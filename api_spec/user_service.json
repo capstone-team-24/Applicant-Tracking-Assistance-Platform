@@ -1,0 +1,564 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "User Service API",
+        "description": "ATS User Service - manages user profiles, organizations, and documents",
+        "contact": {
+            "name": "ATS Team",
+            "email": "team@ats.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8082",
+            "description": "Generated server url"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Profiles",
+            "description": "User profile management"
+        },
+        {
+            "name": "Internal Profiles",
+            "description": "Internal profile endpoints for service-to-service communication"
+        },
+        {
+            "name": "Organizations",
+            "description": "Organization management"
+        }
+    ],
+    "paths": {
+        "/profiles/{id}": {
+            "get": {
+                "tags": [
+                    "Profiles"
+                ],
+                "summary": "Get profile by ID",
+                "operationId": "getProfile",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfileResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Profiles"
+                ],
+                "summary": "Update profile by ID (ownership check via X-User-Id header)",
+                "operationId": "updateProfile",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProfileUpdateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfileResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profiles/me": {
+            "get": {
+                "tags": [
+                    "Profiles"
+                ],
+                "summary": "Get current user's profile (via X-User-Id header)",
+                "operationId": "getMyProfile",
+                "parameters": [
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfileResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Profiles"
+                ],
+                "summary": "Update current user's profile (via X-User-Id header)",
+                "operationId": "updateMyProfile",
+                "parameters": [
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProfileUpdateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfileResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profiles/{id}/upload-cv": {
+            "post": {
+                "tags": [
+                    "Profiles"
+                ],
+                "summary": "Upload CV for a profile",
+                "operationId": "uploadCv",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfileResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations": {
+            "post": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Create a new organization",
+                "operationId": "createOrganization",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateOrganizationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/profiles/bootstrap": {
+            "post": {
+                "tags": [
+                    "Internal Profiles"
+                ],
+                "summary": "Bootstrap a new user profile (called by auth-service)",
+                "operationId": "bootstrapProfile",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BootstrapProfileRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProfileResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profiles/{id}/application-data": {
+            "get": {
+                "tags": [
+                    "Profiles"
+                ],
+                "summary": "Get application data for a profile by profile ID",
+                "operationId": "getApplicationData",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApplicationDataResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/profiles/{authUserId}/application-data": {
+            "get": {
+                "tags": [
+                    "Internal Profiles"
+                ],
+                "summary": "Get application data by authUserId (internal)",
+                "operationId": "getApplicationData_1",
+                "parameters": [
+                    {
+                        "name": "authUserId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApplicationDataResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/organizations/{orgId}/policies": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Get organization policies by ID (internal)",
+                "operationId": "getOrganizationPolicies",
+                "parameters": [
+                    {
+                        "name": "orgId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ProfileUpdateRequest": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "bio": {
+                        "type": "string"
+                    },
+                    "yearsOfExperience": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "ProfileResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "authUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "bio": {
+                        "type": "string"
+                    },
+                    "cvUrl": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "orgId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "yearsOfExperience": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CreateOrganizationRequest": {
+                "required": [
+                    "name"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "organizationPolicies": {
+                        "type": "string"
+                    }
+                }
+            },
+            "OrganizationResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "organizationPolicies": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "BootstrapProfileRequest": {
+                "required": [
+                    "authUserId",
+                    "email",
+                    "firstName",
+                    "lastName",
+                    "role"
+                ],
+                "type": "object",
+                "properties": {
+                    "authUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "orgId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "ApplicationDataResponse": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "latestCvUrl": {
+                        "type": "string"
+                    },
+                    "yearsOfExperience": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            }
+        }
+    }
+}

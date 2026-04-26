@@ -1,0 +1,48 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ats_users}
+    username: ${SPRING_DATASOURCE_USERNAME:ats_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:ats_secret_2024}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  storage:
+    base-path: ${APP_STORAGE_PATH:./data/storage}
+
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://jaeger:4318/v1/traces

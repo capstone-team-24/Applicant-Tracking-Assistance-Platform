@@ -1,0 +1,64 @@
+server:
+  port: 8083
+spring:
+  application:
+    name: jobs-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ats_jobs}
+    username: ${SPRING_DATASOURCE_USERNAME:ats_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:ats_secret_2024}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: latest
+      properties:
+        spring.json.trusted.packages: "com.ats.jobs.dto"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.ats.jobs.dto.RankResultEvent
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+app:
+  storage:
+    base-path: ${APP_STORAGE_PATH:./data/storage}
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
+
+google:
+  credentials:
+    base64: ${GOOGLE_CREDENTIALS_BASE64:}
+  client:
+    id: ${GOOGLE_CLIENT_ID:}
+    secret: ${GOOGLE_CLIENT_SECRET:}
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://jaeger:4318/v1/traces

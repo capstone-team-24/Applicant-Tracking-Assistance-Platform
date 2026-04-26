@@ -1,0 +1,77 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**,/api/v1/auth/**
+          filters:
+            - RewritePath=/api/v1/auth/(?<remaining>.*), /auth/${remaining}
+        - id: auth-jwks
+          uri: lb://auth-service
+          predicates:
+            - Path=/.well-known/**
+        - id: user-profiles-api
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/profiles/**
+          filters:
+            - RewritePath=/api/v1/profiles/(?<remaining>.*), /profiles/${remaining}
+        - id: user-profiles
+          uri: lb://user-service
+          predicates:
+            - Path=/profiles/**,/internal/profiles/**,/organizations/**,/internal/organizations/**
+        - id: jobs-service
+          uri: lb://jobs-service
+          predicates:
+            - Path=/api/v1/jobs/**,/api/v1/applications/**,/api/v1/interviews/**,/api/v1/integrations/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: assessment-service
+          uri: http://assessment-service:8091
+          predicates:
+            - Path=/api/v1/assessments/**,/api/v1/assessments
+          filters:
+            - RewritePath=/api/v1/(?<remaining>.*), /${remaining}
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+gateway:
+  auth:
+    jwks-uri: ${GATEWAY_JWKS_URI:http://localhost:8081/.well-known/jwks.json}
+  rate-limit:
+    requests-per-second: 50
+
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://jaeger:4318/v1/traces
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    io.opentelemetry: DEBUG

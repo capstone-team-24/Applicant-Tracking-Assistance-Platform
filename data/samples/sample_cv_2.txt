@@ -1,0 +1,39 @@
+Emily Chen
+Full Stack Developer
+emily.chen@example.com | (555) 987-6543 | Austin, TX
+
+SUMMARY
+Creative full-stack developer with 3 years of experience building web applications.
+Passionate about clean code and user experience. Looking for opportunities to grow
+in a collaborative team environment.
+
+SKILLS
+- Frontend: React, Vue.js, HTML5, CSS3, Tailwind CSS, JavaScript, TypeScript
+- Backend: Node.js, Express, Python, Django
+- Databases: PostgreSQL, MySQL, MongoDB
+- Tools: Git, Docker, VS Code, Figma
+- Other: REST APIs, GraphQL, Agile/Scrum
+
+EXPERIENCE
+
+Full Stack Developer | DigitalFlow Agency | Sep 2022 - Present
+- Build and maintain client websites using React and Node.js
+- Implemented responsive designs matching Figma mockups with pixel-perfect accuracy
+- Created REST APIs with Express.js handling 10K+ daily active users
+- Deployed applications using Docker and AWS EC2
+
+Junior Developer | CodeHouse Startup | Jun 2021 - Aug 2022
+- Developed features for e-commerce platform using Vue.js and Django
+- Wrote unit tests with Jest and Pytest, maintaining 80% coverage
+- Collaborated with UX team to improve user onboarding flow, increasing conversion by 25%
+
+Intern | LocalTech Solutions | Jan 2021 - May 2021
+- Assisted in building internal tools using Python and Flask
+- Created documentation for development processes
+
+EDUCATION
+Bachelor of Science in Information Technology | University of Texas at Austin | 2021
+
+PROJECTS
+- OpenSource Contributor: Contributed to React component libraries (200+ GitHub stars)
+- Personal Blog: Built with Next.js and MDX, deployed on Vercel

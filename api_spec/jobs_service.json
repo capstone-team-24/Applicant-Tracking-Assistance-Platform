@@ -1,0 +1,2139 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "OpenAPI definition",
+        "version": "v0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8083",
+            "description": "Generated server url"
+        }
+    ],
+    "paths": {
+        "/api/v1/jobs/{jobId}/bookings/{bookingId}/complete": {
+            "put": {
+                "tags": [
+                    "recruiter-interview-controller"
+                ],
+                "operationId": "completeBooking",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubmitInterviewFeedbackRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InterviewBooking"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{id}": {
+            "get": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "getJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "updateJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateJobRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "deleteJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/{id}/status": {
+            "get": {
+                "tags": [
+                    "application-controller"
+                ],
+                "operationId": "getApplicationStatus",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApplicationResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "application-controller"
+                ],
+                "operationId": "updateApplicationStatus",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateStatusRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApplicationDetailResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs": {
+            "get": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "listJobs",
+                "parameters": [
+                    {
+                        "name": "orgId",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "DRAFT",
+                                "PUBLISHED",
+                                "CLOSED",
+                                "ARCHIVED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "sortBy",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "createdAt"
+                        }
+                    },
+                    {
+                        "name": "sortDir",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobListResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "createJob",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateJobRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/slots": {
+            "get": {
+                "tags": [
+                    "recruiter-interview-controller"
+                ],
+                "operationId": "getJobSlots",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/InterviewSlot"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "recruiter-interview-controller"
+                ],
+                "operationId": "createSlots",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateInterviewSlotsRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/InterviewSlot"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/send-interview-invites": {
+            "post": {
+                "tags": [
+                    "ranking-controller"
+                ],
+                "operationId": "sendInterviewInvites",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendInterviewInviteRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SendInterviewInviteResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/send-assessment": {
+            "post": {
+                "tags": [
+                    "ranking-controller"
+                ],
+                "operationId": "sendAssessmentInvites",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendAssessmentRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SendAssessmentResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/reject-uninvited": {
+            "post": {
+                "tags": [
+                    "ranking-controller"
+                ],
+                "operationId": "rejectUninvitedCandidates",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RejectResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/reject-uninvited-interview": {
+            "post": {
+                "tags": [
+                    "ranking-controller"
+                ],
+                "operationId": "rejectUninvitedInterviewCandidates",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RejectResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/apply": {
+            "post": {
+                "tags": [
+                    "application-controller"
+                ],
+                "operationId": "apply",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "request"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "request": {
+                                        "$ref": "#/components/schemas/ApplyRequest"
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApplicationResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{id}/rank": {
+            "post": {
+                "tags": [
+                    "ranking-controller"
+                ],
+                "operationId": "triggerRanking",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RankingJobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{id}/publish": {
+            "post": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "publishJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{id}/close": {
+            "post": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "closeJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{id}/archive": {
+            "post": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "archiveJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interviews/book": {
+            "post": {
+                "tags": [
+                    "candidate-interview-controller"
+                ],
+                "operationId": "bookInterview",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BookInterviewRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InterviewBooking"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/integrations/google/callback": {
+            "post": {
+                "tags": [
+                    "google-integration-controller"
+                ],
+                "operationId": "handleCallback",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/bookings": {
+            "get": {
+                "tags": [
+                    "recruiter-interview-controller"
+                ],
+                "operationId": "getJobBookings",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/InterviewBooking"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/{jobId}/applications": {
+            "get": {
+                "tags": [
+                    "application-controller"
+                ],
+                "operationId": "listApplications",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "APPLIED",
+                                "SCREENED",
+                                "OA_INVITED",
+                                "OA_COMPLETED",
+                                "INTERVIEW_INVITED",
+                                "INTERVIEW_SCHEDULED",
+                                "INTERVIEW_COMPLETED",
+                                "OFFERED",
+                                "REJECTED",
+                                "WITHDRAWN"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "sortBy",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "createdAt"
+                        }
+                    },
+                    {
+                        "name": "sortDir",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageApplicationResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/jobs/ranking/{rankingJobId}": {
+            "get": {
+                "tags": [
+                    "ranking-controller"
+                ],
+                "operationId": "getRankingStatus",
+                "parameters": [
+                    {
+                        "name": "rankingJobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RankingJobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interviews/me/bookings": {
+            "get": {
+                "tags": [
+                    "candidate-interview-controller"
+                ],
+                "operationId": "getMyBookings",
+                "parameters": [
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CandidateBookingResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/interviews/available-slots/{jobId}": {
+            "get": {
+                "tags": [
+                    "candidate-interview-controller"
+                ],
+                "operationId": "getAvailableSlots",
+                "parameters": [
+                    {
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/InterviewSlot"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/integrations/google/auth-url": {
+            "get": {
+                "tags": [
+                    "google-integration-controller"
+                ],
+                "operationId": "getAuthUrl",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/{id}": {
+            "get": {
+                "tags": [
+                    "application-controller"
+                ],
+                "operationId": "getApplication",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApplicationDetailResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/{id}/file": {
+            "get": {
+                "tags": [
+                    "application-controller"
+                ],
+                "operationId": "downloadFile",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/me": {
+            "get": {
+                "tags": [
+                    "application-controller"
+                ],
+                "operationId": "getMyApplications",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "sortBy",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "createdAt"
+                        }
+                    },
+                    {
+                        "name": "sortDir",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageApplicationResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/me/interview-invites": {
+            "get": {
+                "tags": [
+                    "interview-invite-controller"
+                ],
+                "operationId": "getReceivedInterviewInvites",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ReceivedInterviewInviteResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/applications/me/assessment-invites": {
+            "get": {
+                "tags": [
+                    "assessment-invite-controller"
+                ],
+                "operationId": "getReceivedAssessments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ReceivedAssessmentInviteResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "SubmitInterviewFeedbackRequest": {
+                "type": "object",
+                "properties": {
+                    "rating": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "feedback": {
+                        "type": "string"
+                    }
+                }
+            },
+            "InterviewBooking": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "slotId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "applicationId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "candidateAuthUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "meetingLink": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "SCHEDULED",
+                            "COMPLETED",
+                            "CANCELLED"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "feedback": {
+                        "type": "string"
+                    },
+                    "rating": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "new": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "UpdateJobRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "requirements": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string"
+                    },
+                    "employmentType": {
+                        "type": "string"
+                    },
+                    "experienceLevel": {
+                        "type": "string"
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "scoringWeights": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    },
+                    "customScoringRules": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "JobResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orgId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "requirements": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string"
+                    },
+                    "employmentType": {
+                        "type": "string"
+                    },
+                    "experienceLevel": {
+                        "type": "string"
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "scoringWeights": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    },
+                    "customScoringRules": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "DRAFT",
+                            "PUBLISHED",
+                            "CLOSED",
+                            "ARCHIVED"
+                        ]
+                    },
+                    "createdBy": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "publishedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "UpdateStatusRequest": {
+                "required": [
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "APPLIED",
+                            "SCREENED",
+                            "OA_INVITED",
+                            "OA_COMPLETED",
+                            "INTERVIEW_INVITED",
+                            "INTERVIEW_SCHEDULED",
+                            "INTERVIEW_COMPLETED",
+                            "OFFERED",
+                            "REJECTED",
+                            "WITHDRAWN"
+                        ]
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ApplicationDetailResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "candidateAuthUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "candidateName": {
+                        "type": "string"
+                    },
+                    "candidateEmail": {
+                        "type": "string"
+                    },
+                    "coverLetter": {
+                        "type": "string"
+                    },
+                    "portfolioLinks": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "contactPhone": {
+                        "type": "string"
+                    },
+                    "candidateProfileSnapshot": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    },
+                    "originalFilePath": {
+                        "type": "string"
+                    },
+                    "originalFilename": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "APPLIED",
+                            "SCREENED",
+                            "OA_INVITED",
+                            "OA_COMPLETED",
+                            "INTERVIEW_INVITED",
+                            "INTERVIEW_SCHEDULED",
+                            "INTERVIEW_COMPLETED",
+                            "OFFERED",
+                            "REJECTED",
+                            "WITHDRAWN"
+                        ]
+                    },
+                    "parseConfidence": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "compositeScore": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "rankingPosition": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CreateJobRequest": {
+                "required": [
+                    "title"
+                ],
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "requirements": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string"
+                    },
+                    "employmentType": {
+                        "type": "string"
+                    },
+                    "experienceLevel": {
+                        "type": "string"
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "scoringWeights": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    },
+                    "customScoringRules": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "CreateInterviewSlotsRequest": {
+                "type": "object",
+                "properties": {
+                    "slots": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SlotTime"
+                        }
+                    }
+                }
+            },
+            "SlotTime": {
+                "type": "object",
+                "properties": {
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "InterviewSlot": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "recruiterAuthUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "AVAILABLE",
+                            "BOOKED"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "new": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "SendInterviewInviteRequest": {
+                "type": "object",
+                "properties": {
+                    "assessmentId": {
+                        "type": "string"
+                    },
+                    "topN": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "minScore": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                }
+            },
+            "SendInterviewInviteResponse": {
+                "type": "object",
+                "properties": {
+                    "sent": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "skipped": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sentTo": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "skippedReasons": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "SendAssessmentRequest": {
+                "type": "object",
+                "properties": {
+                    "assessmentToken": {
+                        "type": "string"
+                    },
+                    "assessmentTitle": {
+                        "type": "string"
+                    },
+                    "timeLimitMinutes": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "topN": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "SendAssessmentResponse": {
+                "type": "object",
+                "properties": {
+                    "sent": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "skipped": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sentTo": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "skippedReasons": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "RejectResponse": {
+                "type": "object",
+                "properties": {
+                    "rejectedCount": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sentTo": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "ApplyRequest": {
+                "type": "object",
+                "properties": {
+                    "candidateAuthUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "coverLetter": {
+                        "type": "string"
+                    },
+                    "portfolioLinks": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "contactPhone": {
+                        "type": "string"
+                    },
+                    "useProfileData": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "ApplicationResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "candidateAuthUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "job": {
+                        "$ref": "#/components/schemas/JobResponse"
+                    },
+                    "candidateName": {
+                        "type": "string"
+                    },
+                    "candidateEmail": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "APPLIED",
+                            "SCREENED",
+                            "OA_INVITED",
+                            "OA_COMPLETED",
+                            "INTERVIEW_INVITED",
+                            "INTERVIEW_SCHEDULED",
+                            "INTERVIEW_COMPLETED",
+                            "OFFERED",
+                            "REJECTED",
+                            "WITHDRAWN"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "compositeScore": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "rankingPosition": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "RankingJobResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "PROCESSING",
+                            "COMPLETED",
+                            "FAILED"
+                        ]
+                    },
+                    "result": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object"
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "completedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "BookInterviewRequest": {
+                "type": "object",
+                "properties": {
+                    "slotId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "JobListResponse": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/JobResponse"
+                        }
+                    },
+                    "page": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "totalElements": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "last": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "PageApplicationResponse": {
+                "type": "object",
+                "properties": {
+                    "totalElements": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "first": {
+                        "type": "boolean"
+                    },
+                    "pageable": {
+                        "$ref": "#/components/schemas/PageableObject"
+                    },
+                    "last": {
+                        "type": "boolean"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ApplicationResponse"
+                        }
+                    },
+                    "number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sort": {
+                        "$ref": "#/components/schemas/SortObject"
+                    },
+                    "numberOfElements": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "empty": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "PageableObject": {
+                "type": "object",
+                "properties": {
+                    "paged": {
+                        "type": "boolean"
+                    },
+                    "pageNumber": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "sort": {
+                        "$ref": "#/components/schemas/SortObject"
+                    },
+                    "unpaged": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "SortObject": {
+                "type": "object",
+                "properties": {
+                    "sorted": {
+                        "type": "boolean"
+                    },
+                    "empty": {
+                        "type": "boolean"
+                    },
+                    "unsorted": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "CandidateBookingResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobTitle": {
+                        "type": "string"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "meetingLink": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "SCHEDULED",
+                            "COMPLETED",
+                            "CANCELLED"
+                        ]
+                    }
+                }
+            },
+            "ReceivedInterviewInviteResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobTitle": {
+                        "type": "string"
+                    },
+                    "oaScore": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "schedulingUrl": {
+                        "type": "string"
+                    },
+                    "sentAt": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ReceivedAssessmentInviteResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "jobTitle": {
+                        "type": "string"
+                    },
+                    "assessmentToken": {
+                        "type": "string"
+                    },
+                    "assessmentTitle": {
+                        "type": "string"
+                    },
+                    "timeLimitMinutes": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "sentAt": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
