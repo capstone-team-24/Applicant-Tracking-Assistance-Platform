@@ -1,21 +1,18 @@
-FROM eclipse-temurin:17-jdk AS build
-
+# Stage 1: Build
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
+# Copy pom.xml and download dependencies to cache them
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy source and build
 COPY src ./src
+RUN mvn clean package -DskipTests -q
 
-# install Maven since the wrapper is not present in this repo
-RUN apt-get update && apt-get install -y maven && \
-    mvn clean package -DskipTests && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
+# Stage 2: Runtime
 FROM eclipse-temurin:17-jre
-
 WORKDIR /app
-
 COPY --from=build /app/target/*.jar app.jar
-
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
