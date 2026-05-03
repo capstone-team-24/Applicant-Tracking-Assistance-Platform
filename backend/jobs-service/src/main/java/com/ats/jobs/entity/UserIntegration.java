@@ -15,19 +15,19 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "recruiter_integrations")
+@Table(name = "user_integrations")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RecruiterIntegration {
+public class UserIntegration {
 
     @Id
     @Column(updatable = false, nullable = false)
     private UUID id;
 
     @Column(nullable = false, unique = true)
-    private UUID recruiterAuthUserId;
+    private UUID authUserId;
 
     @Column(nullable = false, length = 500)
     private String googleRefreshToken;

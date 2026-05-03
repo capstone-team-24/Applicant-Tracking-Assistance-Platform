@@ -52,8 +52,8 @@ public class GoogleCalendarService {
 
     public String createInterviewEvent(String refreshToken, String jobTitle, String candidateEmail, String recruiterEmail, LocalDateTime startTime, LocalDateTime endTime) {
         if (refreshToken == null || refreshToken.isEmpty()) {
-            log.warn("Refresh token is missing, returning placeholder link.");
-            return "https://meet.google.com/placeholder-link-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+            log.error("Google Calendar integration is missing. Refresh token is null.");
+            throw new RuntimeException("Google Calendar integration is missing.");
         }
 
         try {
@@ -96,7 +96,32 @@ public class GoogleCalendarService {
 
         } catch (Exception e) {
             log.error("Error creating Google Calendar event", e);
-            return "https://meet.google.com/placeholder-link-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+            throw new RuntimeException("Failed to create Google Calendar event.", e);
         }
+    }
+
+    public void addEventToCandidateCalendar(String candidateRefreshToken, String jobTitle, String meetingLink, LocalDateTime startTime, LocalDateTime endTime) throws Exception {
+        if (candidateRefreshToken == null || candidateRefreshToken.isEmpty()) {
+            return;
+        }
+
+        Calendar calendarService = getCalendarService(candidateRefreshToken);
+
+        Event event = new Event()
+                .setSummary("Interview: " + jobTitle)
+                .setDescription("Interview scheduled via ATS. Meeting Link: " + meetingLink)
+                .setLocation(meetingLink);
+
+        ZonedDateTime zdtStart = startTime.atZone(ZoneId.of("UTC"));
+        com.google.api.client.util.DateTime startDateTime = new com.google.api.client.util.DateTime(zdtStart.toInstant().toEpochMilli());
+        EventDateTime start = new EventDateTime().setDateTime(startDateTime).setTimeZone("UTC");
+        event.setStart(start);
+
+        ZonedDateTime zdtEnd = endTime.atZone(ZoneId.of("UTC"));
+        com.google.api.client.util.DateTime endDateTime = new com.google.api.client.util.DateTime(zdtEnd.toInstant().toEpochMilli());
+        EventDateTime end = new EventDateTime().setDateTime(endDateTime).setTimeZone("UTC");
+        event.setEnd(end);
+
+        calendarService.events().insert("primary", event).execute();
     }
 }

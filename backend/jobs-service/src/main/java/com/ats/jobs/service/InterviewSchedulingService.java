@@ -14,13 +14,13 @@ import com.ats.jobs.exception.BadRequestException;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
 import com.ats.jobs.feign.NotificationServiceClient;
-import com.ats.jobs.entity.RecruiterIntegration;
+import com.ats.jobs.entity.UserIntegration;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.InterviewBookingRepository;
 import com.ats.jobs.repository.InterviewInviteRepository;
 import com.ats.jobs.repository.InterviewSlotRepository;
 import com.ats.jobs.repository.JobRepository;
-import com.ats.jobs.repository.RecruiterIntegrationRepository;
+import com.ats.jobs.repository.UserIntegrationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,7 +42,7 @@ public class InterviewSchedulingService {
     private final JobRepository jobRepository;
     private final NotificationServiceClient notificationServiceClient;
     private final GoogleCalendarService googleCalendarService;
-    private final RecruiterIntegrationRepository recruiterIntegrationRepository;
+    private final UserIntegrationRepository userIntegrationRepository;
 
     @Transactional
     public List<InterviewSlot> createSlots(UUID jobId, CreateInterviewSlotsRequest request, UUID recruiterAuthUserId, UUID orgId) {
@@ -51,6 +51,11 @@ public class InterviewSchedulingService {
 
         if (orgId != null && !job.getOrgId().equals(orgId)) {
             throw new ForbiddenException("You do not have access to this job.");
+        }
+
+        UserIntegration integration = userIntegrationRepository.findByAuthUserId(recruiterAuthUserId).orElse(null);
+        if (integration == null || integration.getGoogleRefreshToken() == null || integration.getGoogleRefreshToken().isEmpty()) {
+            throw new BadRequestException("Please connect your Google Calendar before creating interview slots.");
         }
 
         List<InterviewSlot> newSlots = request.getSlots().stream()
@@ -163,7 +168,7 @@ public class InterviewSchedulingService {
         String jobTitle = job != null ? job.getTitle() : "Position";
         
         String refreshToken = null;
-        RecruiterIntegration integration = recruiterIntegrationRepository.findByRecruiterAuthUserId(slot.getRecruiterAuthUserId()).orElse(null);
+        UserIntegration integration = userIntegrationRepository.findByAuthUserId(slot.getRecruiterAuthUserId()).orElse(null);
         if (integration != null) {
             refreshToken = integration.getGoogleRefreshToken();
         }
@@ -176,6 +181,22 @@ public class InterviewSchedulingService {
                 slot.getStartTime(),
                 slot.getEndTime()
         );
+
+        // Also add to candidate calendar if they connected their integration
+        UserIntegration candidateIntegration = userIntegrationRepository.findByAuthUserId(candidateAuthUserId).orElse(null);
+        if (candidateIntegration != null && candidateIntegration.getGoogleRefreshToken() != null && !candidateIntegration.getGoogleRefreshToken().isEmpty()) {
+            try {
+                googleCalendarService.addEventToCandidateCalendar(
+                        candidateIntegration.getGoogleRefreshToken(),
+                        jobTitle,
+                        meetingLink,
+                        slot.getStartTime(),
+                        slot.getEndTime()
+                );
+            } catch (Exception e) {
+                log.warn("Failed to add event to candidate calendar, but proceeding. Error: {}", e.getMessage());
+            }
+        }
         
         InterviewBooking booking = InterviewBooking.builder()
                 .slotId(slot.getId())

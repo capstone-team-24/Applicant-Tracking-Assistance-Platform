@@ -1,7 +1,7 @@
 package com.ats.jobs.controller;
 
-import com.ats.jobs.entity.RecruiterIntegration;
-import com.ats.jobs.repository.RecruiterIntegrationRepository;
+import com.ats.jobs.entity.UserIntegration;
+import com.ats.jobs.repository.UserIntegrationRepository;
 import com.ats.jobs.util.HeaderContext;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
@@ -24,7 +24,7 @@ import java.util.UUID;
 @Slf4j
 public class GoogleIntegrationController {
 
-    private final RecruiterIntegrationRepository recruiterIntegrationRepository;
+    private final UserIntegrationRepository userIntegrationRepository;
 
     @Value("${google.client.id:}")
     private String clientId;
@@ -63,6 +63,18 @@ public class GoogleIntegrationController {
         }
     }
 
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Boolean>> getStatus(HttpServletRequest request) {
+        UUID authUserId = HeaderContext.getAuthUserId(request);
+        if (authUserId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        boolean connected = userIntegrationRepository.findByAuthUserId(authUserId)
+                .map(integration -> integration.getGoogleRefreshToken() != null && !integration.getGoogleRefreshToken().isEmpty())
+                .orElse(false);
+        return ResponseEntity.ok(Collections.singletonMap("connected", connected));
+    }
+
     @PostMapping("/callback")
     public ResponseEntity<Map<String, String>> handleCallback(@RequestBody Map<String, String> body, HttpServletRequest request) {
         UUID authUserId = HeaderContext.getAuthUserId(request);
@@ -93,13 +105,13 @@ public class GoogleIntegrationController {
                 return ResponseEntity.badRequest().body(Collections.singletonMap("message", "No refresh token received. Try revoking access and reconnecting."));
             }
 
-            RecruiterIntegration integration = recruiterIntegrationRepository.findByRecruiterAuthUserId(authUserId)
-                    .orElse(RecruiterIntegration.builder()
-                            .recruiterAuthUserId(authUserId)
+            UserIntegration integration = userIntegrationRepository.findByAuthUserId(authUserId)
+                    .orElse(UserIntegration.builder()
+                            .authUserId(authUserId)
                             .build());
 
             integration.setGoogleRefreshToken(refreshToken);
-            recruiterIntegrationRepository.save(integration);
+            userIntegrationRepository.save(integration);
 
             return ResponseEntity.ok(Collections.singletonMap("message", "Successfully connected Google Calendar"));
 
