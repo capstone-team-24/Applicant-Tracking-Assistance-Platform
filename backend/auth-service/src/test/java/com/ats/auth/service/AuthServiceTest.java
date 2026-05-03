@@ -8,6 +8,8 @@ import com.ats.auth.entity.RefreshToken;
 import com.ats.auth.entity.Role;
 import com.ats.auth.exception.DuplicateEmailException;
 import com.ats.auth.exception.InvalidCredentialsException;
+import com.ats.auth.feign.JobServiceClient;
+import com.ats.auth.feign.NotificationServiceClient;
 import com.ats.auth.feign.UserServiceClient;
 import com.ats.auth.repository.AuthUserRepository;
 import com.ats.auth.repository.RefreshTokenRepository;
@@ -48,13 +50,19 @@ class AuthServiceTest {
     @Mock
     private UserServiceClient userServiceClient;
 
+    @Mock
+    private NotificationServiceClient notificationServiceClient;
+
+    @Mock
+    private JobServiceClient jobServiceClient;
+
     private AuthService authService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(authUserRepository, refreshTokenRepository, jwtService, userServiceClient);
+        authService = new AuthService(authUserRepository, refreshTokenRepository, jwtService, userServiceClient, notificationServiceClient, jobServiceClient);
     }
 
     @Test

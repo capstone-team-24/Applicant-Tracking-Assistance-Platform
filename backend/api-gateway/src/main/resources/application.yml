@@ -26,7 +26,13 @@ spring:
         - id: user-profiles
           uri: lb://user-service
           predicates:
-            - Path=/profiles/**,/internal/profiles/**,/organizations/**,/internal/organizations/**
+            - Path=/profiles/**,/internal/profiles/**,/organizations/**,/internal/organizations/**,/api/v1/contact-messages/**
+        - id: auth-org-recruiters
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/org/**
+          filters:
+            - RewritePath=/api/v1/auth/(?<remaining>.*), /auth/${remaining}
         - id: jobs-service
           uri: lb://jobs-service
           predicates:

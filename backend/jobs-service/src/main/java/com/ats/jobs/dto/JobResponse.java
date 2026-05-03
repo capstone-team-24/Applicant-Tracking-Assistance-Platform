@@ -28,6 +28,7 @@ public class JobResponse {
     private Map<String, Object> customScoringRules;
     private JobStatus status;
     private UUID createdBy;
+    private UUID assignedTo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime publishedAt;

@@ -12,11 +12,10 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrganizationResponse {
-
+public class ContactMessageResponse {
     private UUID id;
     private String name;
-    private String organizationPolicies;
+    private String email;
+    private String message;
     private LocalDateTime createdAt;
-    private Boolean isSuspended;
 }

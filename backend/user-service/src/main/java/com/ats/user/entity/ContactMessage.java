@@ -1,6 +1,12 @@
 package com.ats.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,12 +16,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "organization")
+@Table(name = "contact_message")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Organization {
+public class ContactMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -25,15 +31,14 @@ public class Organization {
     @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(name = "organization_policies", columnDefinition = "jsonb")
-    private String organizationPolicies;
+    @Column(nullable = false, length = 255)
+    private String email;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String message;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "is_suspended", nullable = false)
-    @Builder.Default
-    private Boolean isSuspended = false;
 
     @PrePersist
     protected void onCreate() {

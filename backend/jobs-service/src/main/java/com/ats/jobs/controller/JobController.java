@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -118,6 +119,21 @@ public class JobController {
         UUID orgId = HeaderContext.getOrgId(httpRequest);
 
         JobResponse response = jobService.archiveJob(id, orgId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/reassign")
+    public ResponseEntity<JobResponse> reassignJob(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+
+        // Note: Orgs admins are doing this. We'll verify orgId.
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        String assignedToRaw = request.get("assignedTo");
+        UUID newRecruiterId = (assignedToRaw != null && !assignedToRaw.isBlank()) ? UUID.fromString(assignedToRaw) : null;
+
+        JobResponse response = jobService.reassignJob(id, newRecruiterId, orgId);
         return ResponseEntity.ok(response);
     }
 }

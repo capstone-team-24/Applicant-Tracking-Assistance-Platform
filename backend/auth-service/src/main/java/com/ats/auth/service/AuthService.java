@@ -10,6 +10,8 @@ import com.ats.auth.entity.Role;
 import com.ats.auth.exception.DuplicateEmailException;
 import com.ats.auth.exception.InvalidCredentialsException;
 import com.ats.auth.exception.InvalidTokenException;
+import com.ats.auth.feign.JobServiceClient;
+import com.ats.auth.feign.NotificationServiceClient;
 import com.ats.auth.feign.UserServiceClient;
 import com.ats.auth.repository.AuthUserRepository;
 import com.ats.auth.repository.RefreshTokenRepository;
@@ -26,6 +28,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -37,6 +40,8 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
     private final UserServiceClient userServiceClient;
+    private final NotificationServiceClient notificationServiceClient;
+    private final JobServiceClient jobServiceClient;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -46,11 +51,11 @@ public class AuthService {
             throw new DuplicateEmailException(request.getEmail());
         }
 
-        // Auto-generate an orgId for RECRUITER users if not provided
-        UUID orgId = request.getOrgId();
-        if (orgId == null && request.getRole() == Role.RECRUITER) {
-            orgId = UUID.randomUUID();
+        if (request.getRole() == Role.RECRUITER) {
+            throw new IllegalArgumentException("Recruiter signup is not allowed publicly. Must be invited by an Organization Admin.");
         }
+
+        UUID orgId = request.getOrgId();
 
         AuthUser user = AuthUser.builder()
                 .email(request.getEmail())
@@ -81,9 +86,131 @@ public class AuthService {
     }
 
     @Transactional
+    public UUID createOrgAdmin(String email, UUID orgId) {
+        if (authUserRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException(email);
+        }
+
+        AuthUser user = AuthUser.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode("admin123"))
+                .firstName("Org")
+                .lastName("Admin")
+                .role(Role.ORG_ADMIN)
+                .orgId(orgId)
+                .build();
+
+        AuthUser saved = authUserRepository.save(user);
+
+        try {
+            userServiceClient.bootstrapProfile(com.ats.auth.dto.BootstrapProfileRequest.builder()
+                    .authUserId(saved.getId())
+                    .firstName(saved.getFirstName())
+                    .lastName(saved.getLastName())
+                    .email(saved.getEmail())
+                    .role(saved.getRole())
+                    .orgId(saved.getOrgId())
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to bootstrap user profile for org admin userId={}: {}", saved.getId(), e.getMessage());
+        }
+
+        try {
+            notificationServiceClient.sendNotification(com.ats.auth.dto.SendNotificationRequest.builder()
+                    .recipientEmail(email)
+                    .subject("Welcome to our Platform!")
+                    .body("Congratulations on creating your organization account. Please set up your account here: [Empty Link]")
+                    .type("EMAIL")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to send welcome email to org admin userId={}: {}", saved.getId(), e.getMessage());
+        }
+
+        log.info("Org Admin created successfully: userId={}, email={}, orgId={}", saved.getId(), saved.getEmail(), orgId);
+        return saved.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuthUser> getRecruiters(UUID orgId) {
+        return authUserRepository.findByOrgIdAndRole(orgId, Role.RECRUITER);
+    }
+
+    @Transactional
+    public UUID createRecruiter(String email, String firstName, String lastName, UUID orgId) {
+        if (authUserRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException(email);
+        }
+
+        AuthUser user = AuthUser.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode("recruiter123"))
+                .firstName(firstName)
+                .lastName(lastName)
+                .role(Role.RECRUITER)
+                .orgId(orgId)
+                .build();
+
+        AuthUser saved = authUserRepository.save(user);
+
+        try {
+            userServiceClient.bootstrapProfile(com.ats.auth.dto.BootstrapProfileRequest.builder()
+                    .authUserId(saved.getId())
+                    .firstName(saved.getFirstName())
+                    .lastName(saved.getLastName())
+                    .email(saved.getEmail())
+                    .role(saved.getRole())
+                    .orgId(saved.getOrgId())
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to bootstrap user profile for recruiter userId={}: {}", saved.getId(), e.getMessage());
+        }
+
+        try {
+            notificationServiceClient.sendNotification(com.ats.auth.dto.SendNotificationRequest.builder()
+                    .recipientEmail(email)
+                    .subject("Welcome to our Platform!")
+                    .body("You have been added as a recruiter. Your temporary password is: recruiter123")
+                    .type("EMAIL")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to send welcome email to recruiter userId={}: {}", saved.getId(), e.getMessage());
+        }
+
+        log.info("Recruiter created successfully: userId={}, email={}, orgId={}", saved.getId(), saved.getEmail(), orgId);
+        return saved.getId();
+    }
+
+    @Transactional
+    public void suspendRecruiter(UUID recruiterId, UUID orgId, boolean suspend) {
+        AuthUser recruiter = authUserRepository.findById(recruiterId)
+                .orElseThrow(() -> new IllegalArgumentException("Recruiter not found"));
+
+        if (!recruiter.getOrgId().equals(orgId)) {
+            throw new IllegalArgumentException("Recruiter does not belong to your organization");
+        }
+
+        if (recruiter.getRole() != Role.RECRUITER) {
+            throw new IllegalArgumentException("User is not a recruiter");
+        }
+
+        recruiter.setIsSuspended(suspend);
+        authUserRepository.save(recruiter);
+
+        try {
+            jobServiceClient.suspendJobsByRecruiter(recruiterId, suspend);
+        } catch (Exception e) {
+            log.error("Failed to notify jobs-service of recruiter suspension: {}", e.getMessage());
+        }
+    }
+
+    @Transactional
     public LoginResponse login(String email, String password) {
         AuthUser user = authUserRepository.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
+
+        if (Boolean.TRUE.equals(user.getIsSuspended())) {
+            throw new InvalidCredentialsException(); // Alternatively a specialized AccountSuspendedException
+        }
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new InvalidCredentialsException();

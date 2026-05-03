@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 @Service
@@ -45,12 +47,39 @@ public class OrganizationService {
         return org.getOrganizationPolicies();
     }
 
+    @Transactional(readOnly = true)
+    public Page<OrganizationResponse> getAllOrganizations(Pageable pageable) {
+        return organizationRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional
+    public OrganizationResponse updateOrganization(UUID id, CreateOrganizationRequest request) {
+        Organization org = organizationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization", "id", id));
+        org.setName(request.getName());
+        org.setOrganizationPolicies(request.getOrganizationPolicies());
+        Organization updated = organizationRepository.save(org);
+        log.info("Updated organization id={}", updated.getId());
+        return toResponse(updated);
+    }
+
+    @Transactional
+    public OrganizationResponse toggleSuspension(UUID id, boolean suspend) {
+        Organization org = organizationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization", "id", id));
+        org.setIsSuspended(suspend);
+        Organization updated = organizationRepository.save(org);
+        log.info("Organization id={} suspended={}", updated.getId(), suspend);
+        return toResponse(updated);
+    }
+
     private OrganizationResponse toResponse(Organization org) {
         return OrganizationResponse.builder()
                 .id(org.getId())
                 .name(org.getName())
                 .organizationPolicies(org.getOrganizationPolicies())
                 .createdAt(org.getCreatedAt())
+                .isSuspended(org.getIsSuspended())
                 .build();
     }
 }

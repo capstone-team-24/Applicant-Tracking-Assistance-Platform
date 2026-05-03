@@ -4,5 +4,6 @@ public enum JobStatus {
     DRAFT,
     PUBLISHED,
     CLOSED,
-    ARCHIVED
+    ARCHIVED,
+    SUSPENDED
 }

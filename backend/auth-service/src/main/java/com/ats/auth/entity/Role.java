@@ -3,5 +3,6 @@ package com.ats.auth.entity;
 public enum Role {
     CANDIDATE,
     RECRUITER,
-    ADMIN
+    ADMIN,
+    ORG_ADMIN
 }

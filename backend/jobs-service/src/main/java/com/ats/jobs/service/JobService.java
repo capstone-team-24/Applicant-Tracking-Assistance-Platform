@@ -39,6 +39,7 @@ public class JobService {
                 .customScoringRules(request.getCustomScoringRules())
                 .status(JobStatus.DRAFT)
                 .createdBy(userId)
+                .assignedTo(userId)
                 .build();
 
         Job saved = jobRepository.save(job);
@@ -173,6 +174,55 @@ public class JobService {
         log.info("Deleted job id={}", id);
     }
 
+    @Transactional
+    public void suspendJobsByRecruiter(UUID recruiterId, boolean suspend) {
+        // Suspend PUBLISHED jobs if suspend = true.
+        // If suspend = false, we could reinstate SUSPENDED jobs back to PUBLISHED.
+        if (suspend) {
+            jobRepository.findByStatus(JobStatus.PUBLISHED, Pageable.unpaged())
+                    .stream()
+                    .filter(job -> recruiterId.equals(job.getAssignedTo()))
+                    .forEach(job -> {
+                        job.setStatus(JobStatus.SUSPENDED);
+                        jobRepository.save(job);
+                        log.info("Suspended job id={} because recruiter {} was suspended", job.getId(), recruiterId);
+                    });
+        } else {
+            jobRepository.findByStatus(JobStatus.SUSPENDED, Pageable.unpaged())
+                    .stream()
+                    .filter(job -> recruiterId.equals(job.getAssignedTo()))
+                    .forEach(job -> {
+                        job.setStatus(JobStatus.PUBLISHED);
+                        jobRepository.save(job);
+                        log.info("Unsuspended job id={} because recruiter {} was reinstated", job.getId(), recruiterId);
+                    });
+        }
+    }
+
+    @Transactional
+    public JobResponse reassignJob(UUID jobId, UUID newRecruiterId, UUID orgId) {
+        Job job = findJobOrThrow(jobId);
+        validateOwnership(job, orgId);
+
+        job.setAssignedTo(newRecruiterId);
+        
+        if (newRecruiterId == null) {
+            // Unassigned -> Suspended
+            if (job.getStatus() == JobStatus.PUBLISHED) {
+                job.setStatus(JobStatus.SUSPENDED);
+            }
+        } else {
+            // Reassigned to active -> Published
+            if (job.getStatus() == JobStatus.SUSPENDED) {
+                job.setStatus(JobStatus.PUBLISHED);
+            }
+        }
+
+        Job saved = jobRepository.save(job);
+        log.info("Reassigned job id={} to newRecruiterId={}", jobId, newRecruiterId);
+        return mapToResponse(saved);
+    }
+
     private Job findJobOrThrow(UUID id) {
         return jobRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + id));
@@ -199,6 +249,7 @@ public class JobService {
                 .customScoringRules(job.getCustomScoringRules())
                 .status(job.getStatus())
                 .createdBy(job.getCreatedBy())
+                .assignedTo(job.getAssignedTo())
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())
                 .publishedAt(job.getPublishedAt())

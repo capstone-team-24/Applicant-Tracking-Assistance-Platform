@@ -63,6 +63,9 @@ public class Job {
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
+    @Column(name = "assigned_to")
+    private UUID assignedTo;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -81,6 +84,9 @@ public class Job {
         updatedAt = LocalDateTime.now();
         if (status == null) {
             status = JobStatus.DRAFT;
+        }
+        if (assignedTo == null) {
+            assignedTo = createdBy;
         }
     }
 
