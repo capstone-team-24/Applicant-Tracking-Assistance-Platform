@@ -43,6 +43,7 @@ public class AssessmentInviteController {
                         .assessmentTitle(i.getAssessmentTitle())
                         .timeLimitMinutes(i.getTimeLimitMinutes())
                         .sentAt(i.getSentAt() != null ? i.getSentAt().toString() : null)
+                        .expiresAt(i.getExpiresAt() != null ? i.getExpiresAt().toString() : null)
                         .build())
                 .toList();
 

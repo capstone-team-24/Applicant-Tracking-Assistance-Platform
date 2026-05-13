@@ -16,8 +16,8 @@ A complete Applicant Tracking System built with microservices architecture, runn
                     └───┬───┘ └───┬───┘ └──┬───┘ └──┬──┘ └─────┬──────┘
                         │         │        │        │           │
                     ┌───▼─────────▼────────▼────────▼───────────▼──┐
-                    │              PostgreSQL (:5432)                │
-                    │   ats_auth │ ats_users │ ats_jobs │ ats_notif │
+                    │              PostgreSQL (:5432)              │
+                    │  ats_auth │ ats_users │ ats_jobs │ ats_notif │
                     └──────────────────────────────────────────────┘
                     ┌────────────┐  ┌────────────┐  ┌──────────────┐
                     │  RabbitMQ  │  │  Weaviate   │  │    MinIO     │
@@ -217,6 +217,13 @@ See `.env.example` for all configurable values. Key settings:
 | MinIO Console | http://localhost:9001 (minio_admin/minio_secret_2024) |
 | Weaviate | http://localhost:8079/v1 |
 
+## Vector DB Choice
+
+| DB | Pros | Cons | When to use |
+|----|------|------|-------------|
+| **Weaviate** (default) | Full-featured, semantic modules, production-ready | Heavier resource use | Default recommendation |
+| **Chroma** | Lightweight, pure Python, easy setup | Less production-ready | Resource-constrained dev |
+| **Milvus** | Great at scale, distributed | Heavy, complex setup | Large-scale production |
 
 ## Project Structure
 
@@ -257,4 +264,11 @@ cd backend/auth-service && mvn test
 
 # Python services:
 cd ml/parsing-service && pytest tests/ -v
+
+# Frontend:
+cd frontend/client && npm run lint
 ```
+
+## License
+
+Internal use only.

@@ -7,10 +7,12 @@ import com.ats.jobs.exception.BadRequestException;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
 import com.ats.jobs.repository.JobRepository;
+import com.ats.jobs.repository.JobSpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,7 @@ public class JobService {
                 .status(JobStatus.DRAFT)
                 .createdBy(userId)
                 .assignedTo(userId)
+                .applicationDeadline(request.getApplicationDeadline())
                 .build();
 
         Job saved = jobRepository.save(job);
@@ -48,9 +51,10 @@ public class JobService {
     }
 
     @Transactional
-    public JobResponse updateJob(UUID id, UpdateJobRequest request, UUID orgId) {
+    public JobResponse updateJob(UUID id, UpdateJobRequest request, UUID orgId, UUID callerId) {
         Job job = findJobOrThrow(id);
         validateOwnership(job, orgId);
+        validateAssignment(job, callerId);
 
         if (request.getTitle() != null) {
             job.setTitle(request.getTitle());
@@ -79,6 +83,10 @@ public class JobService {
         if (request.getCustomScoringRules() != null) {
             job.setCustomScoringRules(request.getCustomScoringRules());
         }
+        // applicationDeadline — allow setting, updating, or clearing (null = no deadline)
+        if (request.getApplicationDeadline() != null) {
+            job.setApplicationDeadline(request.getApplicationDeadline());
+        }
 
         Job saved = jobRepository.save(job);
         log.info("Updated job id={}", saved.getId());
@@ -92,32 +100,49 @@ public class JobService {
     }
 
     @Transactional(readOnly = true)
-    public JobListResponse listJobs(UUID orgId, JobStatus status, Pageable pageable) {
-        Page<Job> page;
-        if (orgId != null && status != null) {
-            page = jobRepository.findByOrgIdAndStatus(orgId, status, pageable);
-        } else if (orgId != null) {
-            page = jobRepository.findByOrgId(orgId, pageable);
-        } else if (status != null) {
-            page = jobRepository.findByStatus(status, pageable);
-        } else {
-            page = jobRepository.findAll(pageable);
-        }
+    public JobListResponse listJobs(
+            UUID orgId,
+            JobStatus status,
+            String search,
+            String location,
+            String employmentType,
+            String experienceLevel,
+            Pageable pageable) {
 
-        return JobListResponse.builder()
-                .content(page.getContent().stream().map(this::mapToResponse).toList())
-                .page(page.getNumber())
-                .size(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .last(page.isLast())
-                .build();
+        Specification<Job> spec = JobSpec.withFilters(
+                orgId, status, search, location, employmentType, experienceLevel);
+        Page<Job> page = jobRepository.findAll(spec, pageable);
+        return buildListResponse(page);
+    }
+
+    /**
+     * List jobs scoped to a recruiter's company (orgId mandatory).
+     * All company jobs are returned so the recruiter can see the full picture,
+     * but only jobs where assignedTo == recruiterId may be mutated (enforced
+     * separately by {@link #validateAssignment}).
+     */
+    @Transactional(readOnly = true)
+    public JobListResponse listJobsByOrg(
+            UUID orgId,
+            JobStatus status,
+            String search,
+            String location,
+            String employmentType,
+            String experienceLevel,
+            Pageable pageable) {
+
+        // orgId is always forced by the caller for recruiters — never null here
+        Specification<Job> spec = JobSpec.withFilters(
+                orgId, status, search, location, employmentType, experienceLevel);
+        Page<Job> page = jobRepository.findAll(spec, pageable);
+        return buildListResponse(page);
     }
 
     @Transactional
-    public JobResponse publishJob(UUID id, UUID orgId) {
+    public JobResponse publishJob(UUID id, UUID orgId, UUID callerId) {
         Job job = findJobOrThrow(id);
         validateOwnership(job, orgId);
+        validateAssignment(job, callerId);
 
         if (job.getStatus() != JobStatus.DRAFT) {
             throw new BadRequestException("Only DRAFT jobs can be published. Current status: " + job.getStatus());
@@ -131,9 +156,10 @@ public class JobService {
     }
 
     @Transactional
-    public JobResponse closeJob(UUID id, UUID orgId) {
+    public JobResponse closeJob(UUID id, UUID orgId, UUID callerId) {
         Job job = findJobOrThrow(id);
         validateOwnership(job, orgId);
+        validateAssignment(job, callerId);
 
         if (job.getStatus() != JobStatus.PUBLISHED) {
             throw new BadRequestException("Only PUBLISHED jobs can be closed. Current status: " + job.getStatus());
@@ -147,9 +173,10 @@ public class JobService {
     }
 
     @Transactional
-    public JobResponse archiveJob(UUID id, UUID orgId) {
+    public JobResponse archiveJob(UUID id, UUID orgId, UUID callerId) {
         Job job = findJobOrThrow(id);
         validateOwnership(job, orgId);
+        validateAssignment(job, callerId);
 
         if (job.getStatus() != JobStatus.CLOSED) {
             throw new BadRequestException("Only CLOSED jobs can be archived. Current status: " + job.getStatus());
@@ -162,9 +189,10 @@ public class JobService {
     }
 
     @Transactional
-    public void deleteJob(UUID id, UUID orgId) {
+    public void deleteJob(UUID id, UUID orgId, UUID callerId) {
         Job job = findJobOrThrow(id);
         validateOwnership(job, orgId);
+        validateAssignment(job, callerId);
 
         if (job.getStatus() != JobStatus.DRAFT) {
             throw new BadRequestException("Only DRAFT jobs can be deleted. Current status: " + job.getStatus());
@@ -234,6 +262,28 @@ public class JobService {
         }
     }
 
+    /**
+     * Ensures the calling recruiter is the one assigned to this job before
+     * allowing any mutation (update, publish, close, archive, delete).
+     */
+    private void validateAssignment(Job job, UUID callerId) {
+        if (callerId == null || !callerId.equals(job.getAssignedTo())) {
+            throw new ForbiddenException(
+                    "You are not assigned to this job and cannot modify it.");
+        }
+    }
+
+    private JobListResponse buildListResponse(Page<Job> page) {
+        return JobListResponse.builder()
+                .content(page.getContent().stream().map(this::mapToResponse).toList())
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .last(page.isLast())
+                .build();
+    }
+
     private JobResponse mapToResponse(Job job) {
         return JobResponse.builder()
                 .id(job.getId())
@@ -254,6 +304,7 @@ public class JobService {
                 .updatedAt(job.getUpdatedAt())
                 .publishedAt(job.getPublishedAt())
                 .closedAt(job.getClosedAt())
+                .applicationDeadline(job.getApplicationDeadline())
                 .build();
     }
 }

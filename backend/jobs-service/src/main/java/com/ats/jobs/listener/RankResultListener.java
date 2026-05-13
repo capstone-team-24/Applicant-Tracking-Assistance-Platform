@@ -70,7 +70,15 @@ public class RankResultListener {
                     Application app = optApp.get();
                     app.setCompositeScore(ranked.getCompositeScore());
                     app.setRankingPosition(ranked.getRankingPosition());
-                    app.setStatus(ApplicationStatus.SCREENED);
+                    // Only advance to SCREENED if the candidate is still at APPLIED.
+                    // Do NOT overwrite statuses that have already progressed further
+                    // (e.g. OA_INVITED, OA_COMPLETED, INTERVIEW_INVITED, etc.).
+                    if (app.getStatus() == ApplicationStatus.APPLIED) {
+                        app.setStatus(ApplicationStatus.SCREENED);
+                    } else {
+                        log.info("Skipping status update for application {} — current status={} is beyond APPLIED",
+                                app.getId(), app.getStatus());
+                    }
                     applicationRepository.save(app);
                 }
             }

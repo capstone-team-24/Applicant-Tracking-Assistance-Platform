@@ -1,0 +1,90 @@
+"use client";
+
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { integrationsApi } from "@/lib/api";
+import { toast } from "react-hot-toast";
+
+function CallbackContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const processedRef = useRef(false);
+
+  useEffect(() => {
+    const code = searchParams.get("code");
+    
+    if (!code) {
+      setStatus("error");
+      toast.error("Authorization code is missing");
+      return;
+    }
+
+    if (processedRef.current) return;
+    processedRef.current = true;
+
+    const connectAccount = async () => {
+      try {
+        await integrationsApi.handleGoogleCallback(code);
+        setStatus("success");
+        toast.success("Successfully connected Google Calendar!");
+        
+        // Redirect back to settings after 2 seconds
+        setTimeout(() => {
+          router.push("/recruiter/settings");
+        }, 2000);
+      } catch (error: any) {
+        setStatus("error");
+        console.error(error);
+        const errorMsg = error.response?.data?.message || "Failed to connect Google Calendar";
+        toast.error(errorMsg);
+      }
+    };
+
+    connectAccount();
+  }, [searchParams, router]);
+
+  return (
+    <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+      {status === "loading" && (
+        <div className="flex flex-col items-center">
+          <svg className="w-12 h-12 text-blue-500 animate-spin mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          <h2 className="text-xl font-semibold">Connecting to Google Calendar...</h2>
+          <p className="text-gray-500 mt-2">Please wait while we secure your connection.</p>
+        </div>
+      )}
+
+      {status === "success" && (
+        <div className="flex flex-col items-center">
+          <svg className="w-12 h-12 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <h2 className="text-xl font-semibold text-gray-900">Connection Successful!</h2>
+          <p className="text-gray-500 mt-2">Redirecting you back to settings...</p>
+        </div>
+      )}
+
+      {status === "error" && (
+        <div className="flex flex-col items-center">
+          <svg className="w-12 h-12 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <h2 className="text-xl font-semibold text-gray-900">Connection Failed</h2>
+          <p className="text-gray-500 mt-2 mb-6">We couldn't connect your calendar. Please try again.</p>
+          <button
+            onClick={() => router.push("/recruiter/settings")}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+          >
+            Return to Settings
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Suspense fallback={<div className="text-gray-500">Loading...</div>}>
+        <CallbackContent />
+      </Suspense>
+    </div>
+  );
+}

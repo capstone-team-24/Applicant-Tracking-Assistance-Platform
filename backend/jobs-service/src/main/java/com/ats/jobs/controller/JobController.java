@@ -31,29 +31,57 @@ public class JobController {
 
         HeaderContext.assertRecruiter(httpRequest);
         UUID userId = HeaderContext.getUserId(httpRequest);
-        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        UUID orgId  = HeaderContext.getOrgId(httpRequest);
 
         JobResponse response = jobService.createJob(request, userId, orgId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * List jobs.
+     * <ul>
+     *   <li>RECRUITER  – always scoped to their own org (orgId from JWT headers).
+     *       Any orgId query-param supplied by the client is ignored; the recruiter
+     *       sees all jobs for their company (read) so they have context, but the
+     *       detail page enforces assignment before showing edit controls.</li>
+     *   <li>ORG_ADMIN / PLATFORM_ADMIN – can pass orgId freely.</li>
+     * </ul>
+     */
     @GetMapping
     public ResponseEntity<JobListResponse> listJobs(
             @RequestParam(required = false) UUID orgId,
             @RequestParam(required = false) JobStatus status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String employmentType,
+            @RequestParam(required = false) String experienceLevel,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @RequestParam(defaultValue = "desc") String sortDir,
+            HttpServletRequest httpRequest) {
 
         Sort sort = sortDir.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        JobListResponse response = jobService.listJobs(orgId, status, pageable);
+        String role = HeaderContext.getUserRole(httpRequest);
+
+        JobListResponse response;
+        if ("RECRUITER".equalsIgnoreCase(role)) {
+            // Force orgId from the auth headers – recruiter cannot see other companies
+            UUID recruiterOrgId = HeaderContext.getOrgId(httpRequest);
+            response = jobService.listJobsByOrg(
+                    recruiterOrgId, status, search, location, employmentType, experienceLevel, pageable);
+        } else {
+            response = jobService.listJobs(
+                    orgId, status, search, location, employmentType, experienceLevel, pageable);
+        }
+
         return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<JobResponse> getJob(@PathVariable UUID id) {
@@ -68,9 +96,10 @@ public class JobController {
             HttpServletRequest httpRequest) {
 
         HeaderContext.assertRecruiter(httpRequest);
-        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        UUID userId = HeaderContext.getUserId(httpRequest);
+        UUID orgId  = HeaderContext.getOrgId(httpRequest);
 
-        JobResponse response = jobService.updateJob(id, request, orgId);
+        JobResponse response = jobService.updateJob(id, request, orgId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -80,9 +109,10 @@ public class JobController {
             HttpServletRequest httpRequest) {
 
         HeaderContext.assertRecruiter(httpRequest);
-        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        UUID userId = HeaderContext.getUserId(httpRequest);
+        UUID orgId  = HeaderContext.getOrgId(httpRequest);
 
-        jobService.deleteJob(id, orgId);
+        jobService.deleteJob(id, orgId, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -92,9 +122,10 @@ public class JobController {
             HttpServletRequest httpRequest) {
 
         HeaderContext.assertRecruiter(httpRequest);
-        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        UUID userId = HeaderContext.getUserId(httpRequest);
+        UUID orgId  = HeaderContext.getOrgId(httpRequest);
 
-        JobResponse response = jobService.publishJob(id, orgId);
+        JobResponse response = jobService.publishJob(id, orgId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -104,9 +135,10 @@ public class JobController {
             HttpServletRequest httpRequest) {
 
         HeaderContext.assertRecruiter(httpRequest);
-        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        UUID userId = HeaderContext.getUserId(httpRequest);
+        UUID orgId  = HeaderContext.getOrgId(httpRequest);
 
-        JobResponse response = jobService.closeJob(id, orgId);
+        JobResponse response = jobService.closeJob(id, orgId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -116,9 +148,10 @@ public class JobController {
             HttpServletRequest httpRequest) {
 
         HeaderContext.assertRecruiter(httpRequest);
-        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        UUID userId = HeaderContext.getUserId(httpRequest);
+        UUID orgId  = HeaderContext.getOrgId(httpRequest);
 
-        JobResponse response = jobService.archiveJob(id, orgId);
+        JobResponse response = jobService.archiveJob(id, orgId, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -128,10 +161,12 @@ public class JobController {
             @RequestBody Map<String, String> request,
             HttpServletRequest httpRequest) {
 
-        // Note: Orgs admins are doing this. We'll verify orgId.
+        // Note: Org admins perform this action. We verify orgId only.
         UUID orgId = HeaderContext.getOrgId(httpRequest);
         String assignedToRaw = request.get("assignedTo");
-        UUID newRecruiterId = (assignedToRaw != null && !assignedToRaw.isBlank()) ? UUID.fromString(assignedToRaw) : null;
+        UUID newRecruiterId = (assignedToRaw != null && !assignedToRaw.isBlank())
+                ? UUID.fromString(assignedToRaw)
+                : null;
 
         JobResponse response = jobService.reassignJob(id, newRecruiterId, orgId);
         return ResponseEntity.ok(response);

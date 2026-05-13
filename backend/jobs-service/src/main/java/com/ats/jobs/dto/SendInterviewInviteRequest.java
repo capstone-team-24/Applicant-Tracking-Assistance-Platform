@@ -2,6 +2,8 @@ package com.ats.jobs.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,4 +19,11 @@ public class SendInterviewInviteRequest {
 
     /** Optional minimum OA score (0–100) to qualify. */
     private Double minScore;
+
+    /**
+     * Optional deadline by which the candidate must book an interview slot.
+     * Stored on each invite and shown on the candidate dashboard.
+     * Once this datetime passes, the booking link is disabled.
+     */
+    private LocalDateTime expiresAt;
 }

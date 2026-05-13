@@ -26,6 +26,57 @@
         }
     ],
     "paths": {
+        "/auth/org/recruiters/{id}/suspend": {
+            "put": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Suspend or unsuspend a recruiter (Org Admin only)",
+                "operationId": "suspendRecruiter",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "suspend",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/signup": {
             "post": {
                 "tags": [
@@ -84,6 +135,116 @@
                             "*/*": {
                                 "schema": {
                                     "$ref": "#/components/schemas/RefreshResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/org/recruiters": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get all recruiters for an organization (Org Admin only)",
+                "operationId": "getRecruiters",
+                "parameters": [
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AuthUser"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Create a recruiter (Org Admin only)",
+                "operationId": "createRecruiter",
+                "parameters": [
+                    {
+                        "name": "X-Org-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateRecruiterRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/org-admin": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Create an Organization Admin (Platform Admin only)",
+                "operationId": "createOrgAdmin",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateOrgAdminRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "object"
+                                    }
                                 }
                             }
                         }
@@ -233,7 +394,8 @@
                         "enum": [
                             "CANDIDATE",
                             "RECRUITER",
-                            "ADMIN"
+                            "ADMIN",
+                            "ORG_ADMIN"
                         ]
                     },
                     "orgId": {
@@ -265,6 +427,41 @@
                     "expiresIn": {
                         "type": "integer",
                         "format": "int64"
+                    }
+                }
+            },
+            "CreateRecruiterRequest": {
+                "required": [
+                    "email",
+                    "firstName",
+                    "lastName"
+                ],
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateOrgAdminRequest": {
+                "required": [
+                    "email",
+                    "orgId"
+                ],
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "orgId": {
+                        "type": "string",
+                        "format": "uuid"
                     }
                 }
             },
@@ -305,7 +502,8 @@
                         "enum": [
                             "CANDIDATE",
                             "RECRUITER",
-                            "ADMIN"
+                            "ADMIN",
+                            "ORG_ADMIN"
                         ]
                     },
                     "orgId": {
@@ -320,6 +518,47 @@
                     },
                     "lastName": {
                         "type": "string"
+                    }
+                }
+            },
+            "AuthUser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "passwordHash": {
+                        "type": "string"
+                    },
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "CANDIDATE",
+                            "RECRUITER",
+                            "ADMIN",
+                            "ORG_ADMIN"
+                        ]
+                    },
+                    "orgId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "isSuspended": {
+                        "type": "boolean"
                     }
                 }
             },

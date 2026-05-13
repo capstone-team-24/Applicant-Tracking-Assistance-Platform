@@ -19,4 +19,8 @@ public interface InterviewInviteRepository extends JpaRepository<InterviewInvite
             Pageable pageable);
 
     boolean existsByJobIdAndCandidateAuthUserId(UUID jobId, UUID candidateAuthUserId);
+
+    List<InterviewInvite> findByJobIdAndCandidateAuthUserId(UUID jobId, UUID candidateAuthUserId);
+
+    List<InterviewInvite> findByJobId(UUID jobId);
 }

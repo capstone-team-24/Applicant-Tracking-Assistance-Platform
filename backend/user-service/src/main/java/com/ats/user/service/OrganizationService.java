@@ -23,9 +23,14 @@ public class OrganizationService {
 
     @Transactional
     public OrganizationResponse create(CreateOrganizationRequest request) {
+        String policies = request.getOrganizationPolicies();
+        if (policies == null || policies.trim().isEmpty()) {
+            policies = "{}";
+        }
+
         Organization organization = Organization.builder()
                 .name(request.getName())
-                .organizationPolicies(request.getOrganizationPolicies())
+                .organizationPolicies(policies)
                 .build();
 
         Organization saved = organizationRepository.save(organization);

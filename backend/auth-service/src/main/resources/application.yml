@@ -44,6 +44,9 @@ jwt:
   issuer: ${JWT_ISSUER:ats-auth-service}
   audience: ${JWT_AUDIENCE:ats-platform}
 
+app:
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3001}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

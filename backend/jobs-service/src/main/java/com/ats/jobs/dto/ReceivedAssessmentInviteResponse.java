@@ -17,4 +17,5 @@ public class ReceivedAssessmentInviteResponse {
     private String assessmentTitle;
     private Integer timeLimitMinutes;
     private String sentAt;
+    private String expiresAt;
 }

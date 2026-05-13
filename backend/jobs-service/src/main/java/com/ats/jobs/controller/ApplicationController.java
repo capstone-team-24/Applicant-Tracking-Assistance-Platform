@@ -4,6 +4,8 @@ import com.ats.jobs.dto.*;
 import com.ats.jobs.enums.ApplicationStatus;
 import jakarta.validation.Valid;
 import com.ats.jobs.service.ApplicationService;
+import com.ats.jobs.service.AssessmentInviteService;
+import com.ats.jobs.service.InterviewInviteService;
 import com.ats.jobs.util.HeaderContext;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,8 @@ import java.util.UUID;
 public class ApplicationController {
 
     private final ApplicationService applicationService;
+    private final AssessmentInviteService assessmentInviteService;
+    private final InterviewInviteService interviewInviteService;
 
     @PostMapping(value = "/api/v1/jobs/{jobId}/apply", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApplicationResponse> apply(
@@ -121,6 +125,42 @@ public class ApplicationController {
             HttpServletRequest httpRequest) {
         HeaderContext.assertRecruiter(httpRequest);
         ApplicationDetailResponse response = applicationService.updateApplicationStatus(id, request.getStatus());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/v1/applications/{id}/send-oa
+     *
+     * Manually send an OA invite to a single candidate, bypassing AI ranking.
+     * The recruiter must supply the same assessment details as in the bulk flow.
+     */
+    @PostMapping("/api/v1/applications/{id}/send-oa")
+    public ResponseEntity<SendAssessmentResponse> sendOAToApplication(
+            @PathVariable UUID id,
+            @RequestBody SendAssessmentRequest request,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        SendAssessmentResponse response = assessmentInviteService.sendAssessmentToApplication(id, request, orgId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/v1/applications/{id}/send-interview-invite
+     *
+     * Manually send an interview invite to a single candidate, bypassing OA
+     * score filtering and topN cap.
+     */
+    @PostMapping("/api/v1/applications/{id}/send-interview-invite")
+    public ResponseEntity<SendInterviewInviteResponse> sendInterviewInviteToApplication(
+            @PathVariable UUID id,
+            @RequestBody(required = false) SendSingleInterviewInviteRequest request,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        SendInterviewInviteResponse response = interviewInviteService.sendInterviewInviteToApplication(id, request, orgId);
         return ResponseEntity.ok(response);
     }
 }

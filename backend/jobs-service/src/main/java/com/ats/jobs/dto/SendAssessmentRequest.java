@@ -2,6 +2,8 @@ package com.ats.jobs.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,4 +22,11 @@ public class SendAssessmentRequest {
 
     /** How many top-ranked candidates to invite. Defaults to 10 when null or <= 0. */
     private Integer topN;
+
+    /**
+     * Optional deadline by which the candidate must complete the OA.
+     * Stored on each invite record and shown on the candidate dashboard.
+     * Once this datetime has passed, the invite is shown as expired.
+     */
+    private LocalDateTime expiresAt;
 }

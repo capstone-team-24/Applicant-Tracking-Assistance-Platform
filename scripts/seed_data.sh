@@ -19,17 +19,63 @@ for i in $(seq 1 30); do
   sleep 5
 done
 
+# 0. Setup Platform Admin, Organization, and Org Admin
+echo ""
+echo "==> Creating Platform Admin..."
+curl -sf -X POST "$GATEWAY_URL/auth/signup" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "System",
+    "lastName": "Admin",
+    "email": "admin@ats.platform",
+    "password": "Password123!",
+    "role": "ADMIN"
+  }' > /dev/null 2>&1 || echo "Platform admin already exists"
+
+echo "==> Logging in as Platform Admin..."
+ADMIN_LOGIN=$(curl -sf -X POST "$GATEWAY_URL/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@ats.platform",
+    "password": "Password123!"
+  }' 2>&1) || { echo "Admin login failed"; exit 1; }
+
+ADMIN_TOKEN=$(echo "$ADMIN_LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null || echo "")
+
+echo "==> Creating Organization..."
+ORG_RESP=$(curl -sf -X POST "$GATEWAY_URL/organizations" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{
+    "name": "Acme Corp",
+    "organizationPolicies": "Default Policies"
+  }' 2>&1) || echo "Organization creation failed"
+
+ORG_ID=$(echo "$ORG_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+if [ -z "$ORG_ID" ]; then
+  echo "Failed to create or extract Organization ID. Cannot proceed to create Org Admin."
+  exit 1
+fi
+echo "    Organization ID: $ORG_ID"
+
+echo "==> Creating Organization Admin..."
+curl -sf -X POST "$GATEWAY_URL/auth/org-admin" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"email\": \"orgadmin@acmecorp.com\",
+    \"orgId\": \"$ORG_ID\"
+  }" > /dev/null 2>&1 || echo "Org Admin creation failed"
+
 # 1. Create a recruiter account
 echo ""
 echo "==> Creating recruiter account..."
-SIGNUP_RESP=$(curl -sf -X POST "$GATEWAY_URL/auth/signup" \
+SIGNUP_RESP=$(curl -sf -X POST "$GATEWAY_URL/auth/org/recruiters" \
   -H "Content-Type: application/json" \
+  -H "X-Org-Id: $ORG_ID" \
   -d '{
     "firstName": "Alice",
     "lastName": "Recruiter",
-    "email": "alice@example.com",
-    "password": "Password123!",
-    "role": "RECRUITER"
+    "email": "alice@example.com"
   }' 2>&1) || echo "Signup may have failed (possibly already exists): $SIGNUP_RESP"
 echo "    Recruiter signup response: $SIGNUP_RESP"
 
@@ -40,7 +86,7 @@ LOGIN_RESP=$(curl -sf -X POST "$GATEWAY_URL/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "alice@example.com",
-    "password": "Password123!"
+    "password": "recruiter123"
   }' 2>&1) || { echo "Login failed"; exit 1; }
 
 ACCESS_TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null || echo "")
@@ -118,10 +164,12 @@ echo ""
 echo "=== Seed data creation complete ==="
 echo ""
 echo "Accounts created:"
-echo "  Recruiter: alice@example.com / Password123!"
-echo "  Candidate: john@example.com  / Password123!"
+echo "  Platform Admin: admin@ats.platform / Password123!"
+echo "  Org Admin:      orgadmin@acmecorp.com / admin123"
+echo "  Recruiter:      alice@example.com / recruiter123"
+echo "  Candidate:      john@example.com / Password123!"
 echo ""
 echo "You can now:"
 echo "  - Browse jobs: curl $GATEWAY_URL/api/v1/jobs"
-echo "  - Login:       curl -X POST $GATEWAY_URL/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"alice@example.com\",\"password\":\"Password123!\"}'"
+echo "  - Login:       curl -X POST $GATEWAY_URL/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"alice@example.com\",\"password\":\"recruiter123\"}'"
 echo "  - Open frontend: http://localhost:3000"

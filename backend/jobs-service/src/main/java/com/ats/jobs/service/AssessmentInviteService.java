@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -147,6 +149,7 @@ public class AssessmentInviteService {
                                 .assessmentToken(request.getAssessmentToken())
                                 .assessmentTitle(request.getAssessmentTitle())
                                 .timeLimitMinutes(request.getTimeLimitMinutes())
+                                .expiresAt(request.getExpiresAt())
                                 .build());
                                 
                         app.setStatus(ApplicationStatus.OA_INVITED);
@@ -175,6 +178,114 @@ public class AssessmentInviteService {
                 .sentTo(sentTo)
                 .skippedReasons(skippedReasons)
                 .build();
+    }
+
+    /**
+     * Send an OA invite to a single specific application.
+     *
+     * <p>Unlike {@link #sendAssessmentToTopCandidates}, this method is recruiter-
+     * initiated and bypasses the AI ranking / "already invited" guard. If the
+     * candidate was previously invited the record is updated and a fresh email
+     * is sent — the recruiter explicitly chose this person.
+     *
+     * @param applicationId the application to invite
+     * @param request       assessment token, title, time limit, optional deadline
+     * @param orgId         recruiter's org — used to authorise access to the job
+     */
+    public SendAssessmentResponse sendAssessmentToApplication(
+            UUID applicationId,
+            SendAssessmentRequest request,
+            UUID orgId) {
+
+        Application app = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
+
+        Job job = jobRepository.findById(app.getJobId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + app.getJobId()));
+
+        if (orgId != null && !job.getOrgId().equals(orgId)) {
+            throw new ForbiddenException("You do not have access to this job.");
+        }
+
+        if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+            return SendAssessmentResponse.builder()
+                    .sent(0).skipped(1)
+                    .sentTo(List.of())
+                    .skippedReasons(List.of("Application is " + app.getStatus() + " and cannot be invited."))
+                    .build();
+        }
+
+        String email = app.getCandidateEmail();
+        if (email == null || email.isBlank()) {
+            return SendAssessmentResponse.builder()
+                    .sent(0).skipped(1)
+                    .sentTo(List.of())
+                    .skippedReasons(List.of("No email address on file for application " + applicationId))
+                    .build();
+        }
+
+        String candidateName = app.getCandidateName() != null ? app.getCandidateName() : "Candidate";
+        String assessmentLink = buildAssessmentLink(request.getAssessmentToken(), app.getCandidateAuthUserId());
+        String subject = "Invitation to Complete Online Assessment — " + job.getTitle();
+        String body = buildEmailHtml(
+                candidateName,
+                job.getTitle(),
+                request.getAssessmentTitle(),
+                request.getTimeLimitMinutes(),
+                assessmentLink);
+
+        try {
+            notificationServiceClient.sendNotification(NotificationSendRequest.builder()
+                    .recipientEmail(email)
+                    .subject(subject)
+                    .body(body)
+                    .type("OA_INVITE")
+                    .build());
+            log.info("Manual OA invite sent to {} (application {}) for job {}.", email, applicationId, app.getJobId());
+
+            if (app.getCandidateAuthUserId() != null) {
+                // Upsert: update existing invite or create a new one
+                List<AssessmentInvite> existing = assessmentInviteRepository
+                        .findByJobIdAndCandidateAuthUserId(app.getJobId(), app.getCandidateAuthUserId());
+                if (!existing.isEmpty()) {
+                    AssessmentInvite inv = existing.get(0);
+                    inv.setAssessmentToken(request.getAssessmentToken());
+                    inv.setAssessmentTitle(request.getAssessmentTitle());
+                    inv.setTimeLimitMinutes(request.getTimeLimitMinutes());
+                    inv.setExpiresAt(request.getExpiresAt());
+                    assessmentInviteRepository.save(inv);
+                } else {
+                    assessmentInviteRepository.save(AssessmentInvite.builder()
+                            .jobId(app.getJobId())
+                            .applicationId(app.getId())
+                            .candidateAuthUserId(app.getCandidateAuthUserId())
+                            .candidateEmail(email)
+                            .jobTitle(job.getTitle())
+                            .assessmentToken(request.getAssessmentToken())
+                            .assessmentTitle(request.getAssessmentTitle())
+                            .timeLimitMinutes(request.getTimeLimitMinutes())
+                            .expiresAt(request.getExpiresAt())
+                            .build());
+                }
+            }
+
+            app.setStatus(ApplicationStatus.OA_INVITED);
+            applicationRepository.save(app);
+
+            return SendAssessmentResponse.builder()
+                    .sent(1).skipped(0)
+                    .sentTo(List.of(email))
+                    .skippedReasons(List.of())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Failed to send manual OA invite to {} for application {}: {}", email, applicationId, e.getMessage());
+            return SendAssessmentResponse.builder()
+                    .sent(0).skipped(1)
+                    .sentTo(List.of())
+                    .skippedReasons(List.of("Failed to deliver to " + email + ": " + e.getMessage()))
+                    .build();
+        }
     }
 
     /**
@@ -376,5 +487,17 @@ public class AssessmentInviteService {
                 "</table>" +
                 "</td></tr></table>" +
                 "</body></html>";
+    }
+
+    /**
+     * Update the deadline for all assessment invites for a given job.
+     */
+    public void updateDeadlineForJob(UUID jobId, LocalDateTime newDeadline) {
+        List<AssessmentInvite> invites = assessmentInviteRepository.findByJobId(jobId);
+        for (AssessmentInvite invite : invites) {
+            invite.setExpiresAt(newDeadline);
+        }
+        assessmentInviteRepository.saveAll(invites);
+        log.info("Updated deadline for {} assessment invites for job {}", invites.size(), jobId);
     }
 }

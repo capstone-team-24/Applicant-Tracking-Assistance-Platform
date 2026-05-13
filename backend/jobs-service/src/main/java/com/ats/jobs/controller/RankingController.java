@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -94,5 +95,44 @@ public class RankingController {
         UUID orgId = HeaderContext.getOrgId(httpRequest);
         RejectResponse response = interviewInviteService.rejectUninvitedCandidates(jobId, orgId);
         return ResponseEntity.ok(response);
+    }
+
+    /** PUT /api/v1/jobs/{jobId}/assessment-deadline */
+    @PutMapping("/{jobId}/assessment-deadline")
+    public ResponseEntity<Void> updateAssessmentDeadline(
+            @PathVariable UUID jobId,
+            @RequestBody DeadlineUpdateRequest request,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        assessmentInviteService.updateDeadlineForJob(jobId, request.getNewDeadline());
+        return ResponseEntity.ok().build();
+    }
+
+    /** PUT /api/v1/jobs/{jobId}/interview-deadline */
+    @PutMapping("/{jobId}/interview-deadline")
+    public ResponseEntity<Void> updateInterviewDeadline(
+            @PathVariable UUID jobId,
+            @RequestBody DeadlineUpdateRequest request,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        interviewInviteService.updateDeadlineForJob(jobId, request.getNewDeadline());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Simple DTO for deadline update requests.
+     */
+    public static class DeadlineUpdateRequest {
+        private LocalDateTime newDeadline;
+
+        public LocalDateTime getNewDeadline() {
+            return newDeadline;
+        }
+
+        public void setNewDeadline(LocalDateTime newDeadline) {
+            this.newDeadline = newDeadline;
+        }
     }
 }

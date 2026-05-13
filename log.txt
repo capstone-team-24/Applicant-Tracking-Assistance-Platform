@@ -1,0 +1,158 @@
+ Image trial1-auth-service Building 
+ Image trial1-eureka-server Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.04kB done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 374B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/eclipse-temurin:17-jdk
+#3 DONE 0.4s
+
+#4 [internal] load metadata for docker.io/library/eclipse-temurin:17-jre
+#4 DONE 0.5s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [build 1/5] FROM docker.io/library/eclipse-temurin:17-jdk@sha256:2ff0b91aaa4cb5dc35b4760c37fe064390a486dcd90b361caa72b55d598601f3
+#6 resolve docker.io/library/eclipse-temurin:17-jdk@sha256:2ff0b91aaa4cb5dc35b4760c37fe064390a486dcd90b361caa72b55d598601f3 0.0s done
+#6 DONE 0.0s
+
+#7 [stage-1 1/3] FROM docker.io/library/eclipse-temurin:17-jre@sha256:25e5ea42bca3a7f1d9b6a96f99416873346002f553954f5ec802d9060a115ecd
+#7 resolve docker.io/library/eclipse-temurin:17-jre@sha256:25e5ea42bca3a7f1d9b6a96f99416873346002f553954f5ec802d9060a115ecd 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 3.10kB done
+#8 DONE 0.0s
+
+#9 [build 3/5] COPY pom.xml .
+#9 CACHED
+
+#10 [build 2/5] WORKDIR /app
+#10 CACHED
+
+#11 [build 4/5] COPY src ./src
+#11 CACHED
+
+#12 [build 5/5] RUN apt-get update && apt-get install -y maven &&     mvn clean package -DskipTests
+#12 1.030 Get:1 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]
+#12 1.036 Get:2 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+#12 2.567 Get:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+#12 2.567 Get:4 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [3,521 kB]
+#12 2.981 Get:5 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+#12 3.368 Get:6 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages [19.3 MB]
+#12 9.486 Get:7 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1,509 kB]
+#12 12.00 Get:8 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1,998 kB]
+#12 16.76 Get:9 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages [1,808 kB]
+#12 17.17 Get:10 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [34.8 kB]
+#12 17.72 Get:11 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages [117 kB]
+#12 17.72 Get:12 http://archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages [331 kB]
+#12 17.73 Get:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [3,738 kB]
+#12 18.59 Get:14 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [38.1 kB]
+#12 18.59 Get:15 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [2,395 kB]
+#12 19.14 Get:16 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [2,156 kB]
+#12 19.71 Get:17 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages [49.5 kB]
+#12 19.71 Get:18 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [36.1 kB]
+#12 19.71 Get:19 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages [695 B]
+#12 19.79 Fetched 37.7 MB in 20s (1,924 kB/s)
+#12 19.79 Reading package lists...
+#12 20.64 Reading package lists...
+#12 21.48 Building dependency tree...
+#12 21.73 Reading state information...
+#12 22.04 The following additional packages will be installed:
+#12 22.04   alsa-topology-conf alsa-ucm-conf ca-certificates-java dbus dbus-bin
+#12 22.04   dbus-daemon dbus-session-bus-common dbus-system-bus-common
+#12 22.04   default-jre-headless java-common libaopalliance-java libapache-pom-java
+#12 22.04   libapparmor1 libasound2-data libasound2t64 libatinject-jsr330-api-java
+#12 22.04   libavahi-client3 libavahi-common-data libavahi-common3 libcdi-api-java
+#12 22.04   libcommons-cli-java libcommons-io-java libcommons-lang3-java
+#12 22.04   libcommons-parent-java libcups2t64 libdbus-1-3 liberror-prone-java
+#12 22.04   libgeronimo-annotation-1.3-spec-java libgeronimo-interceptor-3.0-spec-java
+#12 22.04   libglib2.0-0t64 libglib2.0-data libgraphite2-3 libguava-java libguice-java
+#12 22.04   libharfbuzz0b libicu74 libjansi-java libjpeg-turbo8 libjpeg8 libjsr305-java
+#12 22.04   liblcms2-2 libmaven-parent-java libmaven-resolver-java
+#12 22.04   libmaven-shared-utils-java libmaven3-core-java libnspr4 libnss3 libpcsclite1
+#12 22.04   libplexus-cipher-java libplexus-classworlds-java
+#12 22.04   libplexus-component-annotations-java libplexus-interpolation-java
+#12 22.04   libplexus-sec-dispatcher-java libplexus-utils2-java libsisu-inject-java
+#12 22.04   libsisu-plexus-java libslf4j-java libwagon-file-java
+#12 22.04   libwagon-http-shaded-java libwagon-provider-api-java libxml2
+#12 22.04   openjdk-21-jre-headless shared-mime-info xdg-user-dirs
+#12 22.04 Suggested packages:
+#12 22.04   default-dbus-session-bus | dbus-session-bus default-jre alsa-utils
+#12 22.04   libasound2-plugins libatinject-jsr330-api-java-doc libel-api-java
+#12 22.04   libcommons-io-java-doc cups-common low-memory-monitor libasm-java
+#12 22.04   libcglib-java libjsr305-java-doc liblcms2-utils
+#12 22.04   libmaven-shared-utils-java-doc liblogback-java pcscd
+#12 22.04   libplexus-utils2-java-doc junit4 testng libcommons-logging-java
+#12 22.04   liblog4j1.2-java libnss-mdns fonts-dejavu-extra fonts-ipafont-gothic
+#12 22.04   fonts-ipafont-mincho fonts-wqy-microhei | fonts-wqy-zenhei fonts-indic
+#12 22.21 The following NEW packages will be installed:
+#12 22.21   alsa-topology-conf alsa-ucm-conf ca-certificates-java dbus dbus-bin
+#12 22.21   dbus-daemon dbus-session-bus-common dbus-system-bus-common
+#12 22.21   default-jre-headless java-common libaopalliance-java libapache-pom-java
+#12 22.21   libapparmor1 libasound2-data libasound2t64 libatinject-jsr330-api-java
+#12 22.21   libavahi-client3 libavahi-common-data libavahi-common3 libcdi-api-java
+#12 22.21   libcommons-cli-java libcommons-io-java libcommons-lang3-java
+#12 22.21   libcommons-parent-java libcups2t64 libdbus-1-3 liberror-prone-java
+#12 22.21   libgeronimo-annotation-1.3-spec-java libgeronimo-interceptor-3.0-spec-java
+#12 22.21   libglib2.0-0t64 libglib2.0-data libgraphite2-3 libguava-java libguice-java
+#12 22.21   libharfbuzz0b libicu74 libjansi-java libjpeg-turbo8 libjpeg8 libjsr305-java
+#12 22.21   liblcms2-2 libmaven-parent-java libmaven-resolver-java
+#12 22.21   libmaven-shared-utils-java libmaven3-core-java libnspr4 libnss3 libpcsclite1
+#12 22.21   libplexus-cipher-java libplexus-classworlds-java
+#12 22.21   libplexus-component-annotations-java libplexus-interpolation-java
+#12 22.21   libplexus-sec-dispatcher-java libplexus-utils2-java libsisu-inject-java
+#12 22.21   libsisu-plexus-java libslf4j-java libwagon-file-java
+#12 22.21   libwagon-http-shaded-java libwagon-provider-api-java libxml2 maven
+#12 22.21   openjdk-21-jre-headless shared-mime-info xdg-user-dirs
+#12 23.15 0 upgraded, 65 newly installed, 0 to remove and 4 not upgraded.
+#12 23.15 Need to get 74.1 MB of archives.
+#12 23.15 After this operation, 275 MB of additional disk space will be used.
+#12 23.15 Get:1 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libdbus-1-3 amd64 1.14.10-4ubuntu4.1 [210 kB]
+#12 24.94 Get:2 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 dbus-bin amd64 1.14.10-4ubuntu4.1 [39.3 kB]
+#12 24.99 Get:3 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 dbus-session-bus-common all 1.14.10-4ubuntu4.1 [80.5 kB]
+#12 25.16 Get:4 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libapparmor1 amd64 4.0.1really4.0.1-0ubuntu0.24.04.6 [51.2 kB]
+#12 25.31 Get:5 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 dbus-daemon amd64 1.14.10-4ubuntu4.1 [118 kB]
+#12 25.65 Get:6 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 dbus-system-bus-common all 1.14.10-4ubuntu4.1 [81.6 kB]
+#12 25.83 Get:7 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 dbus amd64 1.14.10-4ubuntu4.1 [24.3 kB]
+#12 25.83 Get:8 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libglib2.0-0t64 amd64 2.80.0-6ubuntu3.8 [1,545 kB]
+#12 27.58 Get:9 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libglib2.0-data all 2.80.0-6ubuntu3.8 [49.6 kB]
+#12 27.62 Get:10 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libicu74 amd64 74.2-1ubuntu3.1 [10.9 MB]
+#12 35.35 Get:11 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libxml2 amd64 2.9.14+dfsg-1.3ubuntu3.7 [764 kB]
+#12 35.80 Get:12 http://archive.ubuntu.com/ubuntu noble/main amd64 shared-mime-info amd64 2.4-4 [474 kB]
+#12 36.35 Get:13 http://archive.ubuntu.com/ubuntu noble/main amd64 xdg-user-dirs amd64 0.18-1build1 [18.4 kB]
+#12 36.35 Get:14 http://archive.ubuntu.com/ubuntu noble/main amd64 alsa-topology-conf all 1.2.5.1-2 [15.5 kB]
+#12 36.35 Get:15 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libasound2-data all 1.2.11-1ubuntu0.2 [21.3 kB]
+#12 36.35 Get:16 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libasound2t64 amd64 1.2.11-1ubuntu0.2 [398 kB]
+#12 36.36 Get:17 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 alsa-ucm-conf all 1.2.10-1ubuntu5.10 [68.6 kB]
+#12 36.37 Get:18 http://archive.ubuntu.com/ubuntu noble/main amd64 ca-certificates-java all 20240118 [11.6 kB]
+#12 36.38 Get:19 http://archive.ubuntu.com/ubuntu noble/main amd64 java-common all 0.75+exp1 [6,798 B]
+#12 36.38 Get:20 http://archive.ubuntu.com/ubuntu noble/main amd64 liblcms2-2 amd64 2.14-2build1 [161 kB]
+#12 36.48 Get:21 http://archive.ubuntu.com/ubuntu noble/main amd64 libjpeg-turbo8 amd64 2.1.5-2ubuntu2 [150 kB]
+#12 36.98 Get:22 http://archive.ubuntu.com/ubuntu noble/main amd64 libjpeg8 amd64 8c-2ubuntu11 [2,148 B]
+#12 36.98 Get:23 http://archive.ubuntu.com/ubuntu noble/main amd64 libnspr4 amd64 2:4.35-1.1build1 [117 kB]
+#12 36.98 Get:24 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libnss3 amd64 2:3.98-1ubuntu0.1 [1,445 kB]
+#12 37.68 Get:25 http://archive.ubuntu.com/ubuntu noble/main amd64 libpcsclite1 amd64 2.0.3-1build1 [21.4 kB]
+#12 37.69 Get:26 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 openjdk-21-jre-headless amd64 21.0.10+7-1~24.04 [46.4 MB]
+#12 55.70 Get:27 http://archive.ubuntu.com/ubuntu noble/main amd64 default-jre-headless amd64 2:1.21-75+exp1 [3,094 B]
+#12 55.92 Get:28 http://archive.ubuntu.com/ubuntu noble/universe amd64 libapache-pom-java all 29-2 [5,284 B]
+#12 56.33 Get:29 http://archive.ubuntu.com/ubuntu noble/universe amd64 libatinject-jsr330-api-java all 1.0+ds1-5 [5,348 B]
+#12 56.74 Get:30 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libavahi-common-data amd64 0.8-13ubuntu6.1 [29.9 kB]
+#12 57.19 Get:31 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libavahi-common3 amd64 0.8-13ubuntu6.1 [23.4 kB]
+#12 57.80 Get:32 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libavahi-client3 amd64 0.8-13ubuntu6.1 [26.8 kB]
+#12 58.10 Get:33 http://archive.ubuntu.com/ubuntu noble/universe amd64 libgeronimo-interceptor-3.0-spec-java all 1.0.1-4fakesync [8,616 B]
+#12 58.37 Get:34 http://archive.ubuntu.com/ubuntu noble/universe amd64 libcdi-api-java all 1.2-3 [54.3 kB]
+#12 58.78 Get:35 http://archive.ubuntu.com/ubuntu noble/universe amd64 libcommons-cli-java all 1.6.0-1 [59.9 kB]
+#12 59.20 Get:36 http://archive.ubuntu.com/ubuntu noble/universe amd64 libcommons-parent-java all 56-1 [10.7 kB]
+#12 59.42 Get:37 http://archive.ubuntu.com/ubuntu noble/universe amd64 libcommons-io-java all 2.11.0-2 [297 kB]
+#12 60.22 Get:38 http://archive.ubuntu.com/ubuntu noble/universe amd64 libcommons-lang3-java all 3.14.0-1 [586 kB]
+#12 61.04 Get:39 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libcups2t64 amd64 2.4.7-1.2ubuntu7.9 [273 kB]
+#12 61.45 Get:40 http://archive.ubuntu.com/ubuntu noble/universe amd64 libjsr305-java all 0.1~+svn49-11 [27.0 kB]
+#12 61.75 Get:41 http://archive.ubuntu.com/ubuntu noble/universe amd64 libguava-java all 32.0.1-1 [2,692 kB]
+

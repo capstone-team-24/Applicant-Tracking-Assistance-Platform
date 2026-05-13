@@ -18,6 +18,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ats.jobs.enums.ApplicationStatus;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,11 +50,21 @@ public class RankingService {
                 .build();
         RankingJob saved = rankingJobRepository.save(rankingJob);
 
-        // 2. Get all application IDs for jobId
+        // 2. Get only APPLIED application IDs for jobId.
+        // Candidates in any other status have already progressed and must not
+        // be fed back into the ranking pipeline.
         List<UUID> applicationIds = applicationRepository.findByJobId(jobId)
                 .stream()
+                .filter(a -> a.getStatus() == ApplicationStatus.APPLIED)
                 .map(Application::getId)
                 .collect(Collectors.toList());
+
+        if (applicationIds.isEmpty()) {
+            log.warn("No APPLIED candidates found for jobId={}; ranking request not sent", jobId);
+            saved.setStatus(RankingStatus.FAILED);
+            rankingJobRepository.save(saved);
+            return mapToResponse(saved);
+        }
 
         // 3. Emit rank request event
         RankRequestEvent event = RankRequestEvent.builder()

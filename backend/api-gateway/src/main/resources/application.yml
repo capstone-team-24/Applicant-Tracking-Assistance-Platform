@@ -10,7 +10,7 @@ spring:
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/auth/**,/api/v1/auth/**
+            - Path=/auth/**,/api/v1/auth/**,/api/v1/auth/invite/**
           filters:
             - RewritePath=/api/v1/auth/(?<remaining>.*), /auth/${remaining}
         - id: auth-jwks
@@ -20,13 +20,13 @@ spring:
         - id: user-profiles-api
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/profiles/**
+            - Path=/api/v1/profiles/**,/api/v1/profiles,/api/v1/organizations/**,/api/v1/organizations,/api/v1/contact-messages/**,/api/v1/contact-messages
           filters:
-            - RewritePath=/api/v1/profiles/(?<remaining>.*), /profiles/${remaining}
+            - RewritePath=/api/v1/(?<remaining>.*), /${remaining}
         - id: user-profiles
           uri: lb://user-service
           predicates:
-            - Path=/profiles/**,/internal/profiles/**,/organizations/**,/internal/organizations/**,/api/v1/contact-messages/**
+            - Path=/profiles/**,/internal/profiles/**,/organizations/**,/internal/organizations/**,/contact-messages/**,/contact-messages
         - id: auth-org-recruiters
           uri: lb://auth-service
           predicates:

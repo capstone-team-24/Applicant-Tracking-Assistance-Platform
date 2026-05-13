@@ -16,4 +16,5 @@ public class ReceivedInterviewInviteResponse {
     private Double oaScore;
     private String schedulingUrl;
     private String sentAt;
+    private String expiresAt;
 }

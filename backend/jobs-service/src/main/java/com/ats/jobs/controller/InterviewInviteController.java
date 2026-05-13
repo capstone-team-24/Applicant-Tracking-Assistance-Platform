@@ -42,6 +42,7 @@ public class InterviewInviteController {
                         .oaScore(i.getOaScore())
                         .schedulingUrl(i.getSchedulingUrl())
                         .sentAt(i.getSentAt() != null ? i.getSentAt().toString() : null)
+                        .expiresAt(i.getExpiresAt() != null ? i.getExpiresAt().toString() : null)
                         .build())
                 .toList();
 

@@ -38,7 +38,12 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/auth/**",
-            "/api/v1/auth/**",            // allow frontend prefix before rewrite
+            "/api/v1/auth/login",
+            "/api/v1/auth/signup",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/invite/validate",  // public: validate invite token
+            "/api/v1/auth/invite/accept",    // public: accept invite & create account
             "/.well-known/**",
             "/actuator/**",
             "/**/swagger/**",
@@ -46,7 +51,8 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             "/**/swagger-ui.html",
             "/**/v3/api-docs/**",
             "/**/v3/api-docs",
-            "/webjars/**"
+            "/webjars/**",
+            "/api/v1/contact-messages"       // public: anyone can submit a contact form
     );
 
     // Paths that are accessible without auth but will still process tokens if present

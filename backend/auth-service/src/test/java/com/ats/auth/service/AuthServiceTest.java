@@ -12,6 +12,7 @@ import com.ats.auth.feign.JobServiceClient;
 import com.ats.auth.feign.NotificationServiceClient;
 import com.ats.auth.feign.UserServiceClient;
 import com.ats.auth.repository.AuthUserRepository;
+import com.ats.auth.repository.InviteTokenRepository;
 import com.ats.auth.repository.RefreshTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ class AuthServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
+    private InviteTokenRepository inviteTokenRepository;
+
+    @Mock
     private JwtService jwtService;
 
     @Mock
@@ -62,7 +66,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(authUserRepository, refreshTokenRepository, jwtService, userServiceClient, notificationServiceClient, jobServiceClient);
+        authService = new AuthService(authUserRepository, refreshTokenRepository, inviteTokenRepository, jwtService, userServiceClient, notificationServiceClient, jobServiceClient);
     }
 
     @Test

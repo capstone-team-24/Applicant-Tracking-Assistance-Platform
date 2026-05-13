@@ -52,6 +52,9 @@ public class AssessmentInvite implements Persistable<UUID> {
     @Column(name = "sent_at", nullable = false, updatable = false)
     private LocalDateTime sentAt;
 
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
     @PrePersist
     protected void onCreate() {
         if (id == null) {

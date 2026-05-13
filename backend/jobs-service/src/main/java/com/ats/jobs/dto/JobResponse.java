@@ -33,4 +33,5 @@ public class JobResponse {
     private LocalDateTime updatedAt;
     private LocalDateTime publishedAt;
     private LocalDateTime closedAt;
+    private LocalDateTime applicationDeadline;
 }

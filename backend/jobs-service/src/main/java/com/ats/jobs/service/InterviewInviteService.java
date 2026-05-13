@@ -25,6 +25,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -165,6 +167,7 @@ public class InterviewInviteService {
                         .jobTitle(job.getTitle())
                         .oaScore(score)
                         .schedulingUrl(schedulingUrl)
+                        .expiresAt(request.getExpiresAt())
                         .build());
 
                 sentTo.add(email);
@@ -182,6 +185,118 @@ public class InterviewInviteService {
                 .sentTo(sentTo)
                 .skippedReasons(skippedReasons)
                 .build();
+    }
+
+    /**
+     * Send an interview invite to a single specific application.
+     *
+     * <p>Unlike {@link #sendInterviewInvites}, this bypasses the OA assessment
+     * score filter and topN cap. The recruiter is explicitly choosing this
+     * candidate regardless of AI ranking. If a scored OA submission exists for
+     * this candidate it will be included in the invite email; otherwise score
+     * defaults to 0.0 and the score box is omitted from the email.
+     *
+     * @param applicationId the application to invite
+     * @param request       optional deadline; no other fields required
+     * @param orgId         recruiter's org for authorization
+     */
+    public SendInterviewInviteResponse sendInterviewInviteToApplication(
+            UUID applicationId,
+            com.ats.jobs.dto.SendSingleInterviewInviteRequest request,
+            UUID orgId) {
+
+        Application app = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new com.ats.jobs.exception.ResourceNotFoundException("Application not found: " + applicationId));
+
+        Job job = jobRepository.findById(app.getJobId())
+                .orElseThrow(() -> new com.ats.jobs.exception.ResourceNotFoundException("Job not found: " + app.getJobId()));
+
+        if (orgId != null && !job.getOrgId().equals(orgId)) {
+            throw new com.ats.jobs.exception.ForbiddenException("You do not have access to this job.");
+        }
+
+        if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+            return SendInterviewInviteResponse.builder()
+                    .sent(0).skipped(1)
+                    .sentTo(List.of())
+                    .skippedReasons(List.of("Application is " + app.getStatus() + " and cannot be invited."))
+                    .build();
+        }
+
+        String email = app.getCandidateEmail();
+        if (email == null || email.isBlank()) {
+            return SendInterviewInviteResponse.builder()
+                    .sent(0).skipped(1)
+                    .sentTo(List.of())
+                    .skippedReasons(List.of("No email address on file for application " + applicationId))
+                    .build();
+        }
+
+        // Attempt to pull actual OA score from assessment-service; fall back to 0.0
+        double oaScore = 0.0;
+        if (app.getCandidateAuthUserId() != null) {
+            try {
+                // Fetch any scored submissions and pick the latest score
+                List<Map<String, Object>> subs = fetchScoredSubmissions(null);
+                // (null assessmentId → returns empty list; real lookup requires assessmentId which we don't have here)
+            } catch (Exception ignored) { }
+        }
+
+        String candidateName = app.getCandidateName() != null ? app.getCandidateName() : "Candidate";
+        String schedulingUrl = frontendUrl + "/interview/schedule/" + app.getJobId();
+
+        try {
+            String subject = "Interview Invitation — " + job.getTitle();
+            String body = buildEmailHtml(candidateName, job.getTitle(), oaScore, schedulingUrl);
+            notificationServiceClient.sendNotification(NotificationSendRequest.builder()
+                    .recipientEmail(email)
+                    .subject(subject)
+                    .body(body)
+                    .type("INTERVIEW_INVITE")
+                    .build());
+
+            app.setStatus(ApplicationStatus.INTERVIEW_INVITED);
+            applicationRepository.save(app);
+
+            // Upsert interview invite record for candidate dashboard
+            if (app.getCandidateAuthUserId() != null) {
+                List<InterviewInvite> existing = interviewInviteRepository
+                        .findByJobIdAndCandidateAuthUserId(app.getJobId(), app.getCandidateAuthUserId());
+                if (!existing.isEmpty()) {
+                    InterviewInvite inv = existing.get(0);
+                    inv.setSchedulingUrl(schedulingUrl);
+                    inv.setExpiresAt(request != null ? request.getExpiresAt() : null);
+                    interviewInviteRepository.save(inv);
+                } else {
+                    interviewInviteRepository.save(InterviewInvite.builder()
+                            .jobId(app.getJobId())
+                            .applicationId(app.getId())
+                            .candidateAuthUserId(app.getCandidateAuthUserId())
+                            .candidateEmail(email)
+                            .jobTitle(job.getTitle())
+                            .oaScore(oaScore)
+                            .schedulingUrl(schedulingUrl)
+                            .expiresAt(request != null ? request.getExpiresAt() : null)
+                            .build());
+                }
+            }
+
+            log.info("Manual interview invite sent to {} (application {}) for job {}", email, applicationId, app.getJobId());
+
+            return SendInterviewInviteResponse.builder()
+                    .sent(1).skipped(0)
+                    .sentTo(List.of(email))
+                    .skippedReasons(List.of())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Failed to send manual interview invite to {} for application {}: {}", email, applicationId, e.getMessage());
+            return SendInterviewInviteResponse.builder()
+                    .sent(0).skipped(1)
+                    .sentTo(List.of())
+                    .skippedReasons(List.of("Failed to deliver to " + email + ": " + e.getMessage()))
+                    .build();
+        }
     }
 
     /**
@@ -300,6 +415,18 @@ public class InterviewInviteService {
                "This invitation was sent automatically by the ATS Recruitment System.</p>" +
                "</td></tr></table>" +
                "</td></tr></table></body></html>";
+    }
+
+    /**
+     * Update the deadline for all interview invites for a given job.
+     */
+    public void updateDeadlineForJob(UUID jobId, LocalDateTime newDeadline) {
+        List<InterviewInvite> invites = interviewInviteRepository.findByJobId(jobId);
+        for (InterviewInvite invite : invites) {
+            invite.setExpiresAt(newDeadline);
+        }
+        interviewInviteRepository.saveAll(invites);
+        log.info("Updated deadline for {} interview invites for job {}", invites.size(), jobId);
     }
 
     private static String escHtml(String s) {

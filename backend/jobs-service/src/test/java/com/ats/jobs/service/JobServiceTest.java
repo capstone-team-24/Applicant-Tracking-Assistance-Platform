@@ -99,6 +99,7 @@ class JobServiceTest {
                 .title("Test Job")
                 .status(JobStatus.DRAFT)
                 .createdBy(userId)
+                .assignedTo(userId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -109,6 +110,7 @@ class JobServiceTest {
                 .title("Test Job")
                 .status(JobStatus.PUBLISHED)
                 .createdBy(userId)
+                .assignedTo(userId)
                 .createdAt(draftJob.getCreatedAt())
                 .updatedAt(LocalDateTime.now())
                 .publishedAt(LocalDateTime.now())
@@ -117,7 +119,7 @@ class JobServiceTest {
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(draftJob));
         when(jobRepository.save(any(Job.class))).thenReturn(publishedJob);
 
-        JobResponse response = jobService.publishJob(jobId, orgId);
+        JobResponse response = jobService.publishJob(jobId, orgId, userId);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(JobStatus.PUBLISHED);
@@ -135,13 +137,14 @@ class JobServiceTest {
                 .title("Test Job")
                 .status(JobStatus.PUBLISHED)
                 .createdBy(userId)
+                .assignedTo(userId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(publishedJob));
 
-        assertThatThrownBy(() -> jobService.publishJob(jobId, orgId))
+        assertThatThrownBy(() -> jobService.publishJob(jobId, orgId, userId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Only DRAFT jobs can be published");
     }
@@ -156,13 +159,14 @@ class JobServiceTest {
                 .title("Test Job")
                 .status(JobStatus.DRAFT)
                 .createdBy(userId)
+                .assignedTo(userId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(draftJob));
 
-        assertThatThrownBy(() -> jobService.publishJob(jobId, differentOrgId))
+        assertThatThrownBy(() -> jobService.publishJob(jobId, differentOrgId, userId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("You do not have access to this job");
     }
@@ -175,13 +179,14 @@ class JobServiceTest {
                 .title("Test Job")
                 .status(JobStatus.DRAFT)
                 .createdBy(userId)
+                .assignedTo(userId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(draftJob));
 
-        jobService.deleteJob(jobId, orgId);
+        jobService.deleteJob(jobId, orgId, userId);
 
         verify(jobRepository).delete(draftJob);
     }
@@ -194,13 +199,14 @@ class JobServiceTest {
                 .title("Test Job")
                 .status(JobStatus.PUBLISHED)
                 .createdBy(userId)
+                .assignedTo(userId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(publishedJob));
 
-        assertThatThrownBy(() -> jobService.deleteJob(jobId, orgId))
+        assertThatThrownBy(() -> jobService.deleteJob(jobId, orgId, userId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Only DRAFT jobs can be deleted");
     }

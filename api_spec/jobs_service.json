@@ -11,6 +11,38 @@
         }
     ],
     "paths": {
+        "/internal/jobs/recruiter/{recruiterId}/suspend": {
+            "put": {
+                "tags": [
+                    "internal-job-controller"
+                ],
+                "operationId": "suspendJobsByRecruiter",
+                "parameters": [
+                    {
+                        "name": "recruiterId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "suspend",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/v1/jobs/{jobId}/bookings/{bookingId}/complete": {
             "put": {
                 "tags": [
@@ -171,6 +203,50 @@
                 }
             }
         },
+        "/api/v1/jobs/{id}/reassign": {
+            "put": {
+                "tags": [
+                    "job-controller"
+                ],
+                "operationId": "reassignJob",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/applications/{id}/status": {
             "get": {
                 "tags": [
@@ -267,7 +343,8 @@
                                 "DRAFT",
                                 "PUBLISHED",
                                 "CLOSED",
-                                "ARCHIVED"
+                                "ARCHIVED",
+                                "SUSPENDED"
                             ]
                         }
                     },
@@ -1119,6 +1196,29 @@
                 }
             }
         },
+        "/api/v1/integrations/google/status": {
+            "get": {
+                "tags": [
+                    "google-integration-controller"
+                ],
+                "operationId": "getStatus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/integrations/google/auth-url": {
             "get": {
                 "tags": [
@@ -1466,10 +1566,15 @@
                             "DRAFT",
                             "PUBLISHED",
                             "CLOSED",
-                            "ARCHIVED"
+                            "ARCHIVED",
+                            "SUSPENDED"
                         ]
                     },
                     "createdBy": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "assignedTo": {
                         "type": "string",
                         "format": "uuid"
                     },
@@ -1969,13 +2074,13 @@
                         "type": "integer",
                         "format": "int32"
                     },
-                    "first": {
-                        "type": "boolean"
-                    },
                     "pageable": {
                         "$ref": "#/components/schemas/PageableObject"
                     },
                     "last": {
+                        "type": "boolean"
+                    },
+                    "first": {
                         "type": "boolean"
                     },
                     "size": {

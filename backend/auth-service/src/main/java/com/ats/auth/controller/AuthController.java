@@ -1,15 +1,18 @@
 package com.ats.auth.controller;
 
+import com.ats.auth.dto.AcceptInviteRequest;
+import com.ats.auth.dto.InviteOrgAdminRequest;
+import com.ats.auth.dto.InviteRecruiterRequest;
+import com.ats.auth.dto.InviteTokenResponse;
 import com.ats.auth.dto.JwksResponse;
 import com.ats.auth.dto.LoginRequest;
 import com.ats.auth.dto.LoginResponse;
 import com.ats.auth.dto.RefreshRequest;
 import com.ats.auth.dto.RefreshResponse;
 import com.ats.auth.dto.SignupRequest;
-import com.ats.auth.dto.CreateRecruiterRequest;
+import com.ats.auth.entity.AuthUser;
 import com.ats.auth.service.AuthService;
 import com.ats.auth.service.JwtService;
-import com.ats.auth.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -31,64 +34,22 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Auth endpoints for signup, login, refresh, logout, and JWKS")
+@Tag(name = "Authentication", description = "Auth endpoints for signup, login, refresh, logout, invites, and JWKS")
 public class AuthController {
 
     private final AuthService authService;
     private final JwtService jwtService;
 
-    @Operation(summary = "Register a new user")
+    // ──────────────────────────────────────────────────────────────
+    //  Self-service signup / login
+    // ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "Register a new candidate")
     @PostMapping("/auth/signup")
     public ResponseEntity<Map<String, Object>> signup(@Valid @RequestBody SignupRequest request) {
         UUID userId = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("userId", userId.toString(), "message", "User registered successfully"));
-    }
-
-    @Operation(summary = "Create an Organization Admin (Platform Admin only)")
-    @PostMapping("/auth/org-admin")
-    public ResponseEntity<Map<String, Object>> createOrgAdmin(@Valid @RequestBody com.ats.auth.dto.CreateOrgAdminRequest request) {
-        // Ideally this is secured by a role check. Since auth is centralized, gateway might enforce it or we do it here.
-        // Assuming gateway enforces /api/v1/auth/org-admin, but actually path is /auth/org-admin
-        UUID userId = authService.createOrgAdmin(request.getEmail(), request.getOrgId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("userId", userId.toString(), "message", "Org Admin created successfully"));
-    }
-
-    @Operation(summary = "Get all recruiters for an organization (Org Admin only)")
-    @GetMapping("/auth/org/recruiters")
-    public ResponseEntity<List<AuthUser>> getRecruiters(
-            @RequestHeader(value = "X-Org-Id", required = false) String orgIdHeader) {
-        if (orgIdHeader == null || orgIdHeader.isBlank()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        return ResponseEntity.ok(authService.getRecruiters(UUID.fromString(orgIdHeader)));
-    }
-
-    @Operation(summary = "Create a recruiter (Org Admin only)")
-    @PostMapping("/auth/org/recruiters")
-    public ResponseEntity<Map<String, Object>> createRecruiter(
-            @Valid @RequestBody CreateRecruiterRequest request,
-            @RequestHeader(value = "X-Org-Id", required = false) String orgIdHeader) {
-        if (orgIdHeader == null || orgIdHeader.isBlank()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        UUID userId = authService.createRecruiter(request.getEmail(), request.getFirstName(), request.getLastName(), UUID.fromString(orgIdHeader));
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("userId", userId.toString(), "message", "Recruiter created successfully"));
-    }
-
-    @Operation(summary = "Suspend or unsuspend a recruiter (Org Admin only)")
-    @PutMapping("/auth/org/recruiters/{id}/suspend")
-    public ResponseEntity<Map<String, String>> suspendRecruiter(
-            @PathVariable UUID id,
-            @RequestParam boolean suspend,
-            @RequestHeader(value = "X-Org-Id", required = false) String orgIdHeader) {
-        if (orgIdHeader == null || orgIdHeader.isBlank()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        authService.suspendRecruiter(id, UUID.fromString(orgIdHeader), suspend);
-        return ResponseEntity.ok(Map.of("message", "Recruiter suspension updated successfully"));
     }
 
     @Operation(summary = "Authenticate user and obtain tokens")
@@ -111,6 +72,93 @@ public class AuthController {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Invite: Org Admin (Platform Admin only)
+    // ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "Invite an Organization Admin by email (Platform Admin only)")
+    @PostMapping("/auth/invite/org-admin")
+    public ResponseEntity<Map<String, String>> inviteOrgAdmin(
+            @Valid @RequestBody InviteOrgAdminRequest request) {
+        authService.inviteOrgAdmin(request.getEmail(), request.getOrgId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("message", "Invite sent to " + request.getEmail()));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Invite: Recruiter (Org Admin only)
+    // ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "Invite a Recruiter by email (Org Admin only)")
+    @PostMapping("/auth/invite/recruiter")
+    public ResponseEntity<Map<String, String>> inviteRecruiter(
+            @Valid @RequestBody InviteRecruiterRequest request,
+            @RequestHeader(value = "X-Org-Id", required = false) String orgIdHeader) {
+        if (orgIdHeader == null || orgIdHeader.isBlank()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        authService.inviteRecruiter(request.getEmail(), request.getFirstName(), request.getLastName(),
+                UUID.fromString(orgIdHeader));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("message", "Invite sent to " + request.getEmail()));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Invite: Validate token (public – no auth required)
+    // ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "Validate an invite token and return invite metadata")
+    @GetMapping("/auth/invite/validate")
+    public ResponseEntity<InviteTokenResponse> validateInvite(@RequestParam UUID token) {
+        InviteTokenResponse response = authService.validateInviteToken(token);
+        return ResponseEntity.ok(response);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Invite: Accept – creates the account (public – no auth required)
+    // ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "Accept an invite and create the account")
+    @PostMapping("/auth/invite/accept")
+    public ResponseEntity<Map<String, Object>> acceptInvite(
+            @Valid @RequestBody AcceptInviteRequest request) {
+        UUID userId = authService.acceptInvite(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("userId", userId.toString(), "message", "Account created successfully. You can now log in."));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Recruiters – list / create (legacy endpoints kept for reference;
+    //  creation now uses invite flow above)
+    // ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "Get all recruiters for an organization (Org Admin only)")
+    @GetMapping("/auth/org/recruiters")
+    public ResponseEntity<List<AuthUser>> getRecruiters(
+            @RequestHeader(value = "X-Org-Id", required = false) String orgIdHeader) {
+        if (orgIdHeader == null || orgIdHeader.isBlank()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(authService.getRecruiters(UUID.fromString(orgIdHeader)));
+    }
+
+    @Operation(summary = "Suspend or unsuspend a recruiter (Org Admin only)")
+    @PutMapping("/auth/org/recruiters/{id}/suspend")
+    public ResponseEntity<Map<String, String>> suspendRecruiter(
+            @PathVariable UUID id,
+            @RequestParam boolean suspend,
+            @RequestHeader(value = "X-Org-Id", required = false) String orgIdHeader) {
+        if (orgIdHeader == null || orgIdHeader.isBlank()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        authService.suspendRecruiter(id, UUID.fromString(orgIdHeader), suspend);
+        return ResponseEntity.ok(Map.of("message", "Recruiter suspension updated successfully"));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  JWKS / Key rotation
+    // ──────────────────────────────────────────────────────────────
 
     @Operation(summary = "Get JSON Web Key Set for token verification")
     @GetMapping("/.well-known/jwks.json")

@@ -3,6 +3,9 @@ server:
 spring:
   application:
     name: jobs-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ats_jobs}
     username: ${SPRING_DATASOURCE_USERNAME:ats_admin}

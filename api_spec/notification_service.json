@@ -238,13 +238,13 @@
                         "type": "integer",
                         "format": "int64"
                     },
+                    "first": {
+                        "type": "boolean"
+                    },
                     "pageable": {
                         "$ref": "#/components/schemas/PageableObject"
                     },
                     "last": {
-                        "type": "boolean"
-                    },
-                    "first": {
                         "type": "boolean"
                     },
                     "size": {
