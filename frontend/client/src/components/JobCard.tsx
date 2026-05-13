@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Job } from "@/lib/types";
 import StatusBadge from "./StatusBadge";
-import { formatDate, parseDate } from "@/lib/dateUtils";
+import { formatDate } from "@/lib/dateUtils";
 
 interface JobCardProps {
   job: Job;
@@ -82,26 +82,11 @@ export default function JobCard({ job, showStatus = false, recruiterView = false
       </div>
 
       <div className="flex items-center justify-between pt-5 border-t border-white/10 mt-auto">
-        <div className="flex flex-col gap-1">
-          {job.createdAt && (
-            <span className="text-[11px] font-bold uppercase tracking-widest text-white/30">
-              {formatDate(job.createdAt)}
-            </span>
-          )}
-          {job.applicationDeadline && (
-            <span className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest ${
-              (parseDate(job.applicationDeadline) || new Date()) < new Date()
-                ? "text-red-400"
-                : "text-amber-400"
-            }`}>
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-              {(parseDate(job.applicationDeadline) || new Date()) < new Date()
-                ? "Closed"
-                : `Apply by ${formatDate(job.applicationDeadline)}`
-              }
-            </span>
-          )}
-        </div>
+        {job.createdAt && (
+          <span className="text-[11px] font-bold uppercase tracking-widest text-white/30">
+            {formatDate(job.createdAt)}
+          </span>
+        )}
         <Link
           href={linkHref}
           className="inline-flex items-center px-5 py-2 text-xs font-black uppercase tracking-widest text-black bg-white rounded-xl hover:bg-white/90 active:scale-95 transition-all shadow-lg shadow-white/5"

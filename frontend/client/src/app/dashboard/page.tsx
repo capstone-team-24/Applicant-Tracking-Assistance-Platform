@@ -11,7 +11,7 @@ import JobCard from "@/components/JobCard";
 import StatusBadge from "@/components/StatusBadge";
 import FileUpload from "@/components/FileUpload";
 import toast from "react-hot-toast";
-import { formatDate, formatDateTime, parseDate } from "@/lib/dateUtils";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 
 function CandidateDashboard() {
   const { user } = useAuth();
@@ -392,33 +392,16 @@ function CandidateDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pendingInterviews.map((invite) => {
-                    const isExpired = invite.expiresAt
-                      ? (parseDate(invite.expiresAt) || new Date()) < new Date()
-                      : false;
-
-                    return (
+                    {pendingInterviews.map((invite) => (
                     <div
                       key={invite.id}
-                      className={`border rounded-lg p-4 transition-colors ${
-                        isExpired
-                          ? "border-gray-200 bg-gray-50"
-                          : "border-indigo-200 bg-indigo-50/50"
-                      }`}
+                      className="border border-indigo-200 bg-indigo-50/50 rounded-lg p-4 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className={`font-medium ${ isExpired ? "text-gray-500" : "text-indigo-900"}`}>
-                              Interview: {invite.jobTitle}
-                            </h4>
-                            {isExpired && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                                Booking Closed
-                              </span>
-                            )}
-                          </div>
+                          <h4 className="font-medium text-indigo-900">
+                            Interview: {invite.jobTitle}
+                          </h4>
                           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-indigo-700">
                             {invite.oaScore != null && (
                               <span className="font-semibold">
@@ -426,34 +409,24 @@ function CandidateDashboard() {
                               </span>
                             )}
                             {invite.sentAt && (
-                              <span>Invited {formatDate(invite.sentAt)}</span>
-                            )}
-                            {invite.expiresAt && (
-                              <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
-                                {isExpired ? "Booking closed" : "Book by"}: {formatDateTime(invite.expiresAt)}
+                              <span>
+                                Invited {formatDate(invite.sentAt)}
                               </span>
                             )}
                           </div>
                         </div>
 
-                        {isExpired ? (
-                          <span className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg whitespace-nowrap cursor-not-allowed">
-                            Booking Closed
-                          </span>
-                        ) : (
-                          invite.schedulingUrl && (
-                            <Link
-                              href={invite.schedulingUrl}
-                              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap"
-                            >
-                              Book Interview
-                            </Link>
-                          )
+                        {invite.schedulingUrl && (
+                          <Link
+                            href={invite.schedulingUrl}
+                            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap"
+                          >
+                            Book Interview
+                          </Link>
                         )}
                       </div>
                     </div>
-                    );
-                  })}
+                  ))}
                 </div>
               )}
             </div>
@@ -466,7 +439,7 @@ function CandidateDashboard() {
           const isOATaken = (jobId: string) => {
             const app = applications.find(a => a.jobId === jobId);
             if (!app) return false;
-            const pastStatuses = ["OA_COMPLETED", "INTERVIEW_INVITED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED", "OFFERED", "REJECTED", "WITHDRAWN"];
+            const pastStatuses = ["OA_COMPLETED", "INTERVIEW_INVITED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED", "OFFERED", "REJECTED"];
             return pastStatuses.includes(app.status);
           };
           const pendingOAs = invites.filter(invite => !isOATaken(invite.jobId));
@@ -496,32 +469,17 @@ function CandidateDashboard() {
                     const href = user?.id
                       ? `/assessments/${token}?candidateId=${user.id}`
                       : `/assessments/${token}`;
-                    const isExpired = invite.expiresAt
-                      ? (parseDate(invite.expiresAt) || new Date()) < new Date()
-                      : false;
 
                     return (
                       <div
                         key={invite.id}
-                        className={`border rounded-lg p-4 transition-colors ${
-                          isExpired
-                            ? "border-gray-200 bg-gray-50"
-                            : "border-gray-200 hover:bg-gray-50"
-                        }`}
+                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-gray-900">
-                                {invite.assessmentTitle || "Online Assessment"}
-                              </h4>
-                              {isExpired && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                                  Expired
-                                </span>
-                              )}
-                            </div>
+                            <h4 className="font-medium text-gray-900">
+                              {invite.assessmentTitle || "Online Assessment"}
+                            </h4>
                             <p className="text-sm text-gray-600 mt-1">
                               Job: <span className="font-medium">{invite.jobTitle}</span>
                             </p>
@@ -530,28 +488,19 @@ function CandidateDashboard() {
                                 <span>Time limit: {invite.timeLimitMinutes} min</span>
                               )}
                               {invite.sentAt && (
-                                <span>Sent {formatDateTime(invite.sentAt)}</span>
-                              )}
-                              {invite.expiresAt && (
-                                <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
-                                  {isExpired ? "Expired" : "Due by"}: {formatDateTime(invite.expiresAt)}
+                                <span>
+                                  Sent {formatDateTime(invite.sentAt)}
                                 </span>
                               )}
                             </div>
                           </div>
 
-                          {isExpired ? (
-                            <span className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg whitespace-nowrap cursor-not-allowed">
-                              Expired
-                            </span>
-                          ) : (
-                            <Link
-                              href={href}
-                              className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
-                            >
-                              Start
-                            </Link>
-                          )}
+                          <Link
+                            href={href}
+                            className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
+                          >
+                            Start
+                          </Link>
                         </div>
                       </div>
                     );

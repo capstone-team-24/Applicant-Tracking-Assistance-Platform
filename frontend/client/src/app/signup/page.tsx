@@ -12,17 +12,21 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   password?: string;
-  role?: string;
+  confirmPassword?: string;
 }
 
 export default function SignupPage() {
   const router = useRouter();
+  // At the top of your component, add:
+const [showPassword, setShowPassword] = useState(0);
+const [showConfirmPassword, setShowConfirmPassword] = useState(0);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
-    role: "" as "CANDIDATE" | "",
+    confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -41,14 +45,17 @@ export default function SignupPage() {
     } else if (formData.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters";
     }
-    if (!formData.role) newErrors.role = "Please select a role";
+    
+    // Password Confirmation Logic
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name as keyof FormErrors]) {
@@ -62,16 +69,15 @@ export default function SignupPage() {
 
     setIsLoading(true);
     try {
-      // Sign up
+      // Logic Update: role is always sent as "CANDIDATE"
       await authApi.signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        role: formData.role as "CANDIDATE",
+        role: "CANDIDATE", 
       });
 
-      // Auto-login after signup
       const loginResponse = await authApi.login(formData.email, formData.password);
       const user = {
         id: loginResponse.userId,
@@ -80,19 +86,14 @@ export default function SignupPage() {
         lastName: loginResponse.lastName,
         role: loginResponse.role,
       };
-      storeAuthData(
-        loginResponse.accessToken,
-        loginResponse.refreshToken,
-        user
-      );
+      storeAuthData(loginResponse.accessToken, loginResponse.refreshToken, user);
 
       toast.success("Account created successfully!");
       router.push("/dashboard");
       router.refresh();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      const message =
-        err.response?.data?.message || "Failed to create account. Please try again.";
+      const message = err.response?.data?.message || "Failed to create account.";
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -100,181 +101,179 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+    <div 
+      className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: `url(/bk.jpg)` }}
+    >
+      <div className="w-full max-w-lg">
+        {/* Glass Card Container */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Join the ATS platform today
+            <h1 className="text-3xl font-bold text-white tracking-tight">Create Account</h1>
+            <p className="mt-2 text-sm text-white/70">
+              Join the ATS platform as a Candidate
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label
-                  htmlFor="firstName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  First Name
-                </label>
+                <label className="block text-sm font-medium text-white/80 mb-1.5 ml-1">First Name</label>
                 <input
-                  id="firstName"
                   name="firstName"
                   type="text"
-                  autoComplete="given-name"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 transition-colors ${
-                    errors.firstName
-                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300"
+                  className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 transition-all focus:outline-none focus:ring-2 ${
+                    errors.firstName ? "border-red-400 focus:ring-red-400" : "border-white/20 focus:ring-white/40"
                   }`}
                   placeholder="John"
                 />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
-                )}
+                {errors.firstName && <p className="mt-1 text-xs text-red-300 ml-1">{errors.firstName}</p>}
               </div>
 
               <div>
-                <label
-                  htmlFor="lastName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Last Name
-                </label>
+                <label className="block text-sm font-medium text-white/80 mb-1.5 ml-1">Last Name</label>
                 <input
-                  id="lastName"
                   name="lastName"
                   type="text"
-                  autoComplete="family-name"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 transition-colors ${
-                    errors.lastName
-                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300"
+                  className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 transition-all focus:outline-none focus:ring-2 ${
+                    errors.lastName ? "border-red-400 focus:ring-red-400" : "border-white/20 focus:ring-white/40"
                   }`}
                   placeholder="Doe"
                 />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
-                )}
+                {errors.lastName && <p className="mt-1 text-xs text-red-300 ml-1">{errors.lastName}</p>}
               </div>
             </div>
 
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Email Address
-              </label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5 ml-1">Email Address</label>
               <input
-                id="email"
                 name="email"
                 type="email"
-                autoComplete="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 transition-colors ${
-                  errors.email
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300"
+                className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 transition-all focus:outline-none focus:ring-2 ${
+                  errors.email ? "border-red-400 focus:ring-red-400" : "border-white/20 focus:ring-white/40"
                 }`}
                 placeholder="you@example.com"
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
+              {errors.email && <p className="mt-1 text-xs text-red-300 ml-1">{errors.email}</p>}
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 transition-colors ${
-                  errors.password
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300"
-                }`}
-                placeholder="At least 8 characters"
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+  <label className="block text-sm font-medium text-white/80 mb-1.5 ml-1">Password</label>
+  <div className="relative">
+    <input
+      name="password"
+      type={showPassword ? "text" : "password"}
+      value={formData.password}
+      onChange={handleChange}
+      className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 transition-all focus:outline-none focus:ring-2 ${
+        errors.password ? "border-red-400 focus:ring-red-400" : "border-white/20 focus:ring-white/40"
+      }`}
+      placeholder="8+ characters"
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword((prev) => !prev)}
+      className="absolute inset-y-0 right-3 flex items-center text-white/60 hover:text-white focus:outline-none"
+      aria-label={showPassword ? "Hide password" : "Show password"}
+    >
+      {showPassword ? (
+        // Eye-off icon
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+            d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 
+               0-1.086.174-2.13.5-3.1m3.1 3.1a7.978 7.978 0 00-.5 3c0 
+               4.418 3.582 8 8 8 1.086 0 2.13-.174 3.1-.5m3.1-3.1a7.978 
+               7.978 0 00.5-3c0-4.418-3.582-8-8-8-1.086 0-2.13.174-3.1.5m3.1 
+               3.1L3 3m0 0l18 18" />
+        </svg>
+      ) : (
+        // Eye icon
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 
+               8.268 2.943 9.542 7-1.274 4.057-5.065 
+               7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      )}
+    </button>
+  </div>
+  {errors.password && <p className="mt-1 text-xs text-red-300 ml-1">{errors.password}</p>}
+</div>
 
-            <div>
-              <label
-                htmlFor="role"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                I am a...
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 transition-colors ${
-                  errors.role
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300"
-                } ${!formData.role ? "text-gray-400" : ""}`}
-              >
-                <option value="">Select your role</option>
-                <option value="CANDIDATE">Candidate - Looking for jobs</option>
-              </select>
-              {errors.role && (
-                <p className="mt-1 text-sm text-red-600">{errors.role}</p>
-              )}
-              <p className="mt-2 text-xs text-gray-500">
-                Are you a recruiter?{" "}
-                <a href="/org/login" className="text-primary-600 hover:underline">Sign in via your Organization portal</a>.
-              </p>
+
+             <div>
+  <label className="block text-sm font-medium text-white/80 mb-1.5 ml-1">Confirm Password</label>
+  <div className="relative">
+    <input
+      name="confirmPassword"
+      type={showConfirmPassword ? "text" : "password"}
+      value={formData.confirmPassword}
+      onChange={handleChange}
+      className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 transition-all focus:outline-none focus:ring-2 ${
+        errors.confirmPassword ? "border-red-400 focus:ring-red-400" : "border-white/20 focus:ring-white/40"
+      }`}
+      placeholder="Repeat password"
+    />
+    <button
+      type="button"
+      onClick={() => setShowConfirmPassword((prev) => !prev)}
+      className="absolute inset-y-0 right-3 flex items-center text-white/60 hover:text-white focus:outline-none"
+      aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+    >
+      {showConfirmPassword ? (
+        // Eye-off icon
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+            d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 
+               0-1.086.174-2.13.5-3.1m3.1 3.1a7.978 7.978 0 00-.5 3c0 
+               4.418 3.582 8 8 8 1.086 0 2.13-.174 3.1-.5m3.1-3.1a7.978 
+               7.978 0 00.5-3c0-4.418-3.582-8-8-8-1.086 0-2.13.174-3.1.5m3.1 
+               3.1L3 3m0 0l18 18" />
+        </svg>
+      ) : (
+        // Eye icon
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 
+               8.268 2.943 9.542 7-1.274 4.057-5.065 
+               7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      )}
+    </button>
+  </div>
+  {errors.confirmPassword && <p className="mt-1 text-xs text-red-300 ml-1">{errors.confirmPassword}</p>}
+</div>
+
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 focus:ring-4 focus:ring-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-white/90 text-gray-900 font-bold rounded-xl hover:bg-white transition-all shadow-lg disabled:opacity-50 mt-4"
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Creating account...
-                </span>
-              ) : (
-                "Create Account"
-              )}
+              {isLoading ? "Creating account..." : "Create Account"}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+          <div className="mt-8 text-center border-t border-white/10 pt-6">
+            <p className="text-sm text-white/60">
               Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-medium text-primary-600 hover:text-primary-500"
-              >
+              <Link href="/login" className="font-bold text-white hover:underline underline-offset-4">
                 Sign in here
               </Link>
+            </p>
+            <p className="mt-4 text-xs text-white/40">
+              Are you an organization?{" "}
+              <a href="/org/login" className="hover:text-white transition-colors">Portal Access</a>
             </p>
           </div>
         </div>

@@ -44,32 +44,52 @@ function CallbackContent() {
     connectAccount();
   }, [searchParams, router]);
 
+  
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+    <div className="relative z-10 bg-white/5 border border-white/10 p-10 rounded-[2.5rem] shadow-2xl backdrop-blur-3xl max-w-md w-full text-center ring-1 ring-white/20">
+      
+      {/* LOADING STATE */}
       {status === "loading" && (
-        <div className="flex flex-col items-center">
-          <svg className="w-12 h-12 text-blue-500 animate-spin mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          <h2 className="text-xl font-semibold">Connecting to Google Calendar...</h2>
-          <p className="text-gray-500 mt-2">Please wait while we secure your connection.</p>
+        <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full" />
+            <svg className="w-16 h-16 text-blue-400 animate-spin relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Connecting to Google Calendar...</h2>
+          <p className="text-gray-400 mt-3 font-medium">Please wait while we secure your connection.</p>
         </div>
       )}
 
+      {/* SUCCESS STATE */}
       {status === "success" && (
-        <div className="flex flex-col items-center">
-          <svg className="w-12 h-12 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <h2 className="text-xl font-semibold text-gray-900">Connection Successful!</h2>
-          <p className="text-gray-500 mt-2">Redirecting you back to settings...</p>
+        <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
+            <svg className="w-16 h-16 text-green-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Connection Successful!</h2>
+          <p className="text-gray-400 mt-3 font-medium">Redirecting you back to settings...</p>
         </div>
       )}
 
+      {/* ERROR STATE */}
       {status === "error" && (
-        <div className="flex flex-col items-center">
-          <svg className="w-12 h-12 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <h2 className="text-xl font-semibold text-gray-900">Connection Failed</h2>
-          <p className="text-gray-500 mt-2 mb-6">We couldn't connect your calendar. Please try again.</p>
+        <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-red-500/20 blur-xl rounded-full" />
+            <svg className="w-16 h-16 text-red-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Connection Failed</h2>
+          <p className="text-gray-400 mt-3 mb-8 font-medium">We couldn't connect your calendar. Please try again.</p>
           <button
             onClick={() => router.push("/recruiter/settings")}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+            className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-xl shadow-blue-600/30 active:scale-95"
           >
             Return to Settings
           </button>
@@ -81,8 +101,15 @@ function CallbackContent() {
 
 export default function GoogleCallbackPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Suspense fallback={<div className="text-gray-500">Loading...</div>}>
+    <div 
+      className="min-h-screen w-full bg-cover bg-center bg-fixed relative flex items-center justify-center p-6 transition-all duration-500"
+      style={{ backgroundImage: `url(/bk2.jpg)` }}
+    >
+      {/* Background Overlays */}
+      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-[2px]" />
+      <div className="fixed top-[-5%] right-[-5%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+      <Suspense fallback={<div className="text-gray-400 font-medium animate-pulse relative z-10">Loading...</div>}>
         <CallbackContent />
       </Suspense>
     </div>

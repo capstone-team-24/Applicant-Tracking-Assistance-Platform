@@ -90,7 +90,6 @@ export interface Job {
   publishedAt?: string;
   closedAt?: string;
   assignedTo?: string;
-  applicationDeadline?: string;
 }
 
 export interface ScoringWeights {
@@ -109,7 +108,6 @@ export interface CreateJobData {
   experienceLevel: string;
   skills: string[];
   scoringWeights?: ScoringWeights;
-  applicationDeadline?: string;
 }
 
 export interface JobListResponse {
@@ -273,8 +271,6 @@ export interface SendAssessmentRequest {
   assessmentTitle: string;
   timeLimitMinutes?: number;
   topN?: number;
-  /** ISO datetime string — deadline for candidate to complete the OA. */
-  expiresAt?: string;
 }
 
 export interface SendAssessmentResponse {
@@ -292,8 +288,6 @@ export interface ReceivedAssessmentInvite {
   assessmentTitle?: string;
   timeLimitMinutes?: number;
   sentAt: string;
-  /** ISO datetime string — when this invite expires (null = no deadline). */
-  expiresAt?: string;
 }
 
 export interface InterviewInvite {
@@ -303,16 +297,12 @@ export interface InterviewInvite {
   oaScore?: number;
   schedulingUrl?: string;
   sentAt: string;
-  /** ISO datetime string — deadline to book the interview slot. */
-  expiresAt?: string;
 }
 
 export interface SendInterviewInviteRequest {
   assessmentId: string;
   topN?: number;
   minScore?: number;
-  /** ISO datetime string — deadline for candidate to book an interview slot. */
-  expiresAt?: string;
 }
 
 export interface SendInterviewInviteResponse {

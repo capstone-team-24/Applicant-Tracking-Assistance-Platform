@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(0);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = (): boolean => {
@@ -57,12 +58,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div 
+      className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: `url(/login-bg.jpg)` }}
+    >
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        {/* Updated: Glass Card Container */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <h1 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h1>
+            <p className="mt-2 text-sm text-white/70">
               Sign in to your ATS account
             </p>
           </div>
@@ -71,7 +76,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-white/80 mb-1.5 ml-1"
               >
                 Email Address
               </label>
@@ -84,54 +89,93 @@ export default function LoginPage() {
                   setEmail(e.target.value);
                   if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 transition-colors ${
+                className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 transition-all ${
                   errors.email
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300"
+                    ? "border-red-400 focus:ring-red-400"
+                    : "border-white/20 focus:ring-white/40 focus:bg-white/10"
                 }`}
                 placeholder="you@example.com"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                <p className="mt-1.5 text-xs font-medium text-red-300 ml-1">{errors.email}</p>
               )}
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-                }}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 transition-colors ${
-                  errors.password
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300"
-                }`}
-                placeholder="Enter your password"
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
-            </div>
+           <div>
+  <label
+    htmlFor="password"
+    className="block text-sm font-medium text-white/80 mb-1.5 ml-1"
+  >
+    Password
+  </label>
+  <div className="relative">
+    <input
+      id="password"
+      type={showPassword ? "text" : "password"}
+      autoComplete="current-password"
+      value={password}
+      onChange={(e) => {
+        setPassword(e.target.value);
+        if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+      }}
+      className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 transition-all ${
+        errors.password
+          ? "border-red-400 focus:ring-red-400"
+          : "border-white/20 focus:ring-white/40 focus:bg-white/10"
+      }`}
+      placeholder="Enter your password"
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword((prev) => !prev)}
+      className="absolute inset-y-0 right-3 flex items-center text-white/60 hover:text-white focus:outline-none"
+    >
+    {showPassword ? (
+  // Eye-off icon (correct)
+  <svg xmlns="http://www.w3.org/2000/svg" 
+       className="h-5 w-5" 
+       fill="none" 
+       viewBox="0 0 24 24" 
+       stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+      d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 
+         0-1.086.174-2.13.5-3.1m3.1 3.1a7.978 7.978 0 00-.5 3c0 
+         4.418 3.582 8 8 8 1.086 0 2.13-.174 3.1-.5m3.1-3.1a7.978 
+         7.978 0 00.5-3c0-4.418-3.582-8-8-8-1.086 0-2.13.174-3.1.5m3.1 
+         3.1L3 3m0 0l18 18" />
+  </svg>
+) : (
+  // Eye icon
+  <svg xmlns="http://www.w3.org/2000/svg" 
+       className="h-5 w-5" 
+       fill="none" 
+       viewBox="0 0 24 24" 
+       stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 
+         8.268 2.943 9.542 7-1.274 4.057-5.065 
+         7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+)}
+
+    </button>
+  </div>
+  {errors.password && (
+    <p className="mt-1.5 text-xs font-medium text-red-300 ml-1">{errors.password}</p>
+  )}
+</div>
+
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 focus:ring-4 focus:ring-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-white/90 text-gray-900 font-bold rounded-xl hover:bg-white focus:ring-2 focus:ring-white/50 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-4"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -143,12 +187,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+          <div className="mt-8 text-center border-t border-white/10 pt-6">
+            <p className="text-sm text-white/60">
               Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
-                className="font-medium text-primary-600 hover:text-primary-500"
+                className="font-bold text-white hover:underline underline-offset-4 transition-all"
               >
                 Sign up here
               </Link>

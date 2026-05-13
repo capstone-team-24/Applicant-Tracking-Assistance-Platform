@@ -324,36 +324,6 @@ export const applicationsApi = {
     });
     return response.data;
   },
-
-  /**
-   * Recruiter: manually send an OA invite to a single candidate,
-   * bypassing AI ranking. Requires an assessment to exist on the job.
-   */
-  sendOA: async (
-    appId: string,
-    data: SendAssessmentRequest,
-  ): Promise<SendAssessmentResponse> => {
-    const response = await api.post<SendAssessmentResponse>(
-      `/api/v1/applications/${appId}/send-oa`,
-      data,
-    );
-    return response.data;
-  },
-
-  /**
-   * Recruiter: manually send an interview invite to a single candidate,
-   * bypassing OA score filter and topN cap.
-   */
-  sendInterviewInvite: async (
-    appId: string,
-    data?: { expiresAt?: string },
-  ): Promise<SendInterviewInviteResponse> => {
-    const response = await api.post<SendInterviewInviteResponse>(
-      `/api/v1/applications/${appId}/send-interview-invite`,
-      data ?? {},
-    );
-    return response.data;
-  },
 };
 
 // ---- Ranking API ----
@@ -402,14 +372,6 @@ export const rankingApi = {
   rejectUninvitedInterview: async (jobId: string) => {
     const res = await api.post(`/api/v1/jobs/${jobId}/reject-uninvited-interview`);
     return res.data;
-  },
-
-  updateAssessmentDeadline: async (jobId: string, newDeadline: string): Promise<void> => {
-    await api.put(`/api/v1/jobs/${jobId}/assessment-deadline`, { newDeadline });
-  },
-
-  updateInterviewDeadline: async (jobId: string, newDeadline: string): Promise<void> => {
-    await api.put(`/api/v1/jobs/${jobId}/interview-deadline`, { newDeadline });
   },
 };
 

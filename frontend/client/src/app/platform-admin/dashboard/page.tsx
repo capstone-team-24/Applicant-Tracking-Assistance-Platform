@@ -132,58 +132,105 @@ export default function PlatformAdminDashboard() {
     </div>
   );
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Platform Admin Dashboard</h1>
+ return (
+    <div 
+      className="min-h-screen w-full bg-cover bg-center bg-fixed relative flex flex-col items-center p-8 transition-all duration-500"
+      style={{ backgroundImage: `url(/bk2.jpg)` }}
+    >
+      {/* Dynamic Overlay & Ambient Light */}
+      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-[2px]" />
+      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-7xl">
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-8 px-2">
+          <h1 className="text-3xl font-bold text-white tracking-tight">Platform Admin Dashboard</h1>
           <button 
             onClick={() => {
               removeTokens();
               router.push("/platform-admin/login");
             }}
-            className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+            className="px-6 py-2 bg-red-600/20 border border-red-500/40 text-red-100 rounded-xl hover:bg-red-600 hover:text-white transition-all duration-300 font-medium backdrop-blur-md"
           >
             Logout
           </button>
         </div>
 
-        {renderTabs()}
+        {/* Tabs Container */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-1 backdrop-blur-xl mb-8 w-fit">
+          <nav className="flex space-x-2" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab("messages")}
+              className={`whitespace-nowrap py-2.5 px-6 rounded-xl font-medium text-sm transition-all duration-300 ${
+                activeTab === "messages"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+              }`}
+            >
+              Contact Messages
+            </button>
+            <button
+              onClick={() => setActiveTab("organizations")}
+              className={`whitespace-nowrap py-2.5 px-6 rounded-xl font-medium text-sm transition-all duration-300 ${
+                activeTab === "organizations"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+              }`}
+            >
+              Organizations
+            </button>
+            <button
+              onClick={() => setActiveTab("create_admin")}
+              className={`whitespace-nowrap py-2.5 px-6 rounded-xl font-medium text-sm transition-all duration-300 ${
+                activeTab === "create_admin"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+              }`}
+            >
+              Create Org Admin
+            </button>
+          </nav>
+        </div>
 
         <div className="mt-8">
+          {/* Notifications */}
           {actionStatus && (
-            <div className={`p-4 mb-6 rounded ${actionStatus.type === "success" ? "bg-green-800 text-green-100" : "bg-red-800 text-red-100"}`}>
-              {actionStatus.text}
-              <button className="float-right font-bold" onClick={() => setActionStatus(null)}>&times;</button>
+            <div className={`p-4 mb-6 rounded-2xl border backdrop-blur-2xl flex justify-between items-center animate-in fade-in slide-in-from-top-4 ${
+              actionStatus.type === "success" 
+                ? "bg-green-900/20 border-green-500/30 text-green-200" 
+                : "bg-red-900/20 border-red-500/30 text-red-200"
+            }`}>
+              <span className="font-medium">{actionStatus.text}</span>
+              <button className="text-2xl leading-none opacity-50 hover:opacity-100 px-2" onClick={() => setActionStatus(null)}>&times;</button>
             </div>
           )}
 
           {loading ? (
-            <div className="text-center py-10">Loading...</div>
+            <div className="text-center py-20 text-gray-400 font-medium animate-pulse">Loading...</div>
           ) : (
-            <>
+            <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-2xl shadow-black/50">
               {/* MESSAGES TAB */}
               {activeTab === "messages" && (
-                <div className="overflow-x-auto bg-gray-800 rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-700">
-                    <thead className="bg-gray-700">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-white/10">
+                    <thead>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Message</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Message</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700">
+                    <tbody className="divide-y divide-white/5">
                       {messages.length === 0 ? (
-                        <tr><td colSpan={4} className="px-6 py-4 text-center text-gray-400">No messages found.</td></tr>
+                        <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">No messages found.</td></tr>
                       ) : (
                         messages.map((msg) => (
-                          <tr key={msg.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(msg.createdAt).toLocaleDateString()}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{msg.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{msg.email}</td>
-                            <td className="px-6 py-4 text-sm max-w-xs truncate" title={msg.message}>{msg.message}</td>
+                          <tr key={msg.id} className="hover:bg-white/[0.03] transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{new Date(msg.createdAt).toLocaleDateString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">{msg.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{msg.email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-300 max-w-xs truncate" title={msg.message}>{msg.message}</td>
                           </tr>
                         ))
                       )}
@@ -194,36 +241,36 @@ export default function PlatformAdminDashboard() {
 
               {/* ORGANIZATIONS TAB */}
               {activeTab === "organizations" && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="md:col-span-2">
-                    <h2 className="text-xl font-semibold mb-4">Existing Organizations</h2>
-                    <div className="bg-gray-800 rounded-lg overflow-hidden">
-                      <table className="min-w-full divide-y divide-gray-700">
-                        <thead className="bg-gray-700">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                  <div className="lg:col-span-2">
+                    <h2 className="text-xl font-bold mb-6 text-white tracking-tight">Existing Organizations</h2>
+                    <div className="border border-white/10 rounded-2xl overflow-hidden bg-black/20">
+                      <table className="min-w-full divide-y divide-white/10">
+                        <thead className="bg-white/5">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Status</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase">Actions</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Name</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Status</th>
+                            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-700">
+                        <tbody className="divide-y divide-white/5">
                           {organizations.length === 0 ? (
-                            <tr><td colSpan={3} className="px-6 py-4 text-center text-gray-400">No organizations found.</td></tr>
+                            <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-500 italic">No organizations found.</td></tr>
                           ) : (
                             organizations.map((org) => (
-                              <tr key={org.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm">{org.name}</td>
+                              <tr key={org.id} className="hover:bg-white/[0.03] transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{org.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                   {org.isSuspended ? (
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Suspended</span>
+                                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-red-500/20 text-red-400 border border-red-500/30">Suspended</span>
                                   ) : (
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-500/20 text-green-400 border border-green-500/30">Active</span>
                                   )}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                   <button
                                     onClick={() => handleToggleSuspension(org.id, org.isSuspended)}
-                                    className={`${org.isSuspended ? 'text-green-400 hover:text-green-300' : 'text-red-400 hover:text-red-300'}`}
+                                    className={`transition-colors font-bold hover:underline underline-offset-4 ${org.isSuspended ? 'text-green-400 hover:text-green-300' : 'text-red-400 hover:text-red-300'}`}
                                   >
                                     {org.isSuspended ? 'Unsuspend' : 'Suspend'}
                                   </button>
@@ -236,29 +283,29 @@ export default function PlatformAdminDashboard() {
                     </div>
                   </div>
 
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">Add Organization</h2>
-                    <div className="bg-gray-800 p-6 rounded-lg">
-                      <form onSubmit={handleCreateOrganization}>
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-white tracking-tight">Add Organization</h2>
+                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 shadow-inner">
+                      <form onSubmit={handleCreateOrganization} className="space-y-5">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Name</label>
                           <input
                             type="text"
                             required
-                            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                             value={newOrgName}
                             onChange={(e) => setNewOrgName(e.target.value)}
                           />
                         </div>
-                        <div className="mb-6">
-                          <label className="block text-sm font-medium text-gray-300 mb-1">Policies (JSON optional)</label>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Policies (JSON optional)</label>
                           <textarea
-                            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500 h-24"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all h-32 resize-none"
                             value={newOrgPolicies}
                             onChange={(e) => setNewOrgPolicies(e.target.value)}
                           />
                         </div>
-                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-blue-600/30 active:scale-95">
                           Create Organization
                         </button>
                       </form>
@@ -269,47 +316,50 @@ export default function PlatformAdminDashboard() {
 
               {/* CREATE ADMIN TAB */}
               {activeTab === "create_admin" && (
-                <div className="max-w-md mx-auto bg-gray-800 p-8 rounded-lg shadow-xl">
-                  <h2 className="text-2xl font-semibold mb-6">Create Organization Admin</h2>
-                  <form onSubmit={handleCreateAdmin}>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Organization</label>
-                      <select
-                        required
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                        value={selectedOrgId}
-                        onChange={(e) => setSelectedOrgId(e.target.value)}
-                      >
-                        <option value="">Select an Organization...</option>
-                        {organizations.map(org => (
-                          <option key={org.id} value={org.id}>{org.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Admin Email</label>
-                      <input
-                        type="email"
-                        required
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                        value={newAdminEmail}
-                        onChange={(e) => setNewAdminEmail(e.target.value)}
-                      />
-                      <p className="mt-2 text-xs text-gray-400">
-                        An invite email will be sent to the address above with a secure link
-                        to set up their name and password.
-                      </p>
-                    </div>
-                    <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
-                      Send Invite
-                    </button>
-                  </form>
+                <div className="max-w-xl mx-auto py-8">
+                  <div className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full" />
+                    <h2 className="text-2xl font-bold mb-8 text-white text-center">Create Organization Admin</h2>
+                    <form onSubmit={handleCreateAdmin} className="space-y-6">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Organization</label>
+                        <select
+                          required
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all appearance-none cursor-pointer"
+                          value={selectedOrgId}
+                          onChange={(e) => setSelectedOrgId(e.target.value)}
+                        >
+                          <option value="" className="bg-slate-900">Select an Organization...</option>
+                          {organizations.map(org => (
+                            <option key={org.id} value={org.id} className="bg-slate-900">{org.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Admin Email</label>
+                        <input
+                          type="email"
+                          required
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                          value={newAdminEmail}
+                          onChange={(e) => setNewAdminEmail(e.target.value)}
+                        />
+                        <p className="mt-4 text-xs text-gray-400 leading-relaxed italic">
+                          An invite email will be sent to the address above with a secure link
+                          to set up their name and password.
+                        </p>
+                      </div>
+                      <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-5 rounded-2xl transition-all shadow-xl shadow-blue-600/30 active:scale-95 mt-4">
+                        Send Invite
+                      </button>
+                    </form>
+                  </div>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
     </div>
   );
-}
+  }

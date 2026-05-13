@@ -70,7 +70,7 @@ export default function OrgDashboardPage() {
     e.preventDefault();
     try {
       await orgAdminApi.inviteRecruiter(newRecruiter);
-      setActionMsg({ type: "success", text: `Invite sent to ${newRecruiter.email}. They will receive an email to set up their account.` });
+      setActionMsg({ type: "success", text: `Invite sent to ${newRecruiter.email}.` });
       setNewRecruiter({ email: "", firstName: "", lastName: "" });
       setRecruiterFormOpen(false);
       loadRecruiters();
@@ -111,27 +111,30 @@ export default function OrgDashboardPage() {
 
   const statusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      PUBLISHED: "bg-green-900/50 text-green-300 border-green-700/50",
-      DRAFT: "bg-slate-700/50 text-slate-300 border-slate-600/50",
-      SUSPENDED: "bg-red-900/50 text-red-300 border-red-700/50",
-      CLOSED: "bg-yellow-900/50 text-yellow-300 border-yellow-700/50",
-      ARCHIVED: "bg-purple-900/50 text-purple-300 border-purple-700/50",
+      PUBLISHED: "bg-green-500/20 text-green-200 border-green-500/30",
+      DRAFT: "bg-white/10 text-white/70 border-white/20",
+      SUSPENDED: "bg-red-500/20 text-red-200 border-red-500/30",
+      CLOSED: "bg-yellow-500/20 text-yellow-200 border-yellow-500/30",
+      ARCHIVED: "bg-purple-500/20 text-purple-200 border-purple-500/30",
     };
-    return `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colors[status] || "bg-slate-700 text-slate-300"}`;
+    return `inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${colors[status] || "bg-white/10 text-white/70"}`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950 text-white">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-fixed text-white"
+      style={{ backgroundImage: `url(/bk2.jpg)` }}
+    >
+      {/* Header - Glass Effect */}
+      <header className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-white">Organization Admin</h1>
-            <p className="text-xs text-slate-400 mt-0.5">{user?.firstName} {user?.lastName} · {user?.email}</p>
+            <h1 className="text-xl font-bold text-white tracking-tight uppercase">Admin Control</h1>
+            <p className="text-[10px] font-medium text-white/50 mt-0.5 uppercase tracking-widest">{user?.firstName} {user?.lastName} // {user?.email}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="text-sm px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition"
+            className="text-xs font-bold px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl border border-white/20 transition-all uppercase tracking-widest"
           >
             Sign out
           </button>
@@ -139,193 +142,175 @@ export default function OrgDashboardPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Status message */}
+        {/* Status message - Floating Glass */}
         {actionMsg && (
-          <div className={`mb-6 p-4 rounded-lg border flex justify-between items-start ${actionMsg.type === "success" ? "bg-green-900/40 border-green-700/50 text-green-300" : "bg-red-900/40 border-red-700/50 text-red-300"}`}>
-            <span className="text-sm">{actionMsg.text}</span>
-            <button onClick={() => setActionMsg(null)} className="ml-4 text-lg leading-none opacity-60 hover:opacity-100">×</button>
+          <div className={`mb-6 p-4 rounded-2xl border backdrop-blur-xl flex justify-between items-center animate-in fade-in slide-in-from-top-4 ${actionMsg.type === "success" ? "bg-green-500/10 border-green-500/30 text-green-200" : "bg-red-500/10 border-red-500/30 text-red-200"}`}>
+            <span className="text-sm font-medium">{actionMsg.text}</span>
+            <button onClick={() => setActionMsg(null)} className="text-xl opacity-50 hover:opacity-100 transition-opacity">×</button>
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-slate-800/60 rounded-xl border border-slate-700/50 w-fit mb-8">
+        {/* Tabs - Glass Pill */}
+        <div className="flex gap-1 p-1 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 w-fit mb-8 shadow-2xl">
           {(["recruiters", "jobs"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition capitalize ${tab === t ? "bg-purple-600 text-white shadow-lg shadow-purple-900/40" : "text-slate-400 hover:text-white"}`}
+              className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-widest ${tab === t ? "bg-white text-slate-900 shadow-xl" : "text-white/50 hover:text-white hover:bg-white/5"}`}
             >
-              {t === "recruiters" ? "👥 Recruiters" : "💼 Job Postings"}
+              {t === "recruiters" ? "Recruiters" : "Postings"}
             </button>
           ))}
         </div>
 
         {/* ── Recruiters Tab ── */}
         {tab === "recruiters" && (
-          <div>
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="text-lg font-semibold text-white">Recruiters</h2>
+          <div className="animate-in fade-in duration-500">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white tracking-tight">Management</h2>
               <button
                 onClick={() => setRecruiterFormOpen(!recruiterFormOpen)}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition"
+                className="px-5 py-2.5 bg-white text-slate-900 text-xs font-black rounded-xl hover:bg-slate-200 transition-all uppercase tracking-tighter"
               >
-                + Add Recruiter
+                + New Recruiter
               </button>
             </div>
 
-            {/* Add Recruiter form */}
+            {/* Add Recruiter form - Embedded Glass Card */}
             {recruiterFormOpen && (
-              <div className="mb-6 bg-slate-800/60 border border-slate-700/50 rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-slate-300 mb-4">New Recruiter</h3>
-                <form onSubmit={handleCreateRecruiter} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="mb-8 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-6">Provision New Access</h3>
+                <form onSubmit={handleCreateRecruiter} className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">First Name</label>
+                    <label className="block text-[10px] font-bold text-white/50 uppercase mb-2 ml-1">First Name</label>
                     <input
                       type="text"
                       required
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/10 transition-all"
                       value={newRecruiter.firstName}
                       onChange={(e) => setNewRecruiter({ ...newRecruiter, firstName: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Last Name</label>
+                    <label className="block text-[10px] font-bold text-white/50 uppercase mb-2 ml-1">Last Name</label>
                     <input
                       type="text"
                       required
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/10 transition-all"
                       value={newRecruiter.lastName}
                       onChange={(e) => setNewRecruiter({ ...newRecruiter, lastName: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Email</label>
+                    <label className="block text-[10px] font-bold text-white/50 uppercase mb-2 ml-1">Email Address</label>
                     <input
                       type="email"
                       required
-                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/10 transition-all"
                       value={newRecruiter.email}
                       onChange={(e) => setNewRecruiter({ ...newRecruiter, email: e.target.value })}
                     />
                   </div>
-                  <div className="sm:col-span-3 flex gap-3 justify-end pt-1">
-                    <button type="button" onClick={() => setRecruiterFormOpen(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition">
+                  <div className="sm:col-span-3 flex gap-3 justify-end mt-2">
+                    <button type="button" onClick={() => setRecruiterFormOpen(false)} className="px-6 py-3 text-xs font-bold text-white/40 hover:text-white transition-colors uppercase">
                       Cancel
                     </button>
-                    <button type="submit" className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition">
-                      Send Invite
+                    <button type="submit" className="px-8 py-3 bg-white text-slate-900 text-xs font-black rounded-xl hover:bg-slate-200 transition-all uppercase">
+                      Invite Member
                     </button>
                   </div>
                 </form>
-                <p className="mt-3 text-xs text-slate-500">The recruiter will receive an email with a secure link to confirm their details and set a password.</p>
               </div>
             )}
 
-            {/* Recruiter list */}
-            {recruiterLoading ? (
-              <div className="text-center py-10 text-slate-400">Loading...</div>
-            ) : recruiters.length === 0 ? (
-              <div className="text-center py-16 text-slate-500">
-                <p className="text-4xl mb-3">👤</p>
-                <p>No recruiters yet. Add your first one above.</p>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/40">
-                <table className="min-w-full divide-y divide-slate-700/50">
-                  <thead>
-                    <tr className="bg-slate-800/60">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+            {/* List - Glass Table */}
+            <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-white/40 uppercase tracking-widest">Identify</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-white/40 uppercase tracking-widest">Contact</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-white/40 uppercase tracking-widest">Status</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black text-white/40 uppercase tracking-widest">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {recruiters.map((r) => (
+                    <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-8 py-5 text-sm font-bold text-white">{r.firstName} {r.lastName}</td>
+                      <td className="px-8 py-5 text-sm text-white/60">{r.email}</td>
+                      <td className="px-8 py-5">
+                        <span className={statusBadge(r.isSuspended ? "SUSPENDED" : "PUBLISHED")}>
+                          {r.isSuspended ? "Revoked" : "Active"}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <button
+                          onClick={() => handleToggleSuspend(r.id, r.isSuspended)}
+                          className={`text-xs font-black uppercase tracking-tighter transition-all ${r.isSuspended ? "text-green-400 hover:text-green-300" : "text-red-400 hover:text-red-300"}`}
+                        >
+                          {r.isSuspended ? "Restore" : "Suspend"}
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/30">
-                    {recruiters.map((r) => (
-                      <tr key={r.id} className="hover:bg-slate-700/20 transition">
-                        <td className="px-6 py-4 text-sm text-white">{r.firstName} {r.lastName}</td>
-                        <td className="px-6 py-4 text-sm text-slate-300">{r.email}</td>
-                        <td className="px-6 py-4">
-                          <span className={statusBadge(r.isSuspended ? "SUSPENDED" : "PUBLISHED")}>
-                            {r.isSuspended ? "Suspended" : "Active"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleToggleSuspend(r.id, r.isSuspended)}
-                            className={`text-sm font-medium transition ${r.isSuspended ? "text-green-400 hover:text-green-300" : "text-red-400 hover:text-red-300"}`}
-                          >
-                            {r.isSuspended ? "Unsuspend" : "Suspend"}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {/* ── Jobs Tab ── */}
         {tab === "jobs" && (
-          <div>
-            <h2 className="text-lg font-semibold text-white mb-5">Job Postings</h2>
-            {jobsLoading ? (
-              <div className="text-center py-10 text-slate-400">Loading...</div>
-            ) : jobs.length === 0 ? (
-              <div className="text-center py-16 text-slate-500">
-                <p className="text-4xl mb-3">📋</p>
-                <p>No job postings found for your organization.</p>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/40">
-                <table className="min-w-full divide-y divide-slate-700/50">
-                  <thead>
-                    <tr className="bg-slate-800/60">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Title</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Assigned To</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Reassign</th>
+          <div className="animate-in fade-in duration-500">
+            <h2 className="text-2xl font-bold text-white tracking-tight mb-6">Global Postings</h2>
+            <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-white/40 uppercase tracking-widest">Job Title</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-white/40 uppercase tracking-widest">Lifecycle</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-white/40 uppercase tracking-widest">Owner</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black text-white/40 uppercase tracking-widest">Update</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {jobs.map((job) => (
+                    <tr key={job.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-8 py-5 text-sm font-bold text-white">{job.title}</td>
+                      <td className="px-8 py-5">
+                        <span className={statusBadge(job.status)}>{job.status}</span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <select
+                          className="bg-white/5 border border-white/10 text-xs font-bold text-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all appearance-none cursor-pointer"
+                          value={reassignMap[job.id] ?? ""}
+                          onChange={(e) => setReassignMap({ ...reassignMap, [job.id]: e.target.value })}
+                        >
+                          <option value="" className="bg-slate-900 text-white">None (Unassigned)</option>
+                          {activeRecruiters.map((r) => (
+                            <option key={r.id} value={r.id} className="bg-slate-900 text-white">
+                              {r.firstName} {r.lastName}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <button
+                          onClick={() => handleReassign(job.id)}
+                          className="text-xs font-black uppercase tracking-tighter text-white hover:text-white transition-all underline underline-offset-4"
+                        >
+                          Push Update
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/30">
-                    {jobs.map((job) => (
-                      <tr key={job.id} className="hover:bg-slate-700/20 transition">
-                        <td className="px-6 py-4 text-sm text-white font-medium">{job.title}</td>
-                        <td className="px-6 py-4">
-                          <span className={statusBadge(job.status)}>{job.status}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <select
-                            className="bg-slate-700 border border-slate-600 text-sm text-white rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            value={reassignMap[job.id] ?? ""}
-                            onChange={(e) => setReassignMap({ ...reassignMap, [job.id]: e.target.value })}
-                          >
-                            <option value="">— Unassigned —</option>
-                            {activeRecruiters.map((r) => (
-                              <option key={r.id} value={r.id}>
-                                {r.firstName} {r.lastName}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleReassign(job.id)}
-                            className="text-sm font-medium text-purple-400 hover:text-purple-300 transition"
-                          >
-                            Apply
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <p className="mt-3 text-xs text-slate-500">
-              Assigning a suspended or unassigned job to an active recruiter will <strong className="text-slate-400">reactivate</strong> it. Removing the assignment will <strong className="text-slate-400">suspend</strong> it.
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-6 text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] text-center">
+              Postings without active owners will be automatically suspended.
             </p>
           </div>
         )}
