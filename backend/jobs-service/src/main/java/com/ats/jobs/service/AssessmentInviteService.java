@@ -11,6 +11,7 @@ import com.ats.jobs.enums.ApplicationStatus;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
 import com.ats.jobs.feign.NotificationServiceClient;
+import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.AssessmentInviteRepository;
 import com.ats.jobs.repository.JobRepository;
@@ -35,6 +36,7 @@ public class AssessmentInviteService {
     private final JobRepository jobRepository;
     private final NotificationServiceClient notificationServiceClient;
     private final AssessmentInviteRepository assessmentInviteRepository;
+    private final OrgServiceClient orgServiceClient;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
@@ -140,12 +142,15 @@ public class AssessmentInviteService {
 
                 if (app.getCandidateAuthUserId() != null) {
                     try {
+                        String orgName = null;
+                        try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
                         assessmentInviteRepository.save(AssessmentInvite.builder()
                                 .jobId(jobId)
                                 .applicationId(app.getId())
                                 .candidateAuthUserId(app.getCandidateAuthUserId())
                                 .candidateEmail(email)
                                 .jobTitle(job.getTitle())
+                                .organizationName(orgName)
                                 .assessmentToken(request.getAssessmentToken())
                                 .assessmentTitle(request.getAssessmentTitle())
                                 .timeLimitMinutes(request.getTimeLimitMinutes())
@@ -255,12 +260,15 @@ public class AssessmentInviteService {
                     inv.setExpiresAt(request.getExpiresAt());
                     assessmentInviteRepository.save(inv);
                 } else {
+                    String orgName = null;
+                    try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
                     assessmentInviteRepository.save(AssessmentInvite.builder()
                             .jobId(app.getJobId())
                             .applicationId(app.getId())
                             .candidateAuthUserId(app.getCandidateAuthUserId())
                             .candidateEmail(email)
                             .jobTitle(job.getTitle())
+                            .organizationName(orgName)
                             .assessmentToken(request.getAssessmentToken())
                             .assessmentTitle(request.getAssessmentTitle())
                             .timeLimitMinutes(request.getTimeLimitMinutes())

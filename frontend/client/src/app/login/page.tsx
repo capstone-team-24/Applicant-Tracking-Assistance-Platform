@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = (): boolean => {
@@ -58,7 +58,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-fixed"
       style={{ backgroundImage: `url(/login-bg.jpg)` }}
     >
@@ -89,11 +89,10 @@ export default function LoginPage() {
                   setEmail(e.target.value);
                   if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 transition-all ${
-                  errors.email
-                    ? "border-red-400 focus:ring-red-400"
-                    : "border-white/20 focus:ring-white/40 focus:bg-white/10"
-                }`}
+                className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 transition-all ${errors.email
+                  ? "border-red-400 focus:ring-red-400"
+                  : "border-white/20 focus:ring-white/40 focus:bg-white/10"
+                  }`}
                 placeholder="you@example.com"
               />
               {errors.email && (
@@ -101,71 +100,70 @@ export default function LoginPage() {
               )}
             </div>
 
-           <div>
-  <label
-    htmlFor="password"
-    className="block text-sm font-medium text-white/80 mb-1.5 ml-1"
-  >
-    Password
-  </label>
-  <div className="relative">
-    <input
-      id="password"
-      type={showPassword ? "text" : "password"}
-      autoComplete="current-password"
-      value={password}
-      onChange={(e) => {
-        setPassword(e.target.value);
-        if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-      }}
-      className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 transition-all ${
-        errors.password
-          ? "border-red-400 focus:ring-red-400"
-          : "border-white/20 focus:ring-white/40 focus:bg-white/10"
-      }`}
-      placeholder="Enter your password"
-    />
-    <button
-      type="button"
-      onClick={() => setShowPassword((prev) => !prev)}
-      className="absolute inset-y-0 right-3 flex items-center text-white/60 hover:text-white focus:outline-none"
-    >
-    {showPassword ? (
-  // Eye-off icon (correct)
-  <svg xmlns="http://www.w3.org/2000/svg" 
-       className="h-5 w-5" 
-       fill="none" 
-       viewBox="0 0 24 24" 
-       stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-      d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-white/80 mb-1.5 ml-1"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
+                  className={`w-full px-4 py-3 bg-white/5 border rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 transition-all ${errors.password
+                    ? "border-red-400 focus:ring-red-400"
+                    : "border-white/20 focus:ring-white/40 focus:bg-white/10"
+                    }`}
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-white/60 hover:text-white focus:outline-none"
+                >
+                  {showPassword ? (
+                    // Eye-off icon (correct)
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 
          0-1.086.174-2.13.5-3.1m3.1 3.1a7.978 7.978 0 00-.5 3c0 
          4.418 3.582 8 8 8 1.086 0 2.13-.174 3.1-.5m3.1-3.1a7.978 
          7.978 0 00.5-3c0-4.418-3.582-8-8-8-1.086 0-2.13.174-3.1.5m3.1 
          3.1L3 3m0 0l18 18" />
-  </svg>
-) : (
-  // Eye icon
-  <svg xmlns="http://www.w3.org/2000/svg" 
-       className="h-5 w-5" 
-       fill="none" 
-       viewBox="0 0 24 24" 
-       stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 
+                    </svg>
+                  ) : (
+                    // Eye icon
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 
          8.268 2.943 9.542 7-1.274 4.057-5.065 
          7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-  </svg>
-)}
+                    </svg>
+                  )}
 
-    </button>
-  </div>
-  {errors.password && (
-    <p className="mt-1.5 text-xs font-medium text-red-300 ml-1">{errors.password}</p>
-  )}
-</div>
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1.5 text-xs font-medium text-red-300 ml-1">{errors.password}</p>
+              )}
+            </div>
 
 
             <button

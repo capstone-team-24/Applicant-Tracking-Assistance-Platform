@@ -11,6 +11,7 @@ import com.ats.jobs.enums.ApplicationStatus;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
 import com.ats.jobs.feign.NotificationServiceClient;
+import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.InterviewInviteRepository;
 import com.ats.jobs.repository.JobRepository;
@@ -38,6 +39,7 @@ public class InterviewInviteService {
     private final com.ats.jobs.repository.AssessmentInviteRepository assessmentInviteRepository;
     private final NotificationServiceClient notificationServiceClient;
     private final RestTemplate restTemplate;
+    private final OrgServiceClient orgServiceClient;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
@@ -159,12 +161,15 @@ public class InterviewInviteService {
                 applicationRepository.save(app);
 
                 // Persist invite for candidate dashboard
+                String orgName = null;
+                try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
                 interviewInviteRepository.save(InterviewInvite.builder()
                         .jobId(jobId)
                         .applicationId(app.getId())
                         .candidateAuthUserId(candidateId)
                         .candidateEmail(email)
                         .jobTitle(job.getTitle())
+                        .organizationName(orgName)
                         .oaScore(score)
                         .schedulingUrl(schedulingUrl)
                         .expiresAt(request.getExpiresAt())
@@ -268,12 +273,15 @@ public class InterviewInviteService {
                     inv.setExpiresAt(request != null ? request.getExpiresAt() : null);
                     interviewInviteRepository.save(inv);
                 } else {
+                    String orgName = null;
+                    try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
                     interviewInviteRepository.save(InterviewInvite.builder()
                             .jobId(app.getJobId())
                             .applicationId(app.getId())
                             .candidateAuthUserId(app.getCandidateAuthUserId())
                             .candidateEmail(email)
                             .jobTitle(job.getTitle())
+                            .organizationName(orgName)
                             .oaScore(oaScore)
                             .schedulingUrl(schedulingUrl)
                             .expiresAt(request != null ? request.getExpiresAt() : null)

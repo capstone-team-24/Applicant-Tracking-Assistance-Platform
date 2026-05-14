@@ -13,6 +13,7 @@ public class ReceivedInterviewInviteResponse {
     private UUID id;
     private UUID jobId;
     private String jobTitle;
+    private String organizationName;
     private Double oaScore;
     private String schedulingUrl;
     private String sentAt;

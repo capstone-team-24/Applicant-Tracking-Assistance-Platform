@@ -23,7 +23,7 @@ import type {
 } from "@/lib/types";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import StatusBadge from "@/components/StatusBadge";
-import { formatDateTime } from "@/lib/dateUtils";
+import { formatDateTime, parseDate, toLocalInputValue, nowLocalInputValue, toBackendDatetime } from "@/lib/dateUtils";
 import toast from "react-hot-toast";
 
 type QuestionDraft = {
@@ -80,6 +80,15 @@ export default function RecruiterJobDetailPage() {
   const [interviewTopN, setInterviewTopN] = useState(5);
   const [interviewMinScore, setInterviewMinScore] = useState(60);
 
+  // ── deadline state ────────────────────────────────────────────────────────
+  const [oaDeadline, setOaDeadline] = useState("");
+  const [interviewDeadline, setInterviewDeadline] = useState("");
+  const [isUpdatingOADeadline, setIsUpdatingOADeadline] = useState(false);
+  const [isUpdatingInterviewDeadline, setIsUpdatingInterviewDeadline] = useState(false);
+  const [isEditingJobDeadline, setIsEditingJobDeadline] = useState(false);
+  const [editJobDeadlineVal, setEditJobDeadlineVal] = useState("");
+  const [isSavingJobDeadline, setIsSavingJobDeadline] = useState(false);
+
   // ── interview scheduling state ────────────────────────────────────────────
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
   const [bookings, setBookings] = useState<InterviewBooking[]>([]);
@@ -99,6 +108,9 @@ export default function RecruiterJobDetailPage() {
   const [sortField, setSortField] = useState<"rank" | "score" | "oaScore" | "name">("rank");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [sendingOAForApp, setSendingOAForApp] = useState<string | null>(null);
+  const [sendingInterviewForApp, setSendingInterviewForApp] = useState<string | null>(null);
 
   // assessment form
   const [assessmentTitle, setAssessmentTitle] = useState(
@@ -183,6 +195,19 @@ export default function RecruiterJobDetailPage() {
       fetchIntegrationStatus();
     }
   }, [jobId, fetchJob, fetchApplications, fetchJobAssessment, fetchInterviewData, fetchIntegrationStatus]);
+
+  // Close dropdown when clicking outside any app-menu element
+  useEffect(() => {
+    if (!openDropdownId) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (!target.closest(`#app-menu-${openDropdownId}`)) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openDropdownId]);
 
   // ── job actions ───────────────────────────────────────────────────────────
   const handlePublish = async () => {
@@ -353,6 +378,7 @@ export default function RecruiterJobDetailPage() {
         assessmentTitle: jobAssessment.title,
         timeLimitMinutes: jobAssessment.timeLimitMinutes,
         topN: inviteTopN,
+        expiresAt: oaDeadline ? toBackendDatetime(oaDeadline) : undefined,
       });
       toast.success(
         `Sent invites to ${res.sent} candidates (skipped ${res.skipped})`,
@@ -364,10 +390,60 @@ export default function RecruiterJobDetailPage() {
     }
   };
 
+  const handleUpdateOADeadline = async () => {
+    if (!oaDeadline) {
+      toast.error("Please select a deadline first");
+      return;
+    }
+    setIsUpdatingOADeadline(true);
+    try {
+      await rankingApi.updateAssessmentDeadline(jobId, toBackendDatetime(oaDeadline));
+      toast.success("OA deadline updated for sent invites!");
+    } catch {
+      toast.error("Failed to update OA deadline");
+    } finally {
+      setIsUpdatingOADeadline(false);
+    }
+  };
+
+  const handleUpdateInterviewDeadline = async () => {
+    if (!interviewDeadline) {
+      toast.error("Please select a deadline first");
+      return;
+    }
+    setIsUpdatingInterviewDeadline(true);
+    try {
+      await rankingApi.updateInterviewDeadline(jobId, toBackendDatetime(interviewDeadline));
+      toast.success("Interview deadline updated for sent invites!");
+    } catch {
+      toast.error("Failed to update interview deadline");
+    } finally {
+      setIsUpdatingInterviewDeadline(false);
+    }
+  };
+
+  const handleSaveJobDeadline = async () => {
+    if (!job) return;
+    setIsSavingJobDeadline(true);
+    try {
+      const updatedJob = await jobsApi.updateJob(jobId, {
+        // Send Spring-safe LocalDateTime format (no Z, no milliseconds)
+        applicationDeadline: editJobDeadlineVal ? toBackendDatetime(editJobDeadlineVal) : undefined,
+      });
+      setJob(updatedJob);
+      setIsEditingJobDeadline(false);
+      toast.success("Application deadline updated!");
+    } catch {
+      toast.error("Failed to update application deadline");
+    } finally {
+      setIsSavingJobDeadline(false);
+    }
+  };
+
   const handleRejectUninvited = async () => {
     if (!jobId) return;
     if (!window.confirm("Are you sure you want to reject all candidates who haven't received an assessment invite? This action cannot be undone.")) return;
-    
+
     setIsRejecting(true);
     try {
       const res = await rankingApi.rejectUninvited(jobId);
@@ -390,6 +466,7 @@ export default function RecruiterJobDetailPage() {
         assessmentId: jobAssessment.id,
         topN: interviewTopN,
         minScore: interviewMinScore,
+        expiresAt: interviewDeadline ? toBackendDatetime(interviewDeadline) : undefined,
       });
       toast.success(
         `Interview invites sent to ${res.sent} candidate(s) (skipped ${res.skipped})`,
@@ -405,7 +482,7 @@ export default function RecruiterJobDetailPage() {
   const handleRejectUninvitedInterview = async () => {
     if (!jobId) return;
     if (!window.confirm("Are you sure you want to reject candidates who completed the OA but weren't selected for an interview? This action cannot be undone.")) return;
-    
+
     setIsRejectingInterview(true);
     try {
       const res = await rankingApi.rejectUninvitedInterview(jobId);
@@ -466,6 +543,51 @@ export default function RecruiterJobDetailPage() {
       toast.error("Failed to submit feedback");
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  // ── per-application invite handlers ─────────────────────────────────────
+  const handleSendOAToApp = async (app: Application) => {
+    if (!jobAssessment) {
+      toast.error("No assessment configured for this job. Create one first.");
+      return;
+    }
+    setSendingOAForApp(app.id);
+    setOpenDropdownId(null);
+    try {
+      const res = await applicationsApi.sendOA(app.id, {
+        assessmentToken: jobAssessment.accessToken,
+        assessmentTitle: jobAssessment.title,
+        timeLimitMinutes: jobAssessment.timeLimitMinutes,
+      });
+      if (res.sent > 0) {
+        toast.success(`OA invite sent to ${app.candidateName}!`);
+        fetchApplications();
+      } else {
+        toast.error(res.skippedReasons?.[0] || "Could not send OA invite.");
+      }
+    } catch {
+      toast.error("Failed to send OA invite");
+    } finally {
+      setSendingOAForApp(null);
+    }
+  };
+
+  const handleSendInterviewToApp = async (app: Application) => {
+    setSendingInterviewForApp(app.id);
+    setOpenDropdownId(null);
+    try {
+      const res = await applicationsApi.sendInterviewInvite(app.id);
+      if (res.sent > 0) {
+        toast.success(`Interview invite sent to ${app.candidateName}!`);
+        fetchApplications();
+      } else {
+        toast.error(res.skippedReasons?.[0] || "Could not send interview invite.");
+      }
+    } catch {
+      toast.error("Failed to send interview invite");
+    } finally {
+      setSendingInterviewForApp(null);
     }
   };
 
@@ -607,6 +729,60 @@ export default function RecruiterJobDetailPage() {
                   <span>{job.experienceLevel} Level</span>
                 )}
               </div>
+              {/* ── Application Deadline display + edit ─────────────────── */}
+              {!isEditingJobDeadline && (
+                <div className="flex items-center gap-2 mt-2">
+                  {job.applicationDeadline ? (
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${(parseDate(job.applicationDeadline) || new Date()) < new Date()
+                        ? "bg-red-100 text-red-700"
+                        : "bg-amber-100 text-amber-700"
+                      }`}>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                      {(parseDate(job.applicationDeadline) || new Date()) < new Date()
+                        ? `Closed — deadline was ${formatDateTime(job.applicationDeadline)}`
+                        : `Applications close: ${formatDateTime(job.applicationDeadline)}`
+                      }
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-400 italic">No application deadline set</span>
+                  )}
+                  <button
+                    onClick={() => {
+                      const d = parseDate(job.applicationDeadline);
+                      // Use local time so the datetime-local input pre-fills correctly
+                      setEditJobDeadlineVal(d ? toLocalInputValue(d) : "");
+                      setIsEditingJobDeadline(true);
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                  >
+                    {job.applicationDeadline ? "Edit" : "Add deadline"}
+                  </button>
+                </div>
+              )}
+              {isEditingJobDeadline && (
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="datetime-local"
+                    value={editJobDeadlineVal}
+                    onChange={(e) => setEditJobDeadlineVal(e.target.value)}
+                    min={nowLocalInputValue()}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded"
+                  />
+                  <button
+                    onClick={handleSaveJobDeadline}
+                    disabled={isSavingJobDeadline}
+                    className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSavingJobDeadline ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setIsEditingJobDeadline(false)}
+                    className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               {job.status === "DRAFT" && (
@@ -787,36 +963,64 @@ export default function RecruiterJobDetailPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-indigo-100 flex items-center gap-3">
-                  <span className="text-sm font-medium text-indigo-900">
-                    Send OA to top
-                  </span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={inviteTopN}
-                    onChange={(e) => setInviteTopN(Number(e.target.value))}
-                    className="w-16 px-2 py-1 text-sm border border-indigo-200 rounded"
-                  />
-                  <span className="text-sm font-medium text-indigo-900">
-                    candidates
-                  </span>
-                  <div className="ml-auto flex items-center gap-2">
-                    <button
-                      onClick={handleSendAssessment}
-                      disabled={isSendingOA || applications.length === 0}
-                      className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                    >
-                      {isSendingOA ? "Sending..." : "Send Assessment"}
-                    </button>
-                    <button
-                      onClick={handleRejectUninvited}
-                      disabled={isRejecting || applications.length === 0}
-                      className="px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                    >
-                      {isRejecting ? "Rejecting..." : "Reject Remaining"}
-                    </button>
+                <div className="mt-4 pt-3 border-t border-indigo-100 space-y-3">
+                  {/* OA Deadline picker */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm font-medium text-indigo-900 whitespace-nowrap">
+                      OA Deadline
+                      <span className="ml-1 text-xs font-normal text-indigo-400">(optional)</span>
+                    </span>
+                    <input
+                      type="datetime-local"
+                      value={oaDeadline}
+                      onChange={(e) => setOaDeadline(e.target.value)}
+                      min={nowLocalInputValue()}
+                      className="px-2 py-1 text-sm border border-indigo-200 rounded text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    />
+                    {oaDeadline && (
+                      <span className="text-xs flex items-center gap-2">
+                        <span className="text-amber-600 flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                          Expires {formatDateTime(oaDeadline)}
+                        </span>
+                        <button
+                          onClick={handleUpdateOADeadline}
+                          disabled={isUpdatingOADeadline}
+                          className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          {isUpdatingOADeadline ? "Updating..." : "Update sent invites"}
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                  {/* Send controls */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-indigo-900">Send OA to top</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={inviteTopN}
+                      onChange={(e) => setInviteTopN(Number(e.target.value))}
+                      className="w-16 px-2 py-1 text-sm border border-indigo-200 rounded"
+                    />
+                    <span className="text-sm font-medium text-indigo-900">candidates</span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <button
+                        onClick={handleSendAssessment}
+                        disabled={isSendingOA || applications.length === 0}
+                        className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                      >
+                        {isSendingOA ? "Sending..." : "Send Assessment"}
+                      </button>
+                      <button
+                        onClick={handleRejectUninvited}
+                        disabled={isRejecting || applications.length === 0}
+                        className="px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                      >
+                        {isRejecting ? "Rejecting..." : "Reject Remaining"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1148,6 +1352,36 @@ export default function RecruiterJobDetailPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
+            <div className="flex-1 min-w-[220px]">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Booking Deadline
+                <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="datetime-local"
+                  value={interviewDeadline}
+                  onChange={(e) => setInterviewDeadline(e.target.value)}
+                  min={nowLocalInputValue()}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              {interviewDeadline && (
+                <div className="mt-1 flex items-center justify-between">
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    Booking closes {formatDateTime(interviewDeadline)}
+                  </p>
+                  <button
+                    onClick={handleUpdateInterviewDeadline}
+                    disabled={isUpdatingInterviewDeadline}
+                    className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {isUpdatingInterviewDeadline ? "Updating..." : "Update sent invites"}
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSendInterviewInvites}
@@ -1226,7 +1460,7 @@ export default function RecruiterJobDetailPage() {
                 </ul>
               )}
             </div>
-            
+
             <div className="md:col-span-2 mt-4">
               <h3 className="text-sm font-medium text-gray-700 mb-3">Scheduled Interviews</h3>
               {bookings.length === 0 ? (
@@ -1393,7 +1627,7 @@ export default function RecruiterJobDetailPage() {
                         (s) => s.candidateId === app.candidateAuthUserId
                       );
                       const detailHref = `/recruiter/jobs/${jobId}/applications/${app.id}`;
-                      
+
                       return (
                         <tr key={app.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -1430,9 +1664,76 @@ export default function RecruiterJobDetailPage() {
                             <StatusBadge status={app.status} type="application" />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <Link href={detailHref} className="text-primary-600 hover:text-primary-900">
-                              View Details
-                            </Link>
+                            <div className="relative inline-block text-left" id={`app-menu-${app.id}`}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdownId(openDropdownId === app.id ? null : app.id);
+                                }}
+                                disabled={sendingOAForApp === app.id || sendingInterviewForApp === app.id}
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40"
+                                title="Actions"
+                              >
+                                {(sendingOAForApp === app.id || sendingInterviewForApp === app.id) ? (
+                                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="5" r="1.5" />
+                                    <circle cx="12" cy="12" r="1.5" />
+                                    <circle cx="12" cy="19" r="1.5" />
+                                  </svg>
+                                )}
+                              </button>
+
+                              {openDropdownId === app.id && (
+                                <div
+                                  className="absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-30 py-1 animate-in fade-in zoom-in-95 duration-100"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {/* View Details */}
+                                  <Link
+                                    href={detailHref}
+                                    className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    onClick={() => setOpenDropdownId(null)}
+                                  >
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                                    </svg>
+                                    View Details
+                                  </Link>
+
+                                  <div className="border-t border-gray-100 my-1" />
+
+                                  {/* Send OA */}
+                                  <button
+                                    onClick={() => handleSendOAToApp(app)}
+                                    disabled={!jobAssessment}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    title={!jobAssessment ? "Create an assessment first" : `Send OA invite to ${app.candidateName}`}
+                                  >
+                                    <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />
+                                    </svg>
+                                    Send OA Invite
+                                  </button>
+
+                                  {/* Send Interview Invite */}
+                                  <button
+                                    onClick={() => handleSendInterviewToApp(app)}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                    title={`Send interview invite to ${app.candidateName}`}
+                                  >
+                                    <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                    </svg>
+                                    Send Interview Invite
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1486,9 +1787,8 @@ export default function RecruiterJobDetailPage() {
                       key={star}
                       disabled={selectedBooking.status === "COMPLETED"}
                       onClick={() => setReviewRating(star)}
-                      className={`text-2xl focus:outline-none transition-colors ${
-                        star <= reviewRating ? "text-yellow-400" : "text-gray-300 hover:text-yellow-200"
-                      } ${selectedBooking.status === "COMPLETED" ? "cursor-default" : "cursor-pointer"}`}
+                      className={`text-2xl focus:outline-none transition-colors ${star <= reviewRating ? "text-yellow-400" : "text-gray-300 hover:text-yellow-200"
+                        } ${selectedBooking.status === "COMPLETED" ? "cursor-default" : "cursor-pointer"}`}
                     >
                       ★
                     </button>

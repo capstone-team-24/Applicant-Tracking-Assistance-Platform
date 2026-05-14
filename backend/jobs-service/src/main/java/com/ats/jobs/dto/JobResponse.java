@@ -17,6 +17,7 @@ public class JobResponse {
 
     private UUID id;
     private UUID orgId;
+    private String organizationName;
     private String title;
     private String description;
     private String requirements;

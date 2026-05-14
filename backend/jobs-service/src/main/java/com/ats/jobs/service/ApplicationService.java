@@ -8,6 +8,7 @@ import com.ats.jobs.enums.ApplicationStatus;
 import com.ats.jobs.enums.JobStatus;
 import com.ats.jobs.exception.BadRequestException;
 import com.ats.jobs.exception.ResourceNotFoundException;
+import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.feign.UserServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.JobRepository;
@@ -43,6 +44,7 @@ public class ApplicationService {
     private final UserServiceClient userServiceClient;
     private final FileStorageUtil fileStorageUtil;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OrgServiceClient orgServiceClient;
 
     @Transactional
     public ApplicationResponse apply(UUID jobId, ApplyRequest request, MultipartFile file, UUID orgId, UUID candidateAuthUserId) {
@@ -264,9 +266,12 @@ public class ApplicationService {
             try {
                 Job job = jobRepository.findById(app.getJobId()).orElse(null);
                 if (job != null) {
+                    String orgName = null;
+                    try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
                     jobResponse = JobResponse.builder()
                             .id(job.getId())
                             .orgId(job.getOrgId())
+                            .organizationName(orgName)
                             .title(job.getTitle())
                             .description(job.getDescription())
                             .location(job.getLocation())

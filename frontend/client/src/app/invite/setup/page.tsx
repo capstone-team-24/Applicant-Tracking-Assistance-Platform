@@ -4,13 +4,14 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { inviteApi } from "@/lib/api";
 import type { InviteTokenResponse } from "@/lib/types";
+import { formatDateTime } from "@/lib/dateUtils";
 
 type Step = "loading" | "form" | "success" | "error";
 
-// ── Shared Background Component for Consistency ────────────────────────────
+// ── Shared Background Component ────────────────────────────────────────────
 function GlassPageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div 
+    <div
       className="min-h-screen w-full bg-cover bg-center bg-fixed relative flex flex-col items-center justify-center py-12 px-4"
       style={{ backgroundImage: `url(/bk2.jpg)` }}
     >
@@ -22,6 +23,7 @@ function GlassPageWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── Inner component that uses useSearchParams() ────────────────────────────
 function InviteSetupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,6 +33,7 @@ function InviteSetupContent() {
   const [invite, setInvite] = useState<InviteTokenResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +42,7 @@ function InviteSetupContent() {
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState("");
 
+  /* ── Load invite metadata on mount ── */
   useEffect(() => {
     if (!token) {
       setErrorMsg("No invite token found in the URL.");
@@ -50,6 +54,7 @@ function InviteSetupContent() {
       .validateInvite(token)
       .then((data) => {
         setInvite(data);
+        // Pre-fill name if the admin provided it (recruiter case)
         if (data.firstName) setFirstName(data.firstName);
         if (data.lastName) setLastName(data.lastName);
         setStep("form");
@@ -64,6 +69,7 @@ function InviteSetupContent() {
       });
   }, [token]);
 
+  /* ── Submit handler ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldError("");
@@ -93,6 +99,7 @@ function InviteSetupContent() {
 
   const loginPath = invite?.role === "ORG_ADMIN" ? "/org/login" : "/login";
 
+  /* ── Render states ── */
   if (step === "loading") {
     return (
       <GlassPageWrapper>
@@ -116,7 +123,7 @@ function InviteSetupContent() {
           <h1 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Invite Unavailable</h1>
           <p className="text-white/60 text-sm leading-relaxed mb-6">{errorMsg}</p>
           <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">
-            Please ask your administrator for a new link.
+            If you believe this is an error, please ask your administrator for a new link.
           </p>
         </div>
       </GlassPageWrapper>
@@ -150,10 +157,12 @@ function InviteSetupContent() {
     );
   }
 
+  /* ── Main setup form ── */
   const roleLabel = invite?.role === "ORG_ADMIN" ? "Organization Admin" : "Recruiter";
 
   return (
     <GlassPageWrapper>
+      {/* Role badge */}
       <div className="flex justify-center mb-6">
         <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 border border-white/20 rounded-full text-white text-[10px] font-black uppercase tracking-[0.2em]">
           <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
@@ -162,6 +171,7 @@ function InviteSetupContent() {
       </div>
 
       <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[40px] p-8 md:p-10 shadow-2xl relative overflow-hidden">
+        {/* Title */}
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-black text-white uppercase tracking-tighter mb-2 italic">Set Up Account</h1>
           <p className="text-white/50 text-sm font-medium">
@@ -169,6 +179,7 @@ function InviteSetupContent() {
           </p>
         </div>
 
+        {/* Email display (read-only) */}
         <div className="mb-8 p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
           <svg className="w-4 h-4 text-white/40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -178,10 +189,12 @@ function InviteSetupContent() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">First Name</label>
               <input
+                id="invite-first-name"
                 type="text"
                 required
                 autoFocus
@@ -194,6 +207,7 @@ function InviteSetupContent() {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">Last Name</label>
               <input
+                id="invite-last-name"
                 type="text"
                 required
                 value={lastName}
@@ -204,10 +218,12 @@ function InviteSetupContent() {
             </div>
           </div>
 
+          {/* Password */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">Password</label>
             <div className="relative">
               <input
+                id="invite-password"
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
@@ -222,45 +238,67 @@ function InviteSetupContent() {
                 tabIndex={-1}
               >
                 {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
                 ) : (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
                 )}
               </button>
             </div>
+            {/* Password strength bar — color-coded from your version */}
             {password.length > 0 && (
               <div className="flex gap-1.5 px-1 pt-1">
                 {[8, 12, 16].map((threshold) => (
-                  <div key={threshold} className={`h-1 flex-1 rounded-full transition-all duration-500 ${password.length >= threshold ? "bg-white" : "bg-white/10"}`} />
+                  <div
+                    key={threshold}
+                    className={`h-1 flex-1 rounded-full transition-all duration-500 ${password.length >= threshold
+                        ? threshold === 8
+                          ? "bg-red-400"
+                          : threshold === 12
+                            ? "bg-yellow-400"
+                            : "bg-green-400"
+                        : "bg-white/10"
+                      }`}
+                  />
                 ))}
               </div>
             )}
           </div>
 
+          {/* Confirm password */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">Confirm Password</label>
             <input
+              id="invite-confirm-password"
               type={showPassword ? "text" : "password"}
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter password"
-              className={`w-full bg-white/5 border rounded-2xl px-5 py-3.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 transition-all ${
-                confirmPassword && confirmPassword !== password ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10 focus:ring-white/20"
-              }`}
+              className={`w-full bg-white/5 border rounded-2xl px-5 py-3.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 transition-all ${confirmPassword && confirmPassword !== password
+                  ? "border-red-500/50 focus:ring-red-500/20"
+                  : "border-white/10 focus:ring-white/20"
+                }`}
             />
             {confirmPassword && confirmPassword !== password && (
               <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider ml-1">Passwords do not match</p>
             )}
           </div>
 
+          {/* Field error */}
           {fieldError && (
             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-400 font-bold uppercase tracking-wide">
               {fieldError}
             </div>
           )}
 
+          {/* Submit */}
           <button
+            id="invite-submit"
             type="submit"
             disabled={submitting}
             className="w-full py-4 bg-white text-slate-900 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-slate-100 disabled:opacity-50 transition-all flex items-center justify-center gap-3 shadow-xl"
@@ -270,13 +308,16 @@ function InviteSetupContent() {
                 <div className="w-4 h-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
                 Processing
               </>
-            ) : "Create Account"}
+            ) : (
+              "Create Account"
+            )}
           </button>
         </form>
 
+        {/* Expiry hint — uses your formatDateTime util */}
         {invite?.expiresAt && (
           <p className="mt-8 text-center text-[10px] text-white/30 font-bold uppercase tracking-widest">
-            Expires: {new Date(invite.expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+            Expires: {formatDateTime(invite.expiresAt)}
           </p>
         )}
       </div>
@@ -284,6 +325,7 @@ function InviteSetupContent() {
   );
 }
 
+// ── Suspense fallback ──────────────────────────────────────────────────────
 function InviteSetupFallback() {
   return (
     <GlassPageWrapper>
@@ -295,6 +337,7 @@ function InviteSetupFallback() {
   );
 }
 
+// ── Default export ─────────────────────────────────────────────────────────
 export default function InviteSetupPage() {
   return (
     <Suspense fallback={<InviteSetupFallback />}>

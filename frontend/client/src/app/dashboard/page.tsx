@@ -11,7 +11,7 @@ import JobCard from "@/components/JobCard";
 import StatusBadge from "@/components/StatusBadge";
 import FileUpload from "@/components/FileUpload";
 import toast from "react-hot-toast";
-import { formatDate, formatDateTime } from "@/lib/dateUtils";
+import { formatDate, formatDateTime, parseDate } from "@/lib/dateUtils";
 
 function CandidateDashboard() {
   const { user } = useAuth();
@@ -213,11 +213,10 @@ function CandidateDashboard() {
               <button
                 onClick={handleConnectCalendar}
                 disabled={isConnectingGoogle || isGoogleConnected === true}
-                className={`w-full py-2 px-4 text-sm font-medium rounded-lg shadow-sm transition flex justify-center items-center gap-2 disabled:opacity-50 ${
-                  isGoogleConnected
+                className={`w-full py-2 px-4 text-sm font-medium rounded-lg shadow-sm transition flex justify-center items-center gap-2 disabled:opacity-50 ${isGoogleConnected
                     ? "bg-green-100 text-green-700 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
+                  }`}
               >
                 {isConnectingGoogle ? (
                   <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -269,6 +268,11 @@ function CandidateDashboard() {
                         <h4 className="font-medium text-gray-900">
                           {app.job?.title || "Job Application"}
                         </h4>
+                        {app.job?.organizationName && (
+                          <p className="text-xs font-semibold text-indigo-600 mt-0.5">
+                            {app.job.organizationName}
+                          </p>
+                        )}
                         <p className="text-sm text-gray-500 mt-1">
                           Applied{" "}
                           {app.createdAt
@@ -371,7 +375,7 @@ function CandidateDashboard() {
             return myBookings.some(b => b.jobId === jobId && (b.status === "SCHEDULED" || b.status === "COMPLETED"));
           };
           const pendingInterviews = interviewInvites.filter(invite => !isInterviewBooked(invite.jobId));
-          
+
           if (pendingInterviews.length === 0 && !isLoadingInterviews) return null;
 
           return (
@@ -392,46 +396,77 @@ function CandidateDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pendingInterviews.map((invite) => (
-                    <div
-                      key={invite.id}
-                      className="border border-indigo-200 bg-indigo-50/50 rounded-lg p-4 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h4 className="font-medium text-indigo-900">
-                            Interview: {invite.jobTitle}
-                          </h4>
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-indigo-700">
-                            {invite.oaScore != null && (
-                              <span className="font-semibold">
-                                OA Score: {Math.round(invite.oaScore)}
+                    {pendingInterviews.map((invite) => {
+                      const isExpired = invite.expiresAt
+                        ? (parseDate(invite.expiresAt) || new Date()) < new Date()
+                        : false;
+
+                      return (
+                        <div
+                          key={invite.id}
+                          className={`border rounded-lg p-4 transition-colors ${isExpired
+                              ? "border-gray-200 bg-gray-50"
+                              : "border-indigo-200 bg-indigo-50/50"
+                            }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className={`font-medium ${isExpired ? "text-gray-500" : "text-indigo-900"}`}>
+                                  Interview: {invite.jobTitle}
+                                </h4>
+                                {invite.organizationName && (
+                                  <p className="text-xs font-semibold text-indigo-500 mt-0.5">
+                                    {invite.organizationName}
+                                  </p>
+                                )}
+                                {isExpired && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                    Booking Closed
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-indigo-700">
+                                {invite.oaScore != null && (
+                                  <span className="font-semibold">
+                                    OA Score: {Math.round(invite.oaScore)}
+                                  </span>
+                                )}
+                                {invite.sentAt && (
+                                  <span>Invited {formatDate(invite.sentAt)}</span>
+                                )}
+                                {invite.expiresAt && (
+                                  <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
+                                    {isExpired ? "Booking closed" : "Book by"}: {formatDateTime(invite.expiresAt)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {isExpired ? (
+                              <span className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg whitespace-nowrap cursor-not-allowed">
+                                Booking Closed
                               </span>
-                            )}
-                            {invite.sentAt && (
-                              <span>
-                                Invited {formatDate(invite.sentAt)}
-                              </span>
+                            ) : (
+                              invite.schedulingUrl && (
+                                <Link
+                                  href={invite.schedulingUrl}
+                                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap"
+                                >
+                                  Book Interview
+                                </Link>
+                              )
                             )}
                           </div>
                         </div>
-
-                        {invite.schedulingUrl && (
-                          <Link
-                            href={invite.schedulingUrl}
-                            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap"
-                          >
-                            Book Interview
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
+          );
         })()}
 
         {/* Pending Assessments */}
@@ -439,11 +474,11 @@ function CandidateDashboard() {
           const isOATaken = (jobId: string) => {
             const app = applications.find(a => a.jobId === jobId);
             if (!app) return false;
-            const pastStatuses = ["OA_COMPLETED", "INTERVIEW_INVITED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED", "OFFERED", "REJECTED"];
+            const pastStatuses = ["OA_COMPLETED", "INTERVIEW_INVITED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED", "OFFERED", "REJECTED", "WITHDRAWN"];
             return pastStatuses.includes(app.status);
           };
           const pendingOAs = invites.filter(invite => !isOATaken(invite.jobId));
-          
+
           if (pendingOAs.length === 0 && !isLoadingInvites) return null;
 
           return (
@@ -454,62 +489,88 @@ function CandidateDashboard() {
                 </h2>
 
                 {isLoadingInvites ? (
-                <div className="space-y-3">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4">
-                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pendingOAs.map((invite) => {
-                    const token = invite.assessmentToken;
-                    const href = user?.id
-                      ? `/assessments/${token}?candidateId=${user.id}`
-                      : `/assessments/${token}`;
-
-                    return (
-                      <div
-                        key={invite.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h4 className="font-medium text-gray-900">
-                              {invite.assessmentTitle || "Online Assessment"}
-                            </h4>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Job: <span className="font-medium">{invite.jobTitle}</span>
-                            </p>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
-                              {invite.timeLimitMinutes != null && (
-                                <span>Time limit: {invite.timeLimitMinutes} min</span>
-                              )}
-                              {invite.sentAt && (
-                                <span>
-                                  Sent {formatDateTime(invite.sentAt)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <Link
-                            href={href}
-                            className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
-                          >
-                            Start
-                          </Link>
-                        </div>
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4">
+                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+                        <div className="h-3 bg-gray-200 rounded w-1/2" />
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingOAs.map((invite) => {
+                      const token = invite.assessmentToken;
+                      const href = user?.id
+                        ? `/assessments/${token}?candidateId=${user.id}`
+                        : `/assessments/${token}`;
+                      const isExpired = invite.expiresAt
+                        ? (parseDate(invite.expiresAt) || new Date()) < new Date()
+                        : false;
+
+                      return (
+                        <div
+                          key={invite.id}
+                          className={`border rounded-lg p-4 transition-colors ${isExpired
+                              ? "border-gray-200 bg-gray-50"
+                              : "border-gray-200 hover:bg-gray-50"
+                            }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-900">
+                                  {invite.assessmentTitle || "Online Assessment"}
+                                </h4>
+                                {isExpired && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                    Expired
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Job: <span className="font-medium">{invite.jobTitle}</span>
+                                {invite.organizationName && (
+                                  <span className="ml-2 text-xs font-semibold text-indigo-600">@ {invite.organizationName}</span>
+                                )}
+                              </p>
+                              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+                                {invite.timeLimitMinutes != null && (
+                                  <span>Time limit: {invite.timeLimitMinutes} min</span>
+                                )}
+                                {invite.sentAt && (
+                                  <span>Sent {formatDateTime(invite.sentAt)}</span>
+                                )}
+                                {invite.expiresAt && (
+                                  <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
+                                    {isExpired ? "Expired" : "Due by"}: {formatDateTime(invite.expiresAt)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {isExpired ? (
+                              <span className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg whitespace-nowrap cursor-not-allowed">
+                                Expired
+                              </span>
+                            ) : (
+                              <Link
+                                href={href}
+                                className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
+                              >
+                                Start
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
+          );
         })()}
       </div>
     </div>

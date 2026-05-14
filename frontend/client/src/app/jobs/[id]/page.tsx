@@ -170,9 +170,21 @@ export default function JobDetailPage() {
             </div>
 
             {/* Title */}
-            <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tighter mb-8 leading-[0.9] italic">
+            <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tighter mb-4 leading-[0.9] italic">
               {job.title}
             </h1>
+
+            {/* Org name */}
+            {job.organizationName && (
+              <div className="flex items-center gap-2 mb-8">
+                <svg className="w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                </svg>
+                <span className="text-sm font-black uppercase tracking-[0.2em] text-white/50">
+                  {job.organizationName}
+                </span>
+              </div>
+            )}
 
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-8 text-[11px] font-black uppercase tracking-widest text-white/50">
@@ -332,6 +344,9 @@ export default function JobDetailPage() {
                     label: "Location",
                     value: job.location || "Remote",
                   },
+                  ...(job.organizationName
+                    ? [{ label: "Company", value: job.organizationName }]
+                    : []),
                 ].map((item, idx) => (
                   <div
                     key={idx}
