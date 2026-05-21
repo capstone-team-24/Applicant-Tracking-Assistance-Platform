@@ -17,5 +17,7 @@ public class ContactMessageResponse {
     private String name;
     private String email;
     private String message;
+    private LocalDateTime approvedAt;
+    private UUID approvedOrganizationId;
     private LocalDateTime createdAt;
 }

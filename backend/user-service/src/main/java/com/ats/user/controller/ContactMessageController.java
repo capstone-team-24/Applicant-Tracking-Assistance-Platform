@@ -2,6 +2,7 @@ package com.ats.user.controller;
 
 import com.ats.user.dto.ContactMessageRequest;
 import com.ats.user.dto.ContactMessageResponse;
+import com.ats.user.dto.OrganizationResponse;
 import com.ats.user.service.ContactMessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,5 +36,11 @@ public class ContactMessageController {
             @PageableDefault(size = 20) Pageable pageable) {
         Page<ContactMessageResponse> messages = contactMessageService.getAllMessages(pageable);
         return ResponseEntity.ok(messages);
+    }
+
+    @PostMapping("/contact-messages/{id}/approve")
+    @Operation(summary = "Approve a contact message and create an organization (Platform Admin)")
+    public ResponseEntity<OrganizationResponse> approveContactMessage(@PathVariable java.util.UUID id) {
+        return ResponseEntity.ok(contactMessageService.approve(id));
     }
 }

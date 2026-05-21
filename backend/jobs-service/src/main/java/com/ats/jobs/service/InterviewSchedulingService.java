@@ -264,10 +264,28 @@ public class InterviewSchedulingService {
         booking.setRating(request.getRating());
         booking.setFeedback(request.getFeedback());
 
+        // store detailed interview metrics if provided
+        booking.setTechnical(request.getTechnical());
+        booking.setProblemSolving(request.getProblemSolving());
+        booking.setCommunication(request.getCommunication());
+        booking.setBehavioral(request.getBehavioral());
+        booking.setCultureFit(request.getCultureFit());
+
         // Update the application status to INTERVIEW_COMPLETED
         Application app = applicationRepository.findById(booking.getApplicationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found for booking: " + booking.getApplicationId()));
         app.setStatus(ApplicationStatus.INTERVIEW_COMPLETED);
+        // Compute interview score according to weights provided by product:
+        // Final (/50) = ((Technical*0.40) + (ProblemSolving*0.25) + (Communication*0.15) + (Behavioral*0.10) + (CultureFit*0.10)) * 5
+        Integer tech = request.getTechnical() != null ? request.getTechnical() : 0;
+        Integer prob = request.getProblemSolving() != null ? request.getProblemSolving() : 0;
+        Integer comm = request.getCommunication() != null ? request.getCommunication() : 0;
+        Integer beh = request.getBehavioral() != null ? request.getBehavioral() : 0;
+        Integer cult = request.getCultureFit() != null ? request.getCultureFit() : 0;
+
+        double weighted = (tech * 0.40) + (prob * 0.25) + (comm * 0.15) + (beh * 0.10) + (cult * 0.10);
+        double finalInterviewScore = Math.round((weighted * 5.0) * 100.0) / 100.0; // round to 2 dp
+        app.setInterviewScore(finalInterviewScore);
         applicationRepository.save(app);
 
         InterviewBooking saved = interviewBookingRepository.save(booking);

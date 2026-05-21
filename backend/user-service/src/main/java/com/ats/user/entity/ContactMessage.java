@@ -37,6 +37,12 @@ public class ContactMessage {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String message;
 
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "approved_organization_id", columnDefinition = "uuid")
+    private UUID approvedOrganizationId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

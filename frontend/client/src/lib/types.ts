@@ -350,6 +350,11 @@ export interface InterviewBooking {
 export interface SubmitInterviewFeedbackRequest {
   rating: number;
   feedback: string;
+  technical?: number;
+  problemSolving?: number;
+  communication?: number;
+  behavioral?: number;
+  cultureFit?: number;
 }
 
 export interface CandidateBookingResponse {
@@ -378,6 +383,8 @@ export interface ContactMessage {
   name: string;
   email: string;
   message: string;
+  approvedAt?: string;
+  approvedOrganizationId?: string;
   createdAt: string;
 }
 

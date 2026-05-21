@@ -29,6 +29,7 @@ public class ApplicationDetailResponse {
     private ApplicationStatus status;
     private Double parseConfidence;
     private Double compositeScore;
+    private Double interviewScore;
     private Integer rankingPosition;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

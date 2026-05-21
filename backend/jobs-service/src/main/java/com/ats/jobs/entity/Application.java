@@ -72,6 +72,9 @@ public class Application implements Persistable<UUID> {
     @Column(name = "composite_score")
     private Double compositeScore;
 
+    @Column(name = "interview_score")
+    private Double interviewScore;
+
     @Column(name = "ranking_position")
     private Integer rankingPosition;
 

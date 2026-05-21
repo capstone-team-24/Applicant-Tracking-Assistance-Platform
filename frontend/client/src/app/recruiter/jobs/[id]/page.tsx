@@ -103,6 +103,11 @@ export default function RecruiterJobDetailPage() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewFeedback, setReviewFeedback] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewTechnical, setReviewTechnical] = useState<number | undefined>(undefined);
+  const [reviewProblemSolving, setReviewProblemSolving] = useState<number | undefined>(undefined);
+  const [reviewCommunication, setReviewCommunication] = useState<number | undefined>(undefined);
+  const [reviewBehavioral, setReviewBehavioral] = useState<number | undefined>(undefined);
+  const [reviewCultureFit, setReviewCultureFit] = useState<number | undefined>(undefined);
 
   // ── table state ───────────────────────────────────────────────────────────
   const [sortField, setSortField] = useState<"rank" | "score" | "oaScore" | "name">("rank");
@@ -523,6 +528,17 @@ export default function RecruiterJobDetailPage() {
     setSelectedBooking(booking);
     setReviewRating(booking.rating ?? 5);
     setReviewFeedback(booking.feedback ?? "");
+    // populate metric fields if present on booking (backend may return them)
+    // @ts-ignore
+    setReviewTechnical(typeof booking.technical === 'number' ? booking.technical : undefined);
+    // @ts-ignore
+    setReviewProblemSolving(typeof booking.problemSolving === 'number' ? booking.problemSolving : undefined);
+    // @ts-ignore
+    setReviewCommunication(typeof booking.communication === 'number' ? booking.communication : undefined);
+    // @ts-ignore
+    setReviewBehavioral(typeof booking.behavioral === 'number' ? booking.behavioral : undefined);
+    // @ts-ignore
+    setReviewCultureFit(typeof booking.cultureFit === 'number' ? booking.cultureFit : undefined);
     setIsReviewModalOpen(true);
   };
 
@@ -533,6 +549,11 @@ export default function RecruiterJobDetailPage() {
       await interviewsApi.completeBooking(jobId, selectedBooking.id, {
         rating: reviewRating,
         feedback: reviewFeedback,
+        technical: reviewTechnical,
+        problemSolving: reviewProblemSolving,
+        communication: reviewCommunication,
+        behavioral: reviewBehavioral,
+        cultureFit: reviewCultureFit,
       });
       toast.success("Interview marked as completed and feedback saved.");
       setIsReviewModalOpen(false);
@@ -1794,6 +1815,73 @@ export default function RecruiterJobDetailPage() {
                     </button>
                   ))}
                   <span className="ml-2 text-sm text-gray-500 font-medium">{reviewRating} / 5</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Technical Skills (0-10)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={reviewTechnical ?? ""}
+                    onChange={(e) => setReviewTechnical(e.target.value === "" ? undefined : Number(e.target.value))}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Problem Solving (0-10)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={reviewProblemSolving ?? ""}
+                    onChange={(e) => setReviewProblemSolving(e.target.value === "" ? undefined : Number(e.target.value))}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Communication (0-10)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={reviewCommunication ?? ""}
+                    onChange={(e) => setReviewCommunication(e.target.value === "" ? undefined : Number(e.target.value))}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Behavioral & Professionalism (0-10)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={reviewBehavioral ?? ""}
+                    onChange={(e) => setReviewBehavioral(e.target.value === "" ? undefined : Number(e.target.value))}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Culture Fit (0-10)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={reviewCultureFit ?? ""}
+                    onChange={(e) => setReviewCultureFit(e.target.value === "" ? undefined : Number(e.target.value))}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
                 </div>
               </div>
 

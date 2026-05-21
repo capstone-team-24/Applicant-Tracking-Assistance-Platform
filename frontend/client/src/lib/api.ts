@@ -547,7 +547,19 @@ export const interviewsApi = {
     return response.data;
   },
 
-  completeBooking: async (jobId: string, bookingId: string, data: { rating: number; feedback: string }): Promise<InterviewBooking> => {
+  completeBooking: async (
+    jobId: string,
+    bookingId: string,
+    data: {
+      rating: number;
+      feedback: string;
+      technical?: number;
+      problemSolving?: number;
+      communication?: number;
+      behavioral?: number;
+      cultureFit?: number;
+    },
+  ): Promise<InterviewBooking> => {
     const response = await api.put<InterviewBooking>(`/api/v1/jobs/${jobId}/bookings/${bookingId}/complete`, data);
     return response.data;
   },
@@ -598,6 +610,11 @@ export const platformAdminApi = {
   
   getContactMessages: async (params?: { page?: number; size?: number }): Promise<{ content: import("./types").ContactMessage[]; totalElements: number; totalPages: number }> => {
     const response = await api.get("/api/v1/contact-messages", { params });
+    return response.data;
+  },
+
+  approveContactMessage: async (id: string): Promise<import("./types").Organization> => {
+    const response = await api.post<import("./types").Organization>(`/api/v1/contact-messages/${id}/approve`);
     return response.data;
   },
   

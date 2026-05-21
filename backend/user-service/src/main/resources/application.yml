@@ -28,6 +28,10 @@ eureka:
   instance:
     prefer-ip-address: true
 
+notification:
+  service:
+    url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8084}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

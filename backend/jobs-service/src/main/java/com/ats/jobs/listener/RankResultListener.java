@@ -1,7 +1,6 @@
 package com.ats.jobs.listener;
 
 import com.ats.jobs.config.KafkaConfig;
-import com.ats.jobs.dto.RankResultEvent;
 import com.ats.jobs.entity.Application;
 import com.ats.jobs.entity.RankingJob;
 import com.ats.jobs.enums.ApplicationStatus;
@@ -16,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -29,61 +30,85 @@ public class RankResultListener {
 
     @KafkaListener(topics = KafkaConfig.JOB_RANK_RESULT_TOPIC, groupId = "jobs-service")
     @Transactional
-    public void handleRankResult(RankResultEvent event) {
-        log.info("Received rank result for rankingJobId={}, jobId={}", event.getRankingJobId(), event.getJobId());
+    public void handleRankResult(Map<String, Object> payload) {
+        try {
+            log.info("Received rank result payload: {}", payload);
 
-        Optional<RankingJob> optRankingJob = rankingJobRepository.findById(event.getRankingJobId());
-        if (optRankingJob.isEmpty()) {
-            log.warn("RankingJob not found: {}", event.getRankingJobId());
-            return;
-        }
+            String rankingJobIdStr = (String) payload.get("rankingJobId");
+            String status = (String) payload.get("status");
 
-        RankingJob rankingJob = optRankingJob.get();
-
-        if ("COMPLETED".equalsIgnoreCase(event.getStatus())) {
-            rankingJob.setStatus(RankingStatus.COMPLETED);
-
-            Map<String, Object> resultMap = new HashMap<>();
-            resultMap.put("rankings", event.getRankings());
-            if (event.getMetadata() != null) {
-                resultMap.put("metadata", event.getMetadata());
+            if (rankingJobIdStr == null) {
+                log.warn("Rank result event missing rankingJobId, skipping");
+                return;
             }
-            rankingJob.setResult(resultMap);
-        } else {
-            rankingJob.setStatus(RankingStatus.FAILED);
-            Map<String, Object> resultMap = new HashMap<>();
-            resultMap.put("error", "Ranking failed");
-            if (event.getMetadata() != null) {
-                resultMap.put("metadata", event.getMetadata());
+
+            UUID rankingJobId = UUID.fromString(rankingJobIdStr);
+            Optional<RankingJob> optRankingJob = rankingJobRepository.findById(rankingJobId);
+            if (optRankingJob.isEmpty()) {
+                log.warn("RankingJob not found: {}", rankingJobId);
+                return;
             }
-            rankingJob.setResult(resultMap);
-        }
 
-        rankingJob.setCompletedAt(LocalDateTime.now());
-        rankingJobRepository.save(rankingJob);
+            RankingJob rankingJob = optRankingJob.get();
 
-        // Update individual application scores and positions
-        if (event.getRankings() != null) {
-            for (RankResultEvent.RankedApplication ranked : event.getRankings()) {
-                Optional<Application> optApp = applicationRepository.findById(ranked.getApplicationId());
-                if (optApp.isPresent()) {
-                    Application app = optApp.get();
-                    app.setCompositeScore(ranked.getCompositeScore());
-                    app.setRankingPosition(ranked.getRankingPosition());
-                    // Only advance to SCREENED if the candidate is still at APPLIED.
-                    // Do NOT overwrite statuses that have already progressed further
-                    // (e.g. OA_INVITED, OA_COMPLETED, INTERVIEW_INVITED, etc.).
-                    if (app.getStatus() == ApplicationStatus.APPLIED) {
-                        app.setStatus(ApplicationStatus.SCREENED);
-                    } else {
-                        log.info("Skipping status update for application {} — current status={} is beyond APPLIED",
-                                app.getId(), app.getStatus());
+            if ("COMPLETED".equalsIgnoreCase(status)) {
+                rankingJob.setStatus(RankingStatus.COMPLETED);
+
+                Map<String, Object> resultMap = new HashMap<>();
+                resultMap.put("rankings", payload.get("rankings"));
+                if (payload.get("metadata") != null) {
+                    resultMap.put("metadata", payload.get("metadata"));
+                }
+                rankingJob.setResult(resultMap);
+            } else {
+                rankingJob.setStatus(RankingStatus.FAILED);
+                Map<String, Object> resultMap = new HashMap<>();
+                resultMap.put("error", "Ranking failed");
+                if (payload.get("metadata") != null) {
+                    resultMap.put("metadata", payload.get("metadata"));
+                }
+                rankingJob.setResult(resultMap);
+            }
+
+            rankingJob.setCompletedAt(LocalDateTime.now());
+            rankingJobRepository.save(rankingJob);
+
+            // Update individual application scores and positions
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> rankings = (List<Map<String, Object>>) payload.get("rankings");
+            if (rankings != null) {
+                for (Map<String, Object> ranked : rankings) {
+                    String appIdStr = (String) ranked.get("applicationId");
+                    if (appIdStr == null) continue;
+
+                    UUID applicationId = UUID.fromString(appIdStr);
+                    Optional<Application> optApp = applicationRepository.findById(applicationId);
+                    if (optApp.isPresent()) {
+                        Application app = optApp.get();
+
+                        Number compositeScore = (Number) ranked.get("compositeScore");
+                        Number rankingPosition = (Number) ranked.get("rankingPosition");
+                        if (compositeScore != null) app.setCompositeScore(compositeScore.doubleValue());
+                        if (rankingPosition != null) app.setRankingPosition(rankingPosition.intValue());
+
+                        // Only advance to SCREENED if the candidate is still at APPLIED.
+                        // Do NOT overwrite statuses that have already progressed further
+                        // (e.g. OA_INVITED, OA_COMPLETED, INTERVIEW_INVITED, etc.).
+                        if (app.getStatus() == ApplicationStatus.APPLIED) {
+                            app.setStatus(ApplicationStatus.SCREENED);
+                        } else {
+                            log.info("Skipping status update for application {} — current status={} is beyond APPLIED",
+                                    app.getId(), app.getStatus());
+                        }
+                        applicationRepository.save(app);
                     }
-                    applicationRepository.save(app);
                 }
             }
-        }
 
-        log.info("Rank result processed for rankingJobId={}", event.getRankingJobId());
+            log.info("Rank result processed for rankingJobId={}", rankingJobId);
+
+        } catch (Exception e) {
+            log.error("Error processing rank result event: {}", e.getMessage(), e);
+        }
     }
 }

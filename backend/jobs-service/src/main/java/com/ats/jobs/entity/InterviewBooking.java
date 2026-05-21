@@ -53,6 +53,21 @@ public class InterviewBooking implements Persistable<UUID> {
     @Column(name = "rating")
     private Integer rating;
 
+    @Column(name = "technical_score")
+    private Integer technical;
+
+    @Column(name = "problem_solving_score")
+    private Integer problemSolving;
+
+    @Column(name = "communication_score")
+    private Integer communication;
+
+    @Column(name = "behavioral_score")
+    private Integer behavioral;
+
+    @Column(name = "culture_fit_score")
+    private Integer cultureFit;
+
     public enum BookingStatus {
         SCHEDULED,
         COMPLETED,

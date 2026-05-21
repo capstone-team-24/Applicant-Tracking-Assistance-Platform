@@ -109,221 +109,238 @@ export default function OrgDashboardPage() {
 
   const activeRecruiters = recruiters.filter(r => !r.isSuspended);
 
- const statusBadge = (status: string) => {
-  const colors: Record<string, string> = {
-    PUBLISHED: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
-    DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
-    SUSPENDED: "bg-rose-50 text-rose-700 border-rose-200/60",
-    CLOSED: "bg-amber-50 text-amber-700 border-amber-200/60",
-    ARCHIVED: "bg-purple-50 text-purple-700 border-purple-200/60",
+  const statusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      PUBLISHED: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+      DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
+      SUSPENDED: "bg-rose-50 text-rose-700 border-rose-200/60",
+      CLOSED: "bg-amber-50 text-amber-700 border-amber-200/60",
+      ARCHIVED: "bg-purple-50 text-purple-700 border-purple-200/60",
+    };
+    return `inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${colors[status] || "bg-slate-100 text-slate-600 border-slate-200"}`;
   };
-  return `inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${colors[status] || "bg-slate-100 text-slate-600 border-slate-200"}`;
-};
 
-return (
-  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 text-slate-900 transition-colors duration-300">
-    {/* Header - Glass Effect */}
-    <header className="border-b border-slate-200/80 bg-white/70 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight uppercase">Admin Control</h1>
-          <p className="text-[10px] font-semibold text-slate-500 mt-0.5 uppercase tracking-widest">
-            {user?.firstName} {user?.lastName} <span className="text-slate-300 mx-1">//</span> {user?.email}
-          </p>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="text-xs font-bold px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-all uppercase tracking-widest"
-        >
-          Sign out
-        </button>
-      </div>
-    </header>
+  return (
+    <div
+      className="min-h-screen w-full bg-cover bg-center bg-fixed relative flex flex-col items-center py-12 px-4 text-white transition-colors duration-300"
+      style={{ backgroundImage: `url(/bk2.jpg)` }}
+    >
+      {/* Dark Overlay with Base Blur */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px]" />
 
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Status message - Floating Glass */}
-      {actionMsg && (
-        <div className={`mb-6 p-4 rounded-2xl border backdrop-blur-xl flex justify-between items-center shadow-sm animate-in fade-in slide-in-from-top-4 ${actionMsg.type === "success" ? "bg-emerald-50/80 border-emerald-200 text-emerald-800" : "bg-rose-50/80 border-rose-200 text-rose-800"}`}>
-          <span className="text-sm font-medium">{actionMsg.text}</span>
-          <button onClick={() => setActionMsg(null)} className="text-xl opacity-50 hover:opacity-100 transition-opacity">×</button>
-        </div>
-      )}
+      {/* Ambient Blur Blobs */}
+      <div className="fixed top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
 
-      {/* Tabs - Glass Pill */}
-      <div className="flex gap-1 p-1 bg-slate-200/50 backdrop-blur-md rounded-2xl border border-slate-200/60 w-fit mb-8 shadow-inner">
-        {(["recruiters", "jobs"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-widest ${tab === t ? "bg-white text-indigo-600 shadow-md" : "text-slate-600 hover:text-slate-900 hover:bg-white/40"}`}
-          >
-            {t === "recruiters" ? "Recruiters" : "Postings"}
-          </button>
-        ))}
-      </div>
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-7xl">
 
-      {/* ── Recruiters Tab ── */}
-      {tab === "recruiters" && (
-        <div className="animate-in fade-in duration-500">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Management</h2>
-            <button
-              onClick={() => setRecruiterFormOpen(!recruiterFormOpen)}
-              className="px-5 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 shadow-sm hover:shadow-md transition-all uppercase tracking-wider"
-            >
-              + New Recruiter
-            </button>
+        {/* Header - Glass Effect */}
+        <header className="w-full bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-8 py-6 mb-12 shadow-2xl relative overflow-hidden flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div>
+            <h1 className="text-2xl font-black text-white tracking-tighter italic uppercase">Admin Control</h1>
+            <p className="text-[10px] font-black text-white/40 mt-1 uppercase tracking-[0.2em]">
+              {user?.firstName} {user?.lastName} <span className="text-white/20 mx-2">//</span> {user?.email}
+            </p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="text-[10px] font-black px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 shadow-sm hover:shadow-2xl transition-all uppercase tracking-[0.2em]"
+          >
+            Sign out
+          </button>
+        </header>
 
-          {/* Add Recruiter form - Embedded Glass Card */}
-          {recruiterFormOpen && (
-            <div className="mb-8 bg-white/80 backdrop-blur-2xl border border-slate-200/80 rounded-3xl p-6 shadow-xl overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-400/30 to-transparent"></div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-6">Provision New Access</h3>
-              <form onSubmit={handleCreateRecruiter} className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">First Name</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full bg-white/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm"
-                    value={newRecruiter.firstName}
-                    onChange={(e) => setNewRecruiter({ ...newRecruiter, firstName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Last Name</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full bg-white/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm"
-                    value={newRecruiter.lastName}
-                    onChange={(e) => setNewRecruiter({ ...newRecruiter, lastName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    className="w-full bg-white/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 focus:bg-white transition-all shadow-sm"
-                    value={newRecruiter.email}
-                    onChange={(e) => setNewRecruiter({ ...newRecruiter, email: e.target.value })}
-                  />
-                </div>
-                <div className="sm:col-span-3 flex gap-3 justify-end mt-2">
-                  <button type="button" onClick={() => setRecruiterFormOpen(false)} className="px-6 py-3 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-wider">
-                    Cancel
-                  </button>
-                  <button type="submit" className="px-8 py-3 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 shadow-sm hover:shadow transition-all uppercase tracking-wider">
-                    Invite Member
-                  </button>
-                </div>
-              </form>
+        <div className="w-full">
+          {/* Status message - Floating Glass */}
+          {actionMsg && (
+            <div className={`mb-10 p-6 rounded-[2rem] border backdrop-blur-3xl flex justify-between items-center shadow-2xl animate-in fade-in slide-in-from-top-4 ${actionMsg.type === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"}`}>
+              <span className="text-xs font-black uppercase tracking-[0.1em]">{actionMsg.text}</span>
+              <button onClick={() => setActionMsg(null)} className="text-2xl opacity-50 hover:opacity-100 transition-opacity text-white">×</button>
             </div>
           )}
 
-          {/* List - Glass Table */}
-          <div className="bg-white/70 backdrop-blur-xl border border-slate-200/80 rounded-3xl overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="px-8 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identify</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contact</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                    <th className="px-8 py-5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/70">
-                  {recruiters.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/40 transition-colors">
-                      <td className="px-8 py-5 text-sm font-semibold text-slate-900">{r.firstName} {r.lastName}</td>
-                      <td className="px-8 py-5 text-sm text-slate-600">{r.email}</td>
-                      <td className="px-8 py-5">
-                        <span className={statusBadge(r.isSuspended ? "SUSPENDED" : "PUBLISHED")}>
-                          {r.isSuspended ? "Revoked" : "Active"}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5 text-right">
-                        <button
-                          onClick={() => handleToggleSuspend(r.id, r.isSuspended)}
-                          className={`text-xs font-bold uppercase tracking-wide transition-all ${r.isSuspended ? "text-emerald-600 hover:text-emerald-700" : "text-rose-600 hover:text-rose-700"}`}
-                        >
-                          {r.isSuspended ? "Restore" : "Suspend"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Tabs - Glass Pill */}
+          <div className="flex gap-2 p-1.5 bg-white/5 backdrop-blur-3xl rounded-2xl border border-white/10 w-fit mb-12 shadow-inner">
+            {(["recruiters", "jobs"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-[0.2em] ${tab === t ? "bg-white text-slate-950 shadow-xl" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+              >
+                {t === "recruiters" ? "Recruiters" : "Postings"}
+              </button>
+            ))}
           </div>
-        </div>
-      )}
 
-      {/* ── Jobs Tab ── */}
-      {tab === "jobs" && (
-        <div className="animate-in fade-in duration-500">
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-6">Global Postings</h2>
-          <div className="bg-white/70 backdrop-blur-xl border border-slate-200/80 rounded-3xl overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="px-8 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Job Title</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lifecycle</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Owner</th>
-                    <th className="px-8 py-5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Update</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/70">
-                  {jobs.map((job) => (
-                    <tr key={job.id} className="hover:bg-slate-50/40 transition-colors">
-                      <td className="px-8 py-5 text-sm font-semibold text-slate-900">{job.title}</td>
-                      <td className="px-8 py-5">
-                        <span className={statusBadge(job.status)}>{job.status}</span>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="relative inline-block w-full max-w-[200px]">
-                          <select
-                            className="w-full bg-white/80 border border-slate-200 text-xs font-bold text-slate-700 rounded-xl pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all cursor-pointer appearance-none shadow-sm"
-                            value={reassignMap[job.id] ?? ""}
-                            onChange={(e) => setReassignMap({ ...reassignMap, [job.id]: e.target.value })}
-                          >
-                            <option value="" className="bg-white text-slate-700">None (Unassigned)</option>
-                            {activeRecruiters.map((r) => (
-                              <option key={r.id} value={r.id} className="bg-white text-slate-700">
-                                {r.firstName} {r.lastName}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                            </svg>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5 text-right">
-                        <button
-                          onClick={() => handleReassign(job.id)}
-                          className="text-xs font-bold uppercase tracking-wide text-indigo-600 hover:text-indigo-700 transition-all underline underline-offset-4"
-                        >
-                          Push Update
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* ── Recruiters Tab ── */}
+          {tab === "recruiters" && (
+            <div className="animate-in fade-in duration-500">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
+                <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter italic uppercase leading-none">Management</h2>
+                <button
+                  onClick={() => setRecruiterFormOpen(!recruiterFormOpen)}
+                  className="px-8 py-4 bg-white text-slate-950 text-[11px] font-black rounded-2xl hover:scale-105 shadow-2xl shadow-white/10 transition-all uppercase tracking-[0.2em] w-fit"
+                >
+                  + New Recruiter
+                </button>
+              </div>
+
+              {/* Add Recruiter form - Embedded Glass Card */}
+              {recruiterFormOpen && (
+                <div className="mb-12 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[3rem] p-8 lg:p-12 shadow-2xl overflow-hidden relative">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                  <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-8 ml-1">Provision New Access</h3>
+                  <form onSubmit={handleCreateRecruiter} className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2 ml-1">First Name</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/[0.08] transition-all text-sm font-medium italic"
+                        value={newRecruiter.firstName}
+                        onChange={(e) => setNewRecruiter({ ...newRecruiter, firstName: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2 ml-1">Last Name</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/[0.08] transition-all text-sm font-medium italic"
+                        value={newRecruiter.lastName}
+                        onChange={(e) => setNewRecruiter({ ...newRecruiter, lastName: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2 ml-1">Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/[0.08] transition-all text-sm font-medium italic"
+                        value={newRecruiter.email}
+                        onChange={(e) => setNewRecruiter({ ...newRecruiter, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="sm:col-span-3 flex gap-4 justify-end mt-4">
+                      <button type="button" onClick={() => setRecruiterFormOpen(false)} className="px-6 py-4 text-[10px] font-black text-white/40 hover:text-white transition-colors uppercase tracking-[0.2em]">
+                        Cancel
+                      </button>
+                      <button type="submit" className="px-10 py-4 bg-white text-slate-950 text-[11px] font-black rounded-2xl hover:scale-105 active:scale-95 shadow-2xl shadow-white/10 transition-all uppercase tracking-[0.2em]">
+                        Invite Member
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* List - Glass Table */}
+              <div className="bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[3rem] overflow-hidden shadow-2xl relative">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Identify</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Contact</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Status</th>
+                        <th className="px-8 py-6 text-right text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recruiters.map((r) => (
+                        <tr key={r.id} className="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                          <td className="px-8 py-6 text-sm font-bold text-white italic">{r.firstName} {r.lastName}</td>
+                          <td className="px-8 py-6 text-sm font-medium text-white/60">{r.email}</td>
+                          <td className="px-8 py-6">
+                            <span className={statusBadge(r.isSuspended ? "SUSPENDED" : "PUBLISHED")}>
+                              {r.isSuspended ? "Revoked" : "Active"}
+                            </span>
+                          </td>
+                          <td className="px-8 py-6 text-right">
+                            <button
+                              onClick={() => handleToggleSuspend(r.id, r.isSuspended)}
+                              className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all ${r.isSuspended ? "text-emerald-400 hover:text-emerald-300" : "text-rose-400 hover:text-rose-300"}`}
+                            >
+                              {r.isSuspended ? "Restore" : "Suspend"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
-          <p className="mt-6 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">
-            Postings without active owners will be automatically suspended.
-          </p>
+          )}
+
+          {/* ── Jobs Tab ── */}
+          {tab === "jobs" && (
+            <div className="animate-in fade-in duration-500">
+              <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter italic uppercase leading-none mb-8">Global Postings</h2>
+              <div className="bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[3rem] overflow-hidden shadow-2xl relative">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Job Title</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Lifecycle</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Owner</th>
+                        <th className="px-8 py-6 text-right text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Update</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {jobs.map((job) => (
+                        <tr key={job.id} className="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                          <td className="px-8 py-6 text-sm font-bold text-white italic">{job.title}</td>
+                          <td className="px-8 py-6">
+                            <span className={statusBadge(job.status)}>{job.status}</span>
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="relative inline-block w-full max-w-[200px]">
+                              <select
+                                className="w-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.1em] text-white rounded-2xl pl-4 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/[0.08] transition-all cursor-pointer appearance-none shadow-sm"
+                                value={reassignMap[job.id] ?? ""}
+                                onChange={(e) => setReassignMap({ ...reassignMap, [job.id]: e.target.value })}
+                              >
+                                <option value="" className="bg-slate-900 text-white">None (Unassigned)</option>
+                                {activeRecruiters.map((r) => (
+                                  <option key={r.id} value={r.id} className="bg-slate-900 text-white">
+                                    {r.firstName} {r.lastName}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white/40">
+                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6 text-right">
+                            <button
+                              onClick={() => handleReassign(job.id)}
+                              className="text-[10px] font-black uppercase tracking-[0.2em] text-white hover:text-white/70 transition-all underline underline-offset-4"
+                            >
+                              Push Update
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <p className="mt-8 text-[10px] font-black text-white/40 uppercase tracking-[0.3em] text-center leading-loose max-w-lg mx-auto">
+                Postings without active owners will be automatically suspended.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+      </div>
     </div>
-  </div>
-);}
+  );
+}

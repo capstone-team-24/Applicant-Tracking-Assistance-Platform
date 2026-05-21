@@ -315,6 +315,7 @@ public class ApplicationService {
                 .status(app.getStatus())
                 .parseConfidence(app.getParseConfidence())
                 .compositeScore(app.getCompositeScore())
+                .interviewScore(app.getInterviewScore())
                 .rankingPosition(app.getRankingPosition())
                 .createdAt(app.getCreatedAt())
                 .updatedAt(app.getUpdatedAt())
