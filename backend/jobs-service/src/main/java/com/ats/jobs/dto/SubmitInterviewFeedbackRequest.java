@@ -18,4 +18,9 @@ public class SubmitInterviewFeedbackRequest {
     private Integer communication;
     private Integer behavioral;
     private Integer cultureFit;
+
+    private String recruiterSummary;
+    private String strengths;
+    private String weaknesses;
+    private String hireRecommendation;
 }

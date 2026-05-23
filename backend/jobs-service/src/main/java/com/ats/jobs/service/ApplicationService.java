@@ -7,6 +7,7 @@ import com.ats.jobs.entity.Job;
 import com.ats.jobs.enums.ApplicationStatus;
 import com.ats.jobs.enums.JobStatus;
 import com.ats.jobs.exception.BadRequestException;
+import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
 import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.feign.UserServiceClient;
@@ -250,6 +251,63 @@ public class ApplicationService {
         return mapToDetailResponse(saved);
     }
 
+    @Transactional
+    public void waitlistApplications(UUID jobId, java.util.List<UUID> applicationIds, UUID orgId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+
+        if (orgId != null && !job.getOrgId().equals(orgId)) {
+            throw new ForbiddenException("You do not have access to this job.");
+        }
+
+        java.util.List<Application> apps = applicationRepository.findAllById(applicationIds);
+        for (Application app : apps) {
+            if (app.getJobId().equals(jobId)) {
+                app.setIsWaitlisted(true);
+            }
+        }
+        applicationRepository.saveAll(apps);
+        log.info("Waitlisted {} applications for job {}", applicationIds.size(), jobId);
+    }
+
+    @Transactional
+    public void recalculateFinalRanking(UUID jobId, UUID orgId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+
+        if (orgId != null && !job.getOrgId().equals(orgId)) {
+            throw new ForbiddenException("You do not have access to this job.");
+        }
+
+        java.util.List<Application> apps = applicationRepository.findByJobId(jobId);
+        for (Application app : apps) {
+            double cvScore = app.getCompositeScore() != null ? app.getCompositeScore() : 0.0;
+            double oaScore = app.getOaScore() != null ? app.getOaScore() : 0.0;
+            double interviewScore = app.getInterviewScore() != null ? app.getInterviewScore() : 0.0;
+            
+            double finalRankingScore = Math.round(((cvScore + oaScore + (interviewScore * 2)) / 3.0) * 100.0) / 100.0;
+            app.setFinalRankingScore(finalRankingScore);
+        }
+        
+        apps.sort((a, b) -> {
+            double scoreA = a.getFinalRankingScore() != null ? a.getFinalRankingScore() : 0.0;
+            double scoreB = b.getFinalRankingScore() != null ? b.getFinalRankingScore() : 0.0;
+            return Double.compare(scoreB, scoreA);
+        });
+        
+        int rank = 1;
+        for (Application app : apps) {
+            if (app.getFinalRankingScore() != null && app.getFinalRankingScore() > 0) {
+                app.setFinalRank(rank++);
+            } else {
+                app.setFinalRank(null);
+            }
+        }
+        
+        applicationRepository.saveAll(apps);
+        log.info("Recalculated final ranking for job {}", jobId);
+    }
+
     public String getOriginalFilename(UUID id) {
         Application app = findApplicationOrThrow(id);
         return app.getOriginalFilename();
@@ -295,7 +353,12 @@ public class ApplicationService {
                 .status(app.getStatus())
                 .createdAt(app.getCreatedAt())
                 .compositeScore(app.getCompositeScore())
+                .oaScore(app.getOaScore())
+                .interviewScore(app.getInterviewScore())
+                .finalRankingScore(app.getFinalRankingScore())
                 .rankingPosition(app.getRankingPosition())
+                .finalRank(app.getFinalRank())
+                .isWaitlisted(app.getIsWaitlisted())
                 .build();
     }
 
@@ -315,8 +378,12 @@ public class ApplicationService {
                 .status(app.getStatus())
                 .parseConfidence(app.getParseConfidence())
                 .compositeScore(app.getCompositeScore())
+                .oaScore(app.getOaScore())
                 .interviewScore(app.getInterviewScore())
+                .finalRankingScore(app.getFinalRankingScore())
                 .rankingPosition(app.getRankingPosition())
+                .finalRank(app.getFinalRank())
+                .isWaitlisted(app.getIsWaitlisted())
                 .createdAt(app.getCreatedAt())
                 .updatedAt(app.getUpdatedAt())
                 .build();

@@ -68,6 +68,21 @@ public class InterviewBooking implements Persistable<UUID> {
     @Column(name = "culture_fit_score")
     private Integer cultureFit;
 
+    @Column(name = "recruiter_summary", columnDefinition = "TEXT")
+    private String recruiterSummary;
+
+    @Column(name = "strengths", columnDefinition = "TEXT")
+    private String strengths;
+
+    @Column(name = "weaknesses", columnDefinition = "TEXT")
+    private String weaknesses;
+
+    @Column(name = "hire_recommendation")
+    private String hireRecommendation;
+
+    @Column(name = "final_score")
+    private Double finalScore;
+
     public enum BookingStatus {
         SCHEDULED,
         COMPLETED,

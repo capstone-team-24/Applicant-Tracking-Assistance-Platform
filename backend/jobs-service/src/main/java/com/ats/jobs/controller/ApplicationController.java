@@ -163,4 +163,37 @@ public class ApplicationController {
         SendInterviewInviteResponse response = interviewInviteService.sendInterviewInviteToApplication(id, request, orgId);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * POST /api/v1/jobs/{jobId}/applications/waitlist
+     *
+     * Bulk waitlist candidates.
+     */
+    @PostMapping("/api/v1/jobs/{jobId}/applications/waitlist")
+    public ResponseEntity<Void> waitlistApplications(
+            @PathVariable UUID jobId,
+            @RequestBody java.util.List<UUID> applicationIds,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        applicationService.waitlistApplications(jobId, applicationIds, orgId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * POST /api/v1/jobs/{jobId}/applications/recalculate-ranking
+     *
+     * Recalculates the final ranking for all applications of a job.
+     */
+    @PostMapping("/api/v1/jobs/{jobId}/applications/recalculate-ranking")
+    public ResponseEntity<Void> recalculateFinalRanking(
+            @PathVariable UUID jobId,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        applicationService.recalculateFinalRanking(jobId, orgId);
+        return ResponseEntity.ok().build();
+    }
 }

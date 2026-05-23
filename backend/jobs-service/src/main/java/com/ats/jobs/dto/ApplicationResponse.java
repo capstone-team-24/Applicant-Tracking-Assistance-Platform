@@ -24,5 +24,10 @@ public class ApplicationResponse {
     private ApplicationStatus status;
     private LocalDateTime createdAt;
     private Double compositeScore;
+    private Double oaScore;
+    private Double interviewScore;
+    private Double finalRankingScore;
     private Integer rankingPosition;
+    private Integer finalRank;
+    private Boolean isWaitlisted;
 }

@@ -153,10 +153,18 @@ export interface Application {
     | "INTERVIEW_SCHEDULED"
     | "INTERVIEW_COMPLETED"
     | "OFFERED"
+    | "OFFER_SENT"
+    | "OFFER_ACCEPTED"
+    | "OFFER_DECLINED"
     | "REJECTED"
     | "WITHDRAWN";
   compositeScore?: number;
+  oaScore?: number;
+  interviewScore?: number;
+  finalRankingScore?: number;
   rankingPosition?: number;
+  finalRank?: number;
+  isWaitlisted?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -344,6 +352,16 @@ export interface InterviewBooking {
   status: "SCHEDULED" | "COMPLETED" | "CANCELLED";
   feedback?: string;
   rating?: number;
+  technical?: number;
+  problemSolving?: number;
+  communication?: number;
+  behavioral?: number;
+  cultureFit?: number;
+  recruiterSummary?: string;
+  strengths?: string;
+  weaknesses?: string;
+  hireRecommendation?: string;
+  finalScore?: number;
   createdAt: string;
 }
 
@@ -355,6 +373,10 @@ export interface SubmitInterviewFeedbackRequest {
   communication?: number;
   behavioral?: number;
   cultureFit?: number;
+  recruiterSummary?: string;
+  strengths?: string;
+  weaknesses?: string;
+  hireRecommendation?: string;
 }
 
 export interface CandidateBookingResponse {
@@ -434,3 +456,27 @@ export interface AcceptInviteRequest {
   password: string;
 }
 
+export interface SendOfferRequest {
+  offerMessage: string;
+  salary?: string;
+  startDate?: string; // YYYY-MM-DD
+}
+
+export interface DeclineOfferRequest {
+  reason?: string;
+}
+
+export interface OfferResponse {
+  id: string;
+  applicationId: string;
+  jobTitle: string;
+  companyName: string;
+  candidateName: string;
+  offerMessage: string;
+  salary?: string;
+  startDate?: string;
+  status: "PENDING" | "ACCEPTED" | "DECLINED";
+  sentAt: string;
+  acceptedAt?: string;
+  declinedAt?: string;
+}

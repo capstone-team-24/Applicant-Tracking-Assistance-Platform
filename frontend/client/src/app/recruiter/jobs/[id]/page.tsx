@@ -10,6 +10,7 @@ import {
   assessmentsApi,
   interviewsApi,
   integrationsApi,
+  offersApi,
 } from "@/lib/api";
 import type {
   Job,
@@ -108,6 +109,10 @@ export default function RecruiterJobDetailPage() {
   const [reviewCommunication, setReviewCommunication] = useState<number | undefined>(undefined);
   const [reviewBehavioral, setReviewBehavioral] = useState<number | undefined>(undefined);
   const [reviewCultureFit, setReviewCultureFit] = useState<number | undefined>(undefined);
+  const [reviewRecruiterSummary, setReviewRecruiterSummary] = useState("");
+  const [reviewStrengths, setReviewStrengths] = useState("");
+  const [reviewWeaknesses, setReviewWeaknesses] = useState("");
+  const [reviewHireRecommendation, setReviewHireRecommendation] = useState("Neutral");
 
   // ── table state ───────────────────────────────────────────────────────────
   const [sortField, setSortField] = useState<"rank" | "score" | "oaScore" | "name">("rank");
@@ -116,6 +121,17 @@ export default function RecruiterJobDetailPage() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [sendingOAForApp, setSendingOAForApp] = useState<string | null>(null);
   const [sendingInterviewForApp, setSendingInterviewForApp] = useState<string | null>(null);
+  const [selectedAppIds, setSelectedAppIds] = useState<Set<string>>(new Set());
+  const [isWaitlisting, setIsWaitlisting] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+
+  // ── offer state ──────────────────────────────────────────────────────────
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [offerApp, setOfferApp] = useState<Application | null>(null);
+  const [offerMessage, setOfferMessage] = useState("");
+  const [offerSalary, setOfferSalary] = useState("");
+  const [offerStartDate, setOfferStartDate] = useState("");
+  const [isSendingOffer, setIsSendingOffer] = useState(false);
 
   // assessment form
   const [assessmentTitle, setAssessmentTitle] = useState(
@@ -529,16 +545,15 @@ export default function RecruiterJobDetailPage() {
     setReviewRating(booking.rating ?? 5);
     setReviewFeedback(booking.feedback ?? "");
     // populate metric fields if present on booking (backend may return them)
-    // @ts-ignore
     setReviewTechnical(typeof booking.technical === 'number' ? booking.technical : undefined);
-    // @ts-ignore
     setReviewProblemSolving(typeof booking.problemSolving === 'number' ? booking.problemSolving : undefined);
-    // @ts-ignore
     setReviewCommunication(typeof booking.communication === 'number' ? booking.communication : undefined);
-    // @ts-ignore
     setReviewBehavioral(typeof booking.behavioral === 'number' ? booking.behavioral : undefined);
-    // @ts-ignore
     setReviewCultureFit(typeof booking.cultureFit === 'number' ? booking.cultureFit : undefined);
+    setReviewRecruiterSummary(booking.recruiterSummary || "");
+    setReviewStrengths(booking.strengths || "");
+    setReviewWeaknesses(booking.weaknesses || "");
+    setReviewHireRecommendation(booking.hireRecommendation || "Neutral");
     setIsReviewModalOpen(true);
   };
 
@@ -554,12 +569,17 @@ export default function RecruiterJobDetailPage() {
         communication: reviewCommunication,
         behavioral: reviewBehavioral,
         cultureFit: reviewCultureFit,
+        recruiterSummary: reviewRecruiterSummary,
+        strengths: reviewStrengths,
+        weaknesses: reviewWeaknesses,
+        hireRecommendation: reviewHireRecommendation,
       });
       toast.success("Interview marked as completed and feedback saved.");
       setIsReviewModalOpen(false);
       // refresh bookings
       const bRes = await interviewsApi.getJobBookings(jobId);
       setBookings(bRes);
+      fetchApplications();
     } catch (err) {
       toast.error("Failed to submit feedback");
     } finally {
@@ -612,6 +632,34 @@ export default function RecruiterJobDetailPage() {
     }
   };
 
+  const handleOpenOfferModal = (app: Application) => {
+    setOfferApp(app);
+    setOfferMessage(`We are excited to offer you the position of ${job?.title} at our company!`);
+    setOfferSalary("");
+    setOfferStartDate("");
+    setIsOfferModalOpen(true);
+    setOpenDropdownId(null);
+  };
+
+  const handleSendOfferSubmit = async () => {
+    if (!offerApp || !jobId || !offerMessage) return;
+    setIsSendingOffer(true);
+    try {
+      await offersApi.sendOffer(jobId, offerApp.id, {
+        offerMessage,
+        salary: offerSalary || undefined,
+        startDate: offerStartDate || undefined,
+      });
+      toast.success(`Offer sent to ${offerApp.candidateName}!`);
+      setIsOfferModalOpen(false);
+      fetchApplications();
+    } catch {
+      toast.error("Failed to send offer");
+    } finally {
+      setIsSendingOffer(false);
+    }
+  };
+
   const copyAssessmentLink = () => {
     if (!jobAssessment) return;
     const link =
@@ -657,6 +705,51 @@ export default function RecruiterJobDetailPage() {
 
   const removeQuestion = (idx: number) =>
     setQuestions((prev) => prev.filter((_, i) => i !== idx));
+
+  const handleWaitlist = async () => {
+    if (selectedAppIds.size === 0) return;
+    if (!window.confirm(`Are you sure you want to waitlist ${selectedAppIds.size} candidates?`)) return;
+    setIsWaitlisting(true);
+    try {
+      await applicationsApi.waitlist(jobId, Array.from(selectedAppIds));
+      toast.success("Candidates waitlisted!");
+      setSelectedAppIds(new Set());
+      fetchApplications();
+    } catch {
+      toast.error("Failed to waitlist candidates");
+    } finally {
+      setIsWaitlisting(false);
+    }
+  };
+
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    try {
+      await applicationsApi.recalculateRanking(jobId);
+      toast.success("Final ranking recalculated!");
+      fetchApplications();
+    } catch {
+      toast.error("Failed to recalculate ranking");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
+  const toggleSelectApp = (id: string) => {
+    const next = new Set(selectedAppIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedAppIds(next);
+  };
+
+  const toggleSelectAll = () => {
+    const filterStatusApps = applications.filter((app) => statusFilter === "ALL" || app.status === statusFilter);
+    if (selectedAppIds.size === filterStatusApps.length && filterStatusApps.length > 0) {
+      setSelectedAppIds(new Set());
+    } else {
+      setSelectedAppIds(new Set(filterStatusApps.map(a => a.id)));
+    }
+  };
 
   // ── stats ─────────────────────────────────────────────────────────────────
   const statusCounts = applications.reduce(
@@ -1570,13 +1663,30 @@ export default function RecruiterJobDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Applications ({applications.length})
             </h2>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Filter Status:</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
+            <div className="flex items-center gap-3">
+              {selectedAppIds.size > 0 && (
+                <button
+                  onClick={handleWaitlist}
+                  disabled={isWaitlisting}
+                  className="px-3 py-1.5 bg-amber-100 text-amber-800 text-sm font-medium rounded hover:bg-amber-200 transition-colors disabled:opacity-50"
+                >
+                  {isWaitlisting ? "Waitlisting..." : `Waitlist Selected (${selectedAppIds.size})`}
+                </button>
+              )}
+              <button
+                onClick={handleRecalculate}
+                disabled={isRecalculating}
+                className="px-3 py-1.5 border border-indigo-200 text-indigo-700 bg-white text-sm font-medium rounded hover:bg-indigo-50 transition-colors disabled:opacity-50"
               >
+                {isRecalculating ? "Recalculating..." : "Recalculate Final Ranking"}
+              </button>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Filter Status:</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
+                >
                 <option value="ALL">All</option>
                 <option value="APPLIED">Applied</option>
                 <option value="SCREENED">Screened</option>
@@ -1590,6 +1700,7 @@ export default function RecruiterJobDetailPage() {
               </select>
             </div>
           </div>
+          </div>
 
           {isLoadingApps ? (
             <div className="p-6 space-y-4">
@@ -1602,8 +1713,11 @@ export default function RecruiterJobDetailPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th scope="col" className="px-6 py-3 text-left">
+                      <input type="checkbox" checked={applications.length > 0 && selectedAppIds.size === applications.filter((app) => statusFilter === "ALL" || app.status === statusFilter).length} onChange={toggleSelectAll} className="w-4 h-4 text-primary-600 rounded" />
+                    </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("rank"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
-                      Rank {sortField === "rank" && (sortDir === "asc" ? "↑" : "↓")}
+                      Final Rank {sortField === "rank" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("name"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
                       Candidate {sortField === "name" && (sortDir === "asc" ? "↑" : "↓")}
@@ -1612,7 +1726,10 @@ export default function RecruiterJobDetailPage() {
                       CV Score {sortField === "score" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("oaScore"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
-                      OA Status / Score {sortField === "oaScore" && (sortDir === "asc" ? "↑" : "↓")}
+                      OA Score {sortField === "oaScore" && (sortDir === "asc" ? "↑" : "↓")}
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Interview
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       App Status
@@ -1626,14 +1743,12 @@ export default function RecruiterJobDetailPage() {
                   {applications
                     .filter((app) => statusFilter === "ALL" || app.status === statusFilter)
                     .sort((a, b) => {
-                      const aSub = assessmentSubmissions.find((s) => s.candidateId === a.candidateAuthUserId);
-                      const bSub = assessmentSubmissions.find((s) => s.candidateId === b.candidateAuthUserId);
-                      const aOa = aSub?.score ?? -1;
-                      const bOa = bSub?.score ?? -1;
-                      const aRank = a.rankingPosition ?? 999999;
-                      const bRank = b.rankingPosition ?? 999999;
+                      const aRank = a.finalRank ?? 999999;
+                      const bRank = b.finalRank ?? 999999;
                       const aScore = a.compositeScore ?? 0;
                       const bScore = b.compositeScore ?? 0;
+                      const aOa = a.oaScore ?? -1;
+                      const bOa = b.oaScore ?? -1;
 
                       let diff = 0;
                       if (sortField === "rank") diff = aRank - bRank;
@@ -1644,18 +1759,18 @@ export default function RecruiterJobDetailPage() {
                       return sortDir === "asc" ? diff : -diff;
                     })
                     .map((app) => {
-                      const submission = assessmentSubmissions.find(
-                        (s) => s.candidateId === app.candidateAuthUserId
-                      );
                       const detailHref = `/recruiter/jobs/${jobId}/applications/${app.id}`;
 
                       return (
-                        <tr key={app.id} className="hover:bg-gray-50 transition-colors">
+                        <tr key={app.id} className={`hover:bg-gray-50 transition-colors ${app.isWaitlisted ? "bg-amber-50/30" : ""}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input type="checkbox" checked={selectedAppIds.has(app.id)} onChange={() => toggleSelectApp(app.id)} className="w-4 h-4 text-primary-600 rounded" />
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {app.rankingPosition ? `#${app.rankingPosition}` : "-"}
+                            {app.finalRank ? `#${app.finalRank}` : "-"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{app.candidateName}</div>
+                            <div className="text-sm font-medium text-gray-900">{app.candidateName} {app.isWaitlisted && <span className="ml-2 text-[10px] uppercase font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Waitlisted</span>}</div>
                             <div className="text-sm text-gray-500">{app.candidateEmail}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1666,20 +1781,16 @@ export default function RecruiterJobDetailPage() {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {submission ? (
-                              <div className="flex flex-col items-start gap-1">
-                                <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                                  {submission.status.replace("_", " ")}
-                                </span>
-                                {submission.score != null && (
-                                  <span className="font-bold text-indigo-600 text-base">
-                                    {Math.round(submission.score)}<span className="text-xs text-gray-400 font-normal">/100</span>
-                                  </span>
-                                )}
-                              </div>
+                            {app.oaScore != null ? (
+                              <span className="font-bold text-indigo-600">{Math.round(app.oaScore)}</span>
                             ) : (
                               <span className="text-gray-400">-</span>
                             )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {app.interviewScore != null ? (
+                              <span className="font-bold text-emerald-600">{app.interviewScore} <span className="font-normal text-xs text-gray-400">/50</span></span>
+                            ) : "-"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <StatusBadge status={app.status} type="application" />
@@ -1751,6 +1862,18 @@ export default function RecruiterJobDetailPage() {
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                                     </svg>
                                     Send Interview Invite
+                                  </button>
+
+                                  {/* Send Offer */}
+                                  <button
+                                    onClick={() => handleOpenOfferModal(app)}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+                                    title={`Send offer to ${app.candidateName}`}
+                                  >
+                                    <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                                    </svg>
+                                    Send Offer
                                   </button>
                                 </div>
                               )}
@@ -1885,15 +2008,67 @@ export default function RecruiterJobDetailPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Detailed Feedback</label>
-                <textarea
-                  value={reviewFeedback}
-                  onChange={(e) => setReviewFeedback(e.target.value)}
-                  disabled={selectedBooking.status === "COMPLETED"}
-                  placeholder="How did the interview go? What were their strengths and weaknesses?"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[120px] disabled:bg-gray-50 disabled:text-gray-700"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Recruiter Summary</label>
+                  <textarea
+                    value={reviewRecruiterSummary}
+                    onChange={(e) => setReviewRecruiterSummary(e.target.value)}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detailed Feedback</label>
+                  <textarea
+                    value={reviewFeedback}
+                    onChange={(e) => setReviewFeedback(e.target.value)}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    placeholder="How did the interview go?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px] disabled:bg-gray-50 disabled:text-gray-700"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Strengths</label>
+                  <textarea
+                    value={reviewStrengths}
+                    onChange={(e) => setReviewStrengths(e.target.value)}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    placeholder="Comma-separated or bulleted"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Weaknesses</label>
+                  <textarea
+                    value={reviewWeaknesses}
+                    onChange={(e) => setReviewWeaknesses(e.target.value)}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    placeholder="Comma-separated or bulleted"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hire Recommendation</label>
+                  <select
+                    value={reviewHireRecommendation}
+                    onChange={(e) => setReviewHireRecommendation(e.target.value)}
+                    disabled={selectedBooking.status === "COMPLETED"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="Strong Hire">Strong Hire</option>
+                    <option value="Hire">Hire</option>
+                    <option value="Neutral">Neutral</option>
+                    <option value="No Hire">No Hire</option>
+                    <option value="Strong No Hire">Strong No Hire</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
@@ -1912,6 +2087,75 @@ export default function RecruiterJobDetailPage() {
                   {isSubmittingReview ? "Submitting..." : "Submit Review"}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Offer Modal ──────────────────────────────────────────────────────── */}
+      {isOfferModalOpen && offerApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">
+                Send Offer to {offerApp.candidateName}
+              </h2>
+              <button
+                onClick={() => setIsOfferModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Offer Message *</label>
+                <textarea
+                  value={offerMessage}
+                  onChange={(e) => setOfferMessage(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                  placeholder="We are thrilled to offer you..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Salary (Optional)</label>
+                  <input
+                    type="text"
+                    value={offerSalary}
+                    onChange={(e) => setOfferSalary(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                    placeholder="$100,000 / year"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={offerStartDate}
+                    onChange={(e) => setOfferStartDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => setIsOfferModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendOfferSubmit}
+                disabled={isSendingOffer || !offerMessage}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
+              >
+                {isSendingOffer ? "Sending..." : "Send Offer"}
+              </button>
             </div>
           </div>
         </div>

@@ -68,10 +68,22 @@ public class AssessmentCompletedListener {
             // Only advance if the candidate is in a state that makes sense
             if (app.getStatus() == ApplicationStatus.OA_INVITED ||
                 app.getStatus() == ApplicationStatus.SCREENED) {
+                
+                if (payload.containsKey("score")) {
+                    Object scoreObj = payload.get("score");
+                    if (scoreObj instanceof Number) {
+                        app.setOaScore(((Number) scoreObj).doubleValue());
+                    } else if (scoreObj instanceof String) {
+                        try {
+                            app.setOaScore(Double.parseDouble((String) scoreObj));
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+
                 app.setStatus(ApplicationStatus.OA_COMPLETED);
                 applicationRepository.save(app);
-                log.info("Marked application {} as OA_COMPLETED for candidate {} on job {}",
-                        app.getId(), candidateId, jobId);
+                log.info("Marked application {} as OA_COMPLETED with score {} for candidate {} on job {}",
+                        app.getId(), app.getOaScore(), candidateId, jobId);
 
                 // Send OA completion email
                 try {

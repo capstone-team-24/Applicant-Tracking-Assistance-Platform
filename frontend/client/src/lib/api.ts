@@ -30,6 +30,9 @@ import type {
   CandidateBookingResponse,
   InviteTokenResponse,
   AcceptInviteRequest,
+  SendOfferRequest,
+  DeclineOfferRequest,
+  OfferResponse,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -354,6 +357,16 @@ export const applicationsApi = {
     );
     return response.data;
   },
+
+  /** Bulk waitlist applications */
+  waitlist: async (jobId: string, applicationIds: string[]): Promise<void> => {
+    await api.post(`/api/v1/jobs/${jobId}/applications/waitlist`, applicationIds);
+  },
+
+  /** Recalculate final ranking */
+  recalculateRanking: async (jobId: string): Promise<void> => {
+    await api.post(`/api/v1/jobs/${jobId}/applications/recalculate-ranking`);
+  },
 };
 
 // ---- Ranking API ----
@@ -558,6 +571,10 @@ export const interviewsApi = {
       communication?: number;
       behavioral?: number;
       cultureFit?: number;
+      recruiterSummary?: string;
+      strengths?: string;
+      weaknesses?: string;
+      hireRecommendation?: string;
     },
   ): Promise<InterviewBooking> => {
     const response = await api.put<InterviewBooking>(`/api/v1/jobs/${jobId}/bookings/${bookingId}/complete`, data);
@@ -680,6 +697,34 @@ export const orgAdminApi = {
   reassignJob: async (jobId: string, assignedTo: string | null): Promise<import("./types").Job> => {
     const response = await api.put<import("./types").Job>(`/api/v1/jobs/${jobId}/reassign`, { assignedTo: assignedTo ?? "" });
     return response.data;
+  },
+};
+
+// ---- Offers API ----
+export const offersApi = {
+  sendOffer: async (
+    jobId: string,
+    appId: string,
+    data: SendOfferRequest,
+  ): Promise<OfferResponse> => {
+    const response = await api.post<OfferResponse>(
+      `/api/v1/jobs/${jobId}/applications/${appId}/offer`,
+      data,
+    );
+    return response.data;
+  },
+
+  getOffer: async (token: string): Promise<OfferResponse> => {
+    const response = await api.get<OfferResponse>(`/api/v1/offers/${token}`);
+    return response.data;
+  },
+
+  acceptOffer: async (token: string): Promise<void> => {
+    await api.post(`/api/v1/offers/${token}/accept`);
+  },
+
+  declineOffer: async (token: string, data?: DeclineOfferRequest): Promise<void> => {
+    await api.post(`/api/v1/offers/${token}/decline`, data || {});
   },
 };
 

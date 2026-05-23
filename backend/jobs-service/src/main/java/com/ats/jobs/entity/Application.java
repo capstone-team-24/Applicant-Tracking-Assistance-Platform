@@ -78,6 +78,18 @@ public class Application implements Persistable<UUID> {
     @Column(name = "ranking_position")
     private Integer rankingPosition;
 
+    @Column(name = "oa_score")
+    private Double oaScore;
+
+    @Column(name = "final_ranking_score")
+    private Double finalRankingScore;
+
+    @Column(name = "final_rank")
+    private Integer finalRank;
+
+    @Column(name = "is_waitlisted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isWaitlisted = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
