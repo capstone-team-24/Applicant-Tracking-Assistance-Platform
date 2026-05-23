@@ -33,6 +33,8 @@ import type {
   SendOfferRequest,
   DeclineOfferRequest,
   OfferResponse,
+  RejectRequest,
+  RejectResponse,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -366,6 +368,30 @@ export const applicationsApi = {
   /** Recalculate final ranking */
   recalculateRanking: async (jobId: string): Promise<void> => {
     await api.post(`/api/v1/jobs/${jobId}/applications/recalculate-ranking`);
+  },
+
+  /** Recruiter: reject a single application and send a rejection email */
+  rejectApplication: async (
+    appId: string,
+    data?: RejectRequest,
+  ): Promise<Application> => {
+    const response = await api.post<Application>(
+      `/api/v1/applications/${appId}/reject`,
+      data ?? {},
+    );
+    return response.data;
+  },
+
+  /** Recruiter: bulk-reject selected applications and send rejection emails */
+  bulkReject: async (
+    jobId: string,
+    data: RejectRequest,
+  ): Promise<RejectResponse> => {
+    const response = await api.post<RejectResponse>(
+      `/api/v1/jobs/${jobId}/applications/bulk-reject`,
+      data,
+    );
+    return response.data;
   },
 };
 

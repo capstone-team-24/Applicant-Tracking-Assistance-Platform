@@ -165,6 +165,9 @@ export interface Application {
   rankingPosition?: number;
   finalRank?: number;
   isWaitlisted?: boolean;
+  rejectionReason?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -464,6 +467,16 @@ export interface SendOfferRequest {
 
 export interface DeclineOfferRequest {
   reason?: string;
+}
+
+export interface RejectRequest {
+  reason?: string;
+  applicationIds?: string[];
+}
+
+export interface RejectResponse {
+  rejectedCount: number;
+  sentTo: string[];
 }
 
 export interface OfferResponse {

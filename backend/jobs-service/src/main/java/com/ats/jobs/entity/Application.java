@@ -90,6 +90,15 @@ public class Application implements Persistable<UUID> {
     @Column(name = "is_waitlisted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isWaitlisted = false;
 
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
+
+    @Column(name = "rejected_by")
+    private UUID rejectedBy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

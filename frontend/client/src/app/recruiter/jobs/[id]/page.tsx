@@ -133,6 +133,13 @@ export default function RecruiterJobDetailPage() {
   const [offerStartDate, setOfferStartDate] = useState("");
   const [isSendingOffer, setIsSendingOffer] = useState(false);
 
+  // ── rejection state ───────────────────────────────────────────────────────
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectApp, setRejectApp] = useState<Application | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isBulkReject, setIsBulkReject] = useState(false);
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
+
   // assessment form
   const [assessmentTitle, setAssessmentTitle] = useState(
     "Technical Assessment",
@@ -657,6 +664,47 @@ export default function RecruiterJobDetailPage() {
       toast.error("Failed to send offer");
     } finally {
       setIsSendingOffer(false);
+    }
+  };
+
+  const handleOpenRejectModal = (app: Application) => {
+    setRejectApp(app);
+    setRejectReason("");
+    setIsBulkReject(false);
+    setIsRejectModalOpen(true);
+    setOpenDropdownId(null);
+  };
+
+  const handleOpenBulkRejectModal = () => {
+    if (selectedAppIds.size === 0) return;
+    setRejectApp(null);
+    setRejectReason("");
+    setIsBulkReject(true);
+    setIsRejectModalOpen(true);
+  };
+
+  const handleSubmitReject = async () => {
+    setIsSubmittingReject(true);
+    try {
+      if (isBulkReject) {
+        const res = await applicationsApi.bulkReject(jobId, {
+          applicationIds: Array.from(selectedAppIds),
+          reason: rejectReason || undefined,
+        });
+        toast.success(`Rejected ${res.rejectedCount} candidate(s) and sent notification emails.`);
+        setSelectedAppIds(new Set());
+      } else if (rejectApp) {
+        await applicationsApi.rejectApplication(rejectApp.id, {
+          reason: rejectReason || undefined,
+        });
+        toast.success(`${rejectApp.candidateName} has been rejected and notified via email.`);
+      }
+      setIsRejectModalOpen(false);
+      fetchApplications();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to reject candidate(s)");
+    } finally {
+      setIsSubmittingReject(false);
     }
   };
 
@@ -1665,13 +1713,21 @@ export default function RecruiterJobDetailPage() {
             </h2>
             <div className="flex items-center gap-3">
               {selectedAppIds.size > 0 && (
-                <button
-                  onClick={handleWaitlist}
-                  disabled={isWaitlisting}
-                  className="px-3 py-1.5 bg-amber-100 text-amber-800 text-sm font-medium rounded hover:bg-amber-200 transition-colors disabled:opacity-50"
-                >
-                  {isWaitlisting ? "Waitlisting..." : `Waitlist Selected (${selectedAppIds.size})`}
-                </button>
+                <>
+                  <button
+                    onClick={handleWaitlist}
+                    disabled={isWaitlisting}
+                    className="px-3 py-1.5 bg-amber-100 text-amber-800 text-sm font-medium rounded hover:bg-amber-200 transition-colors disabled:opacity-50"
+                  >
+                    {isWaitlisting ? "Waitlisting..." : `Waitlist Selected (${selectedAppIds.size})`}
+                  </button>
+                  <button
+                    onClick={handleOpenBulkRejectModal}
+                    className="px-3 py-1.5 bg-red-100 text-red-800 text-sm font-medium rounded hover:bg-red-200 transition-colors"
+                  >
+                    Reject Selected ({selectedAppIds.size})
+                  </button>
+                </>
               )}
               <button
                 onClick={handleRecalculate}
@@ -1875,6 +1931,23 @@ export default function RecruiterJobDetailPage() {
                                     </svg>
                                     Send Offer
                                   </button>
+
+                                  {/* Reject */}
+                                  {app.status !== "REJECTED" && app.status !== "WITHDRAWN" && (
+                                    <>
+                                      <div className="border-t border-gray-100 my-1" />
+                                      <button
+                                        onClick={() => handleOpenRejectModal(app)}
+                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                        title={`Reject ${app.candidateName}`}
+                                      >
+                                        <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                        </svg>
+                                        Reject Candidate
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -2155,6 +2228,99 @@ export default function RecruiterJobDetailPage() {
                 className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
               >
                 {isSendingOffer ? "Sending..." : "Send Offer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Rejection Modal ──────────────────────────────────────────────────── */}
+      {isRejectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {isBulkReject ? `Reject ${selectedAppIds.size} Candidates` : `Reject ${rejectApp?.candidateName}`}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {isBulkReject
+                      ? "A rejection email will be sent to each selected candidate."
+                      : `A rejection email will be sent to ${rejectApp?.candidateEmail}.`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRejectModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              {/* Warning banner */}
+              <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm text-red-700">
+                  This action cannot be undone. The candidate{isBulkReject ? "s" : ""} will be notified by email.
+                </p>
+              </div>
+
+              {/* Optional feedback */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Feedback for Candidate
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">(optional — included in the rejection email)</span>
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={4}
+                  placeholder="e.g. We were impressed by your profile, however we are looking for candidates with more experience in..."
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all resize-none"
+                />
+                <p className="mt-1 text-xs text-gray-400">Personalised feedback helps candidates grow professionally and reflects well on your company.</p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => setIsRejectModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitReject}
+                disabled={isSubmittingReject}
+                id="confirm-reject-btn"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
+              >
+                {isSubmittingReject ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Rejecting...
+                  </>
+                ) : (
+                  isBulkReject ? `Reject ${selectedAppIds.size} Candidates` : "Reject & Notify"
+                )}
               </button>
             </div>
           </div>

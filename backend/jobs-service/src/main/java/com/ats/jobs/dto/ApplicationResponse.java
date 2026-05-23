@@ -30,4 +30,7 @@ public class ApplicationResponse {
     private Integer rankingPosition;
     private Integer finalRank;
     private Boolean isWaitlisted;
+    private String rejectionReason;
+    private java.time.LocalDateTime rejectedAt;
+    private java.util.UUID rejectedBy;
 }

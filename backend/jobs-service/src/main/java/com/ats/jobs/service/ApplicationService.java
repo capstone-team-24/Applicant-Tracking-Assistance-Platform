@@ -9,6 +9,7 @@ import com.ats.jobs.enums.JobStatus;
 import com.ats.jobs.exception.BadRequestException;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
+import com.ats.jobs.feign.NotificationServiceClient;
 import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.feign.UserServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
@@ -16,6 +17,7 @@ import com.ats.jobs.repository.JobRepository;
 import com.ats.jobs.util.FileStorageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -31,7 +33,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,6 +50,10 @@ public class ApplicationService {
     private final FileStorageUtil fileStorageUtil;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final OrgServiceClient orgServiceClient;
+    private final NotificationServiceClient notificationServiceClient;
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
     @Transactional
     public ApplicationResponse apply(UUID jobId, ApplyRequest request, MultipartFile file, UUID orgId, UUID candidateAuthUserId) {
@@ -359,6 +367,9 @@ public class ApplicationService {
                 .rankingPosition(app.getRankingPosition())
                 .finalRank(app.getFinalRank())
                 .isWaitlisted(app.getIsWaitlisted())
+                .rejectionReason(app.getRejectionReason())
+                .rejectedAt(app.getRejectedAt())
+                .rejectedBy(app.getRejectedBy())
                 .build();
     }
 
@@ -384,8 +395,187 @@ public class ApplicationService {
                 .rankingPosition(app.getRankingPosition())
                 .finalRank(app.getFinalRank())
                 .isWaitlisted(app.getIsWaitlisted())
+                .rejectionReason(app.getRejectionReason())
+                .rejectedAt(app.getRejectedAt())
+                .rejectedBy(app.getRejectedBy())
                 .createdAt(app.getCreatedAt())
                 .updatedAt(app.getUpdatedAt())
                 .build();
+    }
+
+    // ── Rejection methods ─────────────────────────────────────────────────────
+
+    /**
+     * Reject a single application, store audit fields, and send a styled rejection email.
+     */
+    @Transactional
+    public ApplicationDetailResponse rejectApplication(UUID applicationId, UUID rejectorId, String reason) {
+        Application app = findApplicationOrThrow(applicationId);
+
+        if (app.getStatus() == ApplicationStatus.REJECTED) {
+            throw new BadRequestException("Application is already rejected.");
+        }
+
+        Job job = jobRepository.findById(app.getJobId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + app.getJobId()));
+
+        String orgName = "the company";
+        try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
+
+        // Persist rejection
+        app.setStatus(ApplicationStatus.REJECTED);
+        app.setRejectionReason(reason);
+        app.setRejectedAt(LocalDateTime.now());
+        app.setRejectedBy(rejectorId);
+        Application saved = applicationRepository.save(app);
+        log.info("Rejected application id={} by recruiter={}", applicationId, rejectorId);
+
+        // Send rejection email
+        sendRejectionEmail(app, job.getTitle(), orgName, reason);
+
+        return mapToDetailResponse(saved);
+    }
+
+    /**
+     * Bulk reject a list of applications, store audit fields on each, and send styled emails.
+     */
+    @Transactional
+    public RejectResponse bulkRejectApplications(UUID jobId, List<UUID> applicationIds, UUID rejectorId, String reason, UUID orgId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+
+        if (orgId != null && !job.getOrgId().equals(orgId)) {
+            throw new ForbiddenException("You do not have access to this job.");
+        }
+
+        String orgName = "the company";
+        try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
+
+        List<Application> apps = applicationRepository.findAllById(applicationIds);
+        List<String> sentTo = new ArrayList<>();
+
+        for (Application app : apps) {
+            if (!app.getJobId().equals(jobId)) continue;
+            if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) continue;
+
+            app.setStatus(ApplicationStatus.REJECTED);
+            app.setRejectionReason(reason);
+            app.setRejectedAt(LocalDateTime.now());
+            app.setRejectedBy(rejectorId);
+            applicationRepository.save(app);
+
+            sendRejectionEmail(app, job.getTitle(), orgName, reason);
+            if (app.getCandidateEmail() != null && !app.getCandidateEmail().isBlank()) {
+                sentTo.add(app.getCandidateEmail());
+            }
+        }
+
+        log.info("Bulk-rejected {} applications for job {}", sentTo.size(), jobId);
+        return RejectResponse.builder()
+                .rejectedCount(sentTo.size())
+                .sentTo(sentTo)
+                .build();
+    }
+
+    // ── Email helpers ─────────────────────────────────────────────────────────
+
+    private void sendRejectionEmail(Application app, String jobTitle, String orgName, String optionalFeedback) {
+        String email = app.getCandidateEmail();
+        if (email == null || email.isBlank()) return;
+
+        String candidateName = app.getCandidateName() != null ? app.getCandidateName() : "Candidate";
+        String subject = "Update on Your Application — " + jobTitle + " at " + orgName;
+        String body = buildRejectionEmailHtml(candidateName, jobTitle, orgName, optionalFeedback);
+
+        try {
+            notificationServiceClient.sendNotification(NotificationSendRequest.builder()
+                    .recipientEmail(email)
+                    .subject(subject)
+                    .body(body)
+                    .type("REJECTION")
+                    .build());
+            log.info("Rejection email sent to {} for application {}", email, app.getId());
+        } catch (Exception e) {
+            log.error("Failed to send rejection email to {}: {}", email, e.getMessage());
+        }
+    }
+
+    /**
+     * Builds a polished, brand-consistent HTML rejection email.
+     * Includes candidate name, job title, company name, and optional personalised feedback.
+     */
+    private String buildRejectionEmailHtml(String candidateName, String jobTitle, String companyName, String optionalFeedback) {
+        String feedbackBlock = "";
+        if (optionalFeedback != null && !optionalFeedback.isBlank()) {
+            feedbackBlock =
+                "<div style=\"background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px 24px;margin-bottom:28px;\">" +
+                "<p style=\"margin:0 0 8px;font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;\">Feedback</p>" +
+                "<p style=\"margin:0;font-size:14px;color:#374151;line-height:1.7;\">" + escHtml(optionalFeedback) + "</p>" +
+                "</div>";
+        }
+
+        return "<!DOCTYPE html>" +
+            "<html lang=\"en\"><head><meta charset=\"UTF-8\">" +
+            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
+            "<body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;\">" +
+
+            "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">" +
+            "<tr><td align=\"center\" style=\"padding:40px 16px;\">" +
+
+            // Card
+            "<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" " +
+            "style=\"background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);\">" +
+
+            // Header
+            "<tr><td style=\"background:#1f2937;padding:28px 36px;\">" +
+            "<p style=\"margin:0;font-size:13px;color:#9ca3af;letter-spacing:.5px;text-transform:uppercase;\">" + escHtml(companyName) + "</p>" +
+            "<h1 style=\"margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:700;\">Application Update</h1>" +
+            "</td></tr>" +
+
+            // Body
+            "<tr><td style=\"padding:36px 36px 28px;\">" +
+
+            "<p style=\"margin:0 0 16px;font-size:15px;color:#374151;\">Dear <strong>" + escHtml(candidateName) + "</strong>,</p>" +
+
+            "<p style=\"margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;\">" +
+            "Thank you for taking the time to apply for the <strong>" + escHtml(jobTitle) + "</strong> position at " +
+            "<strong>" + escHtml(companyName) + "</strong>. We genuinely appreciate your interest and the effort " +
+            "you invested in your application.</p>" +
+
+            "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
+            "After careful review, we regret to inform you that we will not be moving forward with your candidacy " +
+            "at this time. This was a difficult decision, as we received applications from many highly qualified " +
+            "individuals. We have decided to proceed with candidates whose experience most closely aligns with the " +
+            "current requirements of the role.</p>" +
+
+            feedbackBlock +
+
+            "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
+            "We encourage you to apply for future opportunities that match your skills and experience. " +
+            "We wish you every success in your job search and professional endeavors.</p>" +
+
+            "<p style=\"margin:0 0 8px;font-size:15px;color:#374151;\">Warm regards,</p>" +
+            "<p style=\"margin:0;font-size:15px;font-weight:600;color:#111827;\">" + escHtml(companyName) + " Recruitment Team</p>" +
+
+            "<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:28px 0 20px;\">" +
+            "<p style=\"font-size:12px;color:#9ca3af;text-align:center;margin:0;\">" +
+            "This message was sent automatically. Please do not reply to this email. If you have questions, " +
+            "please contact the hiring team directly." +
+            "</p>" +
+
+            "</td></tr>" +
+            "</table>" +   // end card
+            "</td></tr></table>" + // end outer
+            "</body></html>";
+    }
+
+    /** Minimal HTML escaping to prevent injection in email bodies. */
+    private static String escHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
     }
 }
