@@ -112,7 +112,7 @@ public class AuthService {
                 .email(email)
                 .role(Role.ORG_ADMIN)
                 .orgId(orgId)
-                .expiresAt(LocalDateTime.now().plusHours(72))
+                .expiresAt(LocalDateTime.now().plusDays(7))
                 .build();
 
         inviteTokenRepository.save(invite);
@@ -129,7 +129,7 @@ public class AuthService {
                             "Click the button below to set up your name and password and activate your account.",
                             "Set Up My Account",
                             setupLink,
-                            "This secure link expires in <strong>72 hours</strong>. If you did not expect this invitation, you can safely ignore this email."
+                            "This secure link expires in <strong>7 days</strong>. If you did not expect this invitation, you can safely ignore this email."
                     ))
                     .type("EMAIL")
                     .build());

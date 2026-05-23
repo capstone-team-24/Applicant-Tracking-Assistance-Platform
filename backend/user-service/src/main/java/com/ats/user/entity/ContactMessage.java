@@ -2,6 +2,8 @@ package com.ats.user.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,6 +39,32 @@ public class ContactMessage {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String message;
 
+    /** HR admin contact name submitted by the organization */
+    @Column(name = "hr_admin_name", length = 255)
+    private String hrAdminName;
+
+    /** Additional company details / description submitted by the org */
+    @Column(name = "company_details", columnDefinition = "TEXT")
+    private String companyDetails;
+
+    /** Workflow status – default PENDING_APPROVAL on creation */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    @Builder.Default
+    private ContactMessageStatus status = ContactMessageStatus.PENDING_APPROVAL;
+
+    /** Admin's inquiry message sent to the org when status → PENDING_RESPONSE */
+    @Column(name = "inquiry_message", columnDefinition = "TEXT")
+    private String inquiryMessage;
+
+    /** Optional reason provided by admin when rejecting */
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    /** Timestamp when the submission was rejected */
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
+
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
@@ -49,5 +77,8 @@ public class ContactMessage {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (status == null) {
+            status = ContactMessageStatus.PENDING_APPROVAL;
+        }
     }
 }

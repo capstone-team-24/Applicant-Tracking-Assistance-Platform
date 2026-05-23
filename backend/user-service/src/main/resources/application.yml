@@ -32,6 +32,10 @@ notification:
   service:
     url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8084}
 
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://auth-service:8081}
+
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -41,6 +45,7 @@ springdoc:
 app:
   storage:
     base-path: ${APP_STORAGE_PATH:./data/storage}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
 
 
 management:

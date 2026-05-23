@@ -646,18 +646,39 @@ export const inviteApi = {
 
 // ---- Platform Admin API ----
 export const platformAdminApi = {
-  submitContactMessage: async (data: { name: string; email: string; message: string }): Promise<import("./types").ContactMessage> => {
+  submitContactMessage: async (data: { name: string; email: string; message: string; hrAdminName?: string; companyDetails?: string }): Promise<import("./types").ContactMessage> => {
     const response = await api.post<import("./types").ContactMessage>("/api/v1/contact-messages", data);
     return response.data;
   },
   
-  getContactMessages: async (params?: { page?: number; size?: number }): Promise<{ content: import("./types").ContactMessage[]; totalElements: number; totalPages: number }> => {
+  getContactMessages: async (params?: { page?: number; size?: number; status?: string }): Promise<{ content: import("./types").ContactMessage[]; totalElements: number; totalPages: number }> => {
     const response = await api.get("/api/v1/contact-messages", { params });
+    return response.data;
+  },
+
+  getContactMessage: async (id: string): Promise<import("./types").ContactMessage> => {
+    const response = await api.get<import("./types").ContactMessage>(`/api/v1/contact-messages/${id}`);
     return response.data;
   },
 
   approveContactMessage: async (id: string): Promise<import("./types").Organization> => {
     const response = await api.post<import("./types").Organization>(`/api/v1/contact-messages/${id}/approve`);
+    return response.data;
+  },
+
+  rejectContactMessage: async (id: string, reason?: string): Promise<import("./types").ContactMessage> => {
+    const response = await api.post<import("./types").ContactMessage>(
+      `/api/v1/contact-messages/${id}/reject`,
+      reason ? { reason } : {},
+    );
+    return response.data;
+  },
+
+  sendInquiry: async (id: string, message: string): Promise<import("./types").ContactMessage> => {
+    const response = await api.post<import("./types").ContactMessage>(
+      `/api/v1/contact-messages/${id}/inquiry`,
+      { message },
+    );
     return response.data;
   },
   
@@ -687,6 +708,21 @@ export const platformAdminApi = {
       email: data.email,
       orgId: data.orgId,
     });
+    return response.data;
+  },
+};
+
+// ---- Public Org Inquiry API (no auth required) ----
+export const orgInquiryApi = {
+  /** Get a contact message by ID (for org revision page) */
+  getSubmission: async (id: string): Promise<import("./types").ContactMessage> => {
+    const response = await api.get<import("./types").ContactMessage>(`/api/v1/contact-messages/${id}`);
+    return response.data;
+  },
+
+  /** Update the submission after inquiry */
+  updateSubmission: async (id: string, data: { message: string; hrAdminName?: string; companyDetails?: string }): Promise<import("./types").ContactMessage> => {
+    const response = await api.put<import("./types").ContactMessage>(`/api/v1/contact-messages/${id}`, data);
     return response.data;
   },
 };

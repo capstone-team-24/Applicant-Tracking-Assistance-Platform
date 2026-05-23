@@ -403,11 +403,23 @@ export interface BookInterviewRequest {
   slotId: string;
 }
 
+export type ContactMessageStatus =
+  | "PENDING_APPROVAL"
+  | "PENDING_RESPONSE"
+  | "APPROVED"
+  | "REJECTED";
+
 export interface ContactMessage {
   id: string;
   name: string;
   email: string;
   message: string;
+  hrAdminName?: string;
+  companyDetails?: string;
+  status: ContactMessageStatus;
+  inquiryMessage?: string;
+  rejectionReason?: string;
+  rejectedAt?: string;
   approvedAt?: string;
   approvedOrganizationId?: string;
   createdAt: string;
