@@ -814,11 +814,11 @@ export default function RecruiterJobDetailPage() {
       <ProtectedRoute requiredRole="RECRUITER">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/3" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
+            <div className="h-8 bg-white/10 rounded w-1/3" />
+            <div className="h-4 bg-white/10 rounded w-1/2" />
             <div className="grid grid-cols-6 gap-3">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-20 bg-gray-200 rounded-lg" />
+                <div key={i} className="h-20 bg-white/10 rounded-lg" />
               ))}
             </div>
           </div>
@@ -831,7 +831,7 @@ export default function RecruiterJobDetailPage() {
     return (
       <ProtectedRoute requiredRole="RECRUITER">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4">
             Job Not Found
           </h2>
           <button
@@ -849,7 +849,7 @@ export default function RecruiterJobDetailPage() {
     <ProtectedRoute requiredRole="RECRUITER">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <nav className="flex items-center gap-2 text-sm text-white/50 mb-6">
           <Link
             href="/dashboard"
             className="hover:text-primary-600 transition-colors"
@@ -869,20 +869,20 @@ export default function RecruiterJobDetailPage() {
               d="m8.25 4.5 7.5 7.5-7.5 7.5"
             />
           </svg>
-          <span className="text-gray-900">{job.title}</span>
+          <span className="text-white">{job.title}</span>
         </nav>
 
         {/* ── Job Header ──────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-white">
                   {job.title}
                 </h1>
                 <StatusBadge status={job.status} type="job" />
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/50">
                 {job.location && <span>{job.location}</span>}
                 {job.employmentType && (
                   <span>{job.employmentType.replace("_", " ")}</span>
@@ -896,8 +896,8 @@ export default function RecruiterJobDetailPage() {
                 <div className="flex items-center gap-2 mt-2">
                   {job.applicationDeadline ? (
                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${(parseDate(job.applicationDeadline) || new Date()) < new Date()
-                        ? "bg-red-100 text-red-700"
-                        : "bg-amber-100 text-amber-700"
+                        ? "bg-red-500/10 text-red-400"
+                        : "bg-amber-500/10 text-amber-400"
                       }`}>
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                       {(parseDate(job.applicationDeadline) || new Date()) < new Date()
@@ -906,7 +906,7 @@ export default function RecruiterJobDetailPage() {
                       }
                     </div>
                   ) : (
-                    <span className="text-xs text-gray-400 italic">No application deadline set</span>
+                    <span className="text-xs text-white/40 italic">No application deadline set</span>
                   )}
                   <button
                     onClick={() => {
@@ -915,7 +915,7 @@ export default function RecruiterJobDetailPage() {
                       setEditJobDeadlineVal(d ? toLocalInputValue(d) : "");
                       setIsEditingJobDeadline(true);
                     }}
-                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    className="text-xs text-white/50 hover:text-white/70 underline"
                   >
                     {job.applicationDeadline ? "Edit" : "Add deadline"}
                   </button>
@@ -928,7 +928,7 @@ export default function RecruiterJobDetailPage() {
                     value={editJobDeadlineVal}
                     onChange={(e) => setEditJobDeadlineVal(e.target.value)}
                     min={nowLocalInputValue()}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded"
+                    className="px-2 py-1 text-xs border border-white/20 bg-white/5 rounded"
                   />
                   <button
                     onClick={handleSaveJobDeadline}
@@ -939,7 +939,7 @@ export default function RecruiterJobDetailPage() {
                   </button>
                   <button
                     onClick={() => setIsEditingJobDeadline(false)}
-                    className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                    className="px-2 py-1 text-xs text-white/50 hover:text-white/70"
                   >
                     Cancel
                   </button>
@@ -988,7 +988,7 @@ export default function RecruiterJobDetailPage() {
             {
               label: "Total",
               value: applications.length,
-              color: "text-gray-900",
+              color: "text-white",
             },
             {
               label: "Applied",
@@ -1018,22 +1018,22 @@ export default function RecruiterJobDetailPage() {
           ].map(({ label, value, color }) => (
             <div
               key={label}
-              className="bg-white rounded-lg border border-gray-200 p-4 text-center"
+              className="bg-white/5 backdrop-blur-lg rounded-lg border border-white/10 p-4 text-center"
             >
               <p className={`text-2xl font-bold ${color}`}>{value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+              <p className="text-xs text-white/50 mt-0.5">{label}</p>
             </div>
           ))}
         </div>
 
         {/* ── Online Assessment ────────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-white">
                 Online Assessment
               </h2>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-white/50 mt-0.5">
                 One assessment per job — share the link with any candidate.
               </p>
             </div>
@@ -1069,18 +1069,18 @@ export default function RecruiterJobDetailPage() {
           {/* Existing assessment */}
           {jobAssessment && (
             <div className="space-y-3">
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4 backdrop-blur-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-indigo-900">
+                    <p className="font-semibold text-indigo-300">
                       {jobAssessment.title}
                     </p>
                     {jobAssessment.description && (
-                      <p className="text-sm text-indigo-700 mt-0.5">
+                      <p className="text-sm text-indigo-300 mt-0.5">
                         {jobAssessment.description}
                       </p>
                     )}
-                    <p className="text-xs text-indigo-600 mt-1">
+                    <p className="text-xs text-indigo-400 mt-1">
                       {jobAssessment.questions.length} question
                       {jobAssessment.questions.length !== 1
                         ? "s"
@@ -1090,13 +1090,13 @@ export default function RecruiterJobDetailPage() {
                     <div className="flex gap-2 mt-2">
                       <button
                         onClick={handleEditAssessment}
-                        className="text-xs bg-white text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-50 flex items-center gap-1"
+                        className="text-xs bg-indigo-600/20 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30 hover:bg-indigo-500/20 flex items-center gap-1"
                       >
                         ✏️ Edit
                       </button>
                       <button
                         onClick={handleDeleteAssessment}
-                        className="text-xs bg-white text-red-600 px-2 py-1 rounded border border-red-200 hover:bg-red-50 flex items-center gap-1"
+                        className="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded border border-red-500/20 hover:bg-red-500/20 flex items-center gap-1"
                       >
                         🗑️ Delete
                       </button>
@@ -1109,16 +1109,16 @@ export default function RecruiterJobDetailPage() {
                 </div>
 
                 <div className="mt-3">
-                  <p className="text-xs font-medium text-indigo-700 mb-1">
+                  <p className="text-xs font-medium text-indigo-400 mb-1">
                     Candidate link — share this with applicants:
                   </p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 min-w-0 text-xs bg-white border border-indigo-200 rounded px-2 py-1.5 truncate text-indigo-900">
+                    <code className="flex-1 min-w-0 text-xs bg-white/5 border border-indigo-500/30 rounded px-2 py-1.5 truncate text-indigo-300">
                       {assessmentLink}
                     </code>
                     <button
                       onClick={copyAssessmentLink}
-                      className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-300 rounded hover:bg-indigo-50 transition-colors"
+                      className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded hover:bg-indigo-500/20 transition-colors"
                     >
                       {copied ? "✓ Copied" : "Copy"}
                     </button>
@@ -1128,7 +1128,7 @@ export default function RecruiterJobDetailPage() {
                 <div className="mt-4 pt-3 border-t border-indigo-100 space-y-3">
                   {/* OA Deadline picker */}
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-sm font-medium text-indigo-900 whitespace-nowrap">
+                    <span className="text-sm font-medium text-indigo-300 whitespace-nowrap">
                       OA Deadline
                       <span className="ml-1 text-xs font-normal text-indigo-400">(optional)</span>
                     </span>
@@ -1137,7 +1137,7 @@ export default function RecruiterJobDetailPage() {
                       value={oaDeadline}
                       onChange={(e) => setOaDeadline(e.target.value)}
                       min={nowLocalInputValue()}
-                      className="px-2 py-1 text-sm border border-indigo-200 rounded text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                      className="px-2 py-1 text-sm border border-indigo-500/30 rounded text-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
                     />
                     {oaDeadline && (
                       <span className="text-xs flex items-center gap-2">
@@ -1157,16 +1157,16 @@ export default function RecruiterJobDetailPage() {
                   </div>
                   {/* Send controls */}
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-indigo-900">Send OA to top</span>
+                    <span className="text-sm font-medium text-indigo-300">Send OA to top</span>
                     <input
                       type="number"
                       min="1"
                       max="100"
                       value={inviteTopN}
                       onChange={(e) => setInviteTopN(Number(e.target.value))}
-                      className="w-16 px-2 py-1 text-sm border border-indigo-200 rounded"
+                      className="w-16 px-2 py-1 text-sm bg-white/5 border border-indigo-500/30 rounded text-white"
                     />
-                    <span className="text-sm font-medium text-indigo-900">candidates</span>
+                    <span className="text-sm font-medium text-indigo-300">candidates</span>
                     <div className="ml-auto flex items-center gap-2">
                       <button
                         onClick={handleSendAssessment}
@@ -1191,28 +1191,28 @@ export default function RecruiterJobDetailPage() {
 
           {/* Assessment creation form */}
           {!jobAssessment && showCreateAssessment && (
-            <div className="border border-gray-200 rounded-lg p-5 space-y-5">
+            <div className="border border-white/10 rounded-lg p-5 space-y-5">
               {/* Title + time limit
                     </p>
                     </p>
                     <div className="flex gap-2 mt-2">
-                      <button onClick={handleEditAssessment} className="text-xs bg-white text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-50 flex items-center gap-1">✏️ Edit</button>
-                      <button onClick={handleDeleteAssessment} className="text-xs bg-white text-red-600 px-2 py-1 rounded border border-red-200 hover:bg-red-50 flex items-center gap-1">🗑️ Delete</button>
+                      <button onClick={handleEditAssessment} className="text-xs bg-indigo-600/20 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30 hover:bg-indigo-500/20 flex items-center gap-1">✏️ Edit</button>
+                      <button onClick={handleDeleteAssessment} className="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded border border-red-500/20 hover:bg-red-500/20 flex items-center gap-1">🗑️ Delete</button>
                     </div> */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-white/70 mb-1">
                     Assessment Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={assessmentTitle}
                     onChange={(e) => setAssessmentTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="e.g. Technical Screening"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-white/70 mb-1">
                     Time Limit (minutes)
                   </label>
                   <input
@@ -1223,38 +1223,38 @@ export default function RecruiterJobDetailPage() {
                     onChange={(e) =>
                       setTimeLimitMinutes(Number(e.target.value))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-white/70 mb-1">
                   Description (optional)
                 </label>
                 <input
                   value={assessmentDescription}
                   onChange={(e) => setAssessmentDescription(e.target.value)}
                   placeholder="Describe what this assessment covers…"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
 
               {/* Questions */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-3">
+                <p className="text-sm font-medium text-white/70 mb-3">
                   Questions
                 </p>
                 <div className="space-y-4">
                   {questions.map((q, qi) => (
                     <div
                       key={qi}
-                      className="border border-gray-200 rounded-lg p-4 space-y-3"
+                      className="border border-white/10 rounded-lg p-4 space-y-3"
                     >
                       {/* Question meta row */}
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-sm font-semibold text-gray-400 w-6">
+                        <span className="text-sm font-semibold text-white/40 w-6">
                           Q{qi + 1}
                         </span>
                         <select
@@ -1266,14 +1266,14 @@ export default function RecruiterJobDetailPage() {
                               e.target.value as QuestionDraft["type"],
                             )
                           }
-                          className="px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
+                          className="px-2 py-1 border border-white/20 bg-white/5 rounded text-sm text-white"
                         >
                           <option value="MCQ">Multiple Choice</option>
                           <option value="SHORT_ANSWER">Short Answer</option>
                           <option value="CODE">Code</option>
                         </select>
                         <div className="flex items-center gap-1">
-                          <label className="text-xs text-gray-500">
+                          <label className="text-xs text-white/50">
                             Points:
                           </label>
                           <input
@@ -1288,7 +1288,7 @@ export default function RecruiterJobDetailPage() {
                                 Number(e.target.value),
                               )
                             }
-                            className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
+                            className="w-16 px-2 py-1 border border-white/20 bg-white/5 rounded text-sm text-white"
                           />
                         </div>
                         {questions.length > 1 && (
@@ -1309,13 +1309,13 @@ export default function RecruiterJobDetailPage() {
                           updateQuestion(qi, "text", e.target.value)
                         }
                         placeholder="Question text…"
-                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       />
 
                       {/* MCQ options */}
                       {q.type === "MCQ" && (
                         <div className="space-y-2">
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-white/50">
                             Options — select the radio button next to the
                             correct answer:
                           </p>
@@ -1338,7 +1338,7 @@ export default function RecruiterJobDetailPage() {
                                   updateOption(qi, oi, e.target.value)
                                 }
                                 placeholder={`Option ${oi + 1}`}
-                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
+                                className="flex-1 px-2 py-1 border border-white/20 bg-white/5 rounded text-sm text-white"
                               />
                             </div>
                           ))}
@@ -1370,7 +1370,7 @@ export default function RecruiterJobDetailPage() {
               </div>
 
               {/* Form actions */}
-              <div className="flex items-center gap-3 pt-1 border-t border-gray-100">
+              <div className="flex items-center gap-3 pt-1 border-t border-white/10">
                 <button
                   onClick={handleCreateAssessment}
                   disabled={isCreatingAssessment}
@@ -1383,7 +1383,7 @@ export default function RecruiterJobDetailPage() {
                     setShowCreateAssessment(false);
                     setQuestions([emptyQuestion()]);
                   }}
-                  className="px-5 py-2 text-sm text-gray-600 hover:text-gray-900"
+                  className="px-5 py-2 text-sm text-white/60 hover:text-white"
                 >
                   Cancel
                 </button>
@@ -1393,7 +1393,7 @@ export default function RecruiterJobDetailPage() {
 
           {/* Empty state */}
           {!jobAssessment && !showCreateAssessment && (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-white/40">
               No assessment created yet. Create one to screen candidates with
               multiple-choice, short-answer, or coding questions.
             </p>
@@ -1401,9 +1401,9 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── Candidate Ranking ────────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-white">
               Candidate Ranking
             </h2>
             <button
@@ -1457,12 +1457,12 @@ export default function RecruiterJobDetailPage() {
           </div>
 
           {rankingStatus && (
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-white/5 rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <StatusBadge status={rankingStatus.status} type="ranking" />
                 {rankingStatus.progress !== undefined && (
                   <div className="flex-1">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-white/10 rounded-full h-2">
                       <div
                         className="bg-primary-600 h-2 rounded-full transition-all"
                         style={{ width: `${rankingStatus.progress}%` }}
@@ -1475,7 +1475,7 @@ export default function RecruiterJobDetailPage() {
           )}
 
           {!rankingStatus && applications.length === 0 && (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-white/40">
               {job.status === "DRAFT"
                 ? "Publish this job first to start receiving applications."
                 : "No applications yet. Ranking will be available once candidates apply."}
@@ -1484,13 +1484,13 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── OA Results & Interview Invites ───────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">
             OA Results & Interview Invites
           </h2>
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-white/70 mb-1">
                 Top N Candidates
               </label>
               <input
@@ -1498,11 +1498,11 @@ export default function RecruiterJobDetailPage() {
                 min="1"
                 value={interviewTopN}
                 onChange={(e) => setInterviewTopN(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-white/70 mb-1">
                 Minimum Score
               </label>
               <input
@@ -1511,13 +1511,13 @@ export default function RecruiterJobDetailPage() {
                 max="100"
                 value={interviewMinScore}
                 onChange={(e) => setInterviewMinScore(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             <div className="flex-1 min-w-[220px]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-white/70 mb-1">
                 Booking Deadline
-                <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                <span className="ml-1 text-xs font-normal text-white/40">(optional)</span>
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -1525,7 +1525,7 @@ export default function RecruiterJobDetailPage() {
                   value={interviewDeadline}
                   onChange={(e) => setInterviewDeadline(e.target.value)}
                   min={nowLocalInputValue()}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  className="flex-1 px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
               {interviewDeadline && (
@@ -1562,22 +1562,22 @@ export default function RecruiterJobDetailPage() {
             </div>
           </div>
           {!jobAssessment && (
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-white/50">
               No assessment configured for this job yet.
             </p>
           )}
         </div>
 
         {/* ── Interview Scheduling ─────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-white mb-4">
             Interview Scheduling
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Add Available Slots</h3>
+              <h3 className="text-sm font-medium text-white/70 mb-3">Add Available Slots</h3>
               {!isGoogleConnected ? (
-                <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm mb-3">
+                <div className="bg-red-500/10 text-red-400 border border-red-500/20 p-3 rounded-md text-sm mb-3">
                   You must connect your Google Calendar in Settings before creating interview slots.
                   <Link href="/recruiter/settings" className="underline ml-1">Go to Settings</Link>
                 </div>
@@ -1589,7 +1589,7 @@ export default function RecruiterJobDetailPage() {
                   onChange={(e) => setScheduleDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
                   disabled={!isGoogleConnected}
-                  className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 disabled:bg-white/10 disabled:cursor-not-allowed"
                 />
                 <div className="flex gap-2">
                   <input
@@ -1597,7 +1597,7 @@ export default function RecruiterJobDetailPage() {
                     value={scheduleTime}
                     onChange={(e) => setScheduleTime(e.target.value)}
                     disabled={!isGoogleConnected}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="flex-1 px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 disabled:bg-white/10 disabled:cursor-not-allowed"
                   />
                   <button
                     onClick={handleCreateSlot}
@@ -1609,13 +1609,13 @@ export default function RecruiterJobDetailPage() {
                 </div>
               </div>
 
-              <h3 className="text-sm font-medium text-gray-700 mt-6 mb-3">Available Slots</h3>
+              <h3 className="text-sm font-medium text-white/70 mt-6 mb-3">Available Slots</h3>
               {slots.filter(s => s.status === "AVAILABLE").length === 0 ? (
-                <p className="text-sm text-gray-500">No available slots.</p>
+                <p className="text-sm text-white/50">No available slots.</p>
               ) : (
                 <ul className="space-y-2 max-h-[200px] overflow-y-auto">
                   {slots.filter(s => s.status === "AVAILABLE").map(slot => (
-                    <li key={slot.id} className="text-sm px-3 py-2 bg-gray-50 rounded-md border border-gray-200 text-gray-700">
+                    <li key={slot.id} className="text-sm px-3 py-2 bg-white/5 rounded-md border border-white/10 text-white/70">
                       {formatDateTime(slot.startTime)}
                     </li>
                   ))}
@@ -1624,39 +1624,39 @@ export default function RecruiterJobDetailPage() {
             </div>
 
             <div className="md:col-span-2 mt-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Scheduled Interviews</h3>
+              <h3 className="text-sm font-medium text-white/70 mb-3">Scheduled Interviews</h3>
               {bookings.length === 0 ? (
-                <p className="text-sm text-gray-500">No interviews booked yet.</p>
+                <p className="text-sm text-white/50">No interviews booked yet.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-gray-200 border border-white/10 rounded-lg">
+                    <thead className="bg-white/5">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Candidate</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Meeting</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Candidate</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Time</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Meeting</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Status</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-white/50 uppercase">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-transparent divide-y divide-white/10">
                       {bookings.map((booking) => {
                         const slot = slots.find((s) => s.id === booking.slotId);
                         const app = applications.find((a) => a.id === booking.applicationId);
                         return (
-                          <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
+                          <tr key={booking.id} className="hover:bg-white/5 transition-colors">
                             <td className="px-4 py-3 whitespace-nowrap">
-                              <Link href={`/recruiter/jobs/${jobId}/applications/${app?.id}`} className="text-sm font-medium text-indigo-600 hover:text-indigo-900">
+                              <Link href={`/recruiter/jobs/${jobId}/applications/${app?.id}`} className="text-sm font-medium text-indigo-600 hover:text-indigo-300">
                                 {app?.candidateName || "Candidate"}
                               </Link>
-                              <div className="text-xs text-gray-500">{app?.candidateEmail}</div>
+                              <div className="text-xs text-white/50">{app?.candidateEmail}</div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-white/70">
                               {slot ? formatDateTime(slot.startTime) : "Unknown Time"}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">
                               {booking.meetingLink ? (
-                                <a href={booking.meetingLink} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-900 underline">
+                                <a href={booking.meetingLink} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-300 underline">
                                   Join Link
                                 </a>
                               ) : "-"}
@@ -1671,7 +1671,7 @@ export default function RecruiterJobDetailPage() {
                                   Scheduled
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-white/10 text-white/80">
                                   {booking.status}
                                 </span>
                               )}
@@ -1680,7 +1680,7 @@ export default function RecruiterJobDetailPage() {
                               {booking.status === "SCHEDULED" && (
                                 <button
                                   onClick={() => handleOpenReviewModal(booking)}
-                                  className="text-indigo-600 hover:text-indigo-900 font-medium"
+                                  className="text-indigo-600 hover:text-indigo-300 font-medium"
                                 >
                                   Complete & Review
                                 </button>
@@ -1688,7 +1688,7 @@ export default function RecruiterJobDetailPage() {
                               {booking.status === "COMPLETED" && (
                                 <button
                                   onClick={() => handleOpenReviewModal(booking)}
-                                  className="text-gray-600 hover:text-gray-900 font-medium"
+                                  className="text-white/60 hover:text-white font-medium"
                                 >
                                   View Review
                                 </button>
@@ -1706,9 +1706,9 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── Applications Table ───────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 overflow-hidden">
+          <div className="p-6 border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold text-white">
               Applications ({applications.length})
             </h2>
             <div className="flex items-center gap-3">
@@ -1717,13 +1717,13 @@ export default function RecruiterJobDetailPage() {
                   <button
                     onClick={handleWaitlist}
                     disabled={isWaitlisting}
-                    className="px-3 py-1.5 bg-amber-100 text-amber-800 text-sm font-medium rounded hover:bg-amber-200 transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-medium rounded hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                   >
                     {isWaitlisting ? "Waitlisting..." : `Waitlist Selected (${selectedAppIds.size})`}
                   </button>
                   <button
                     onClick={handleOpenBulkRejectModal}
-                    className="px-3 py-1.5 bg-red-100 text-red-800 text-sm font-medium rounded hover:bg-red-200 transition-colors"
+                    className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-medium rounded hover:bg-red-500/20 transition-colors"
                   >
                     Reject Selected ({selectedAppIds.size})
                   </button>
@@ -1732,16 +1732,16 @@ export default function RecruiterJobDetailPage() {
               <button
                 onClick={handleRecalculate}
                 disabled={isRecalculating}
-                className="px-3 py-1.5 border border-indigo-200 text-indigo-700 bg-white text-sm font-medium rounded hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 border border-indigo-500/30 text-indigo-700 bg-white text-sm font-medium rounded hover:bg-indigo-500/20 transition-colors disabled:opacity-50"
               >
                 {isRecalculating ? "Recalculating..." : "Recalculate Final Ranking"}
               </button>
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Filter Status:</label>
+                <label className="text-sm font-medium text-white/70">Filter Status:</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
+                  className="px-3 py-1.5 border border-white/20 bg-white/5 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
                 >
                 <option value="ALL">All</option>
                 <option value="APPLIED">Applied</option>
@@ -1761,41 +1761,41 @@ export default function RecruiterJobDetailPage() {
           {isLoadingApps ? (
             <div className="p-6 space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse border rounded-lg p-5 h-16 bg-gray-50" />
+                <div key={i} className="animate-pulse border rounded-lg p-5 h-16 bg-white/5" />
               ))}
             </div>
           ) : applications.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-white/5">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left">
                       <input type="checkbox" checked={applications.length > 0 && selectedAppIds.size === applications.filter((app) => statusFilter === "ALL" || app.status === statusFilter).length} onChange={toggleSelectAll} className="w-4 h-4 text-primary-600 rounded" />
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("rank"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("rank"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
                       Final Rank {sortField === "rank" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("name"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("name"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
                       Candidate {sortField === "name" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("score"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("score"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
                       CV Score {sortField === "score" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("oaScore"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("oaScore"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
                       OA Score {sortField === "oaScore" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                       Interview
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                       App Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-white/50 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-transparent divide-y divide-white/10">
                   {applications
                     .filter((app) => statusFilter === "ALL" || app.status === statusFilter)
                     .sort((a, b) => {
@@ -1818,34 +1818,34 @@ export default function RecruiterJobDetailPage() {
                       const detailHref = `/recruiter/jobs/${jobId}/applications/${app.id}`;
 
                       return (
-                        <tr key={app.id} className={`hover:bg-gray-50 transition-colors ${app.isWaitlisted ? "bg-amber-50/30" : ""}`}>
+                        <tr key={app.id} className={`hover:bg-white/5 transition-colors ${app.isWaitlisted ? "bg-amber-50/30" : ""}`}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input type="checkbox" checked={selectedAppIds.has(app.id)} onChange={() => toggleSelectApp(app.id)} className="w-4 h-4 text-primary-600 rounded" />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                             {app.finalRank ? `#${app.finalRank}` : "-"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{app.candidateName} {app.isWaitlisted && <span className="ml-2 text-[10px] uppercase font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Waitlisted</span>}</div>
-                            <div className="text-sm text-gray-500">{app.candidateEmail}</div>
+                            <div className="text-sm font-medium text-white">{app.candidateName} {app.isWaitlisted && <span className="ml-2 text-[10px] uppercase font-bold text-amber-400 border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 rounded">Waitlisted</span>}</div>
+                            <div className="text-sm text-white/50">{app.candidateEmail}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                             {app.compositeScore != null ? (
                               <span className="font-semibold text-primary-600">{Math.round(app.compositeScore)}</span>
                             ) : (
                               "-"
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                             {app.oaScore != null ? (
                               <span className="font-bold text-indigo-600">{Math.round(app.oaScore)}</span>
                             ) : (
-                              <span className="text-gray-400">-</span>
+                              <span className="text-white/40">-</span>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                             {app.interviewScore != null ? (
-                              <span className="font-bold text-emerald-600">{app.interviewScore} <span className="font-normal text-xs text-gray-400">/50</span></span>
+                              <span className="font-bold text-emerald-600">{app.interviewScore} <span className="font-normal text-xs text-white/40">/50</span></span>
                             ) : "-"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1859,7 +1859,7 @@ export default function RecruiterJobDetailPage() {
                                   setOpenDropdownId(openDropdownId === app.id ? null : app.id);
                                 }}
                                 disabled={sendingOAForApp === app.id || sendingInterviewForApp === app.id}
-                                className="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-full text-white/50 hover:text-white/70 hover:bg-white/10 transition-colors disabled:opacity-40"
                                 title="Actions"
                               >
                                 {(sendingOAForApp === app.id || sendingInterviewForApp === app.id) ? (
@@ -1878,28 +1878,28 @@ export default function RecruiterJobDetailPage() {
 
                               {openDropdownId === app.id && (
                                 <div
-                                  className="absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-30 py-1 animate-in fade-in zoom-in-95 duration-100"
+                                  className="absolute right-0 mt-1 w-52 bg-slate-900 border border-white/10 backdrop-blur-xl rounded-lg shadow-lg z-30 py-1 animate-in fade-in zoom-in-95 duration-100"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {/* View Details */}
                                   <Link
                                     href={detailHref}
-                                    className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    className="flex items-center gap-2.5 px-4 py-2 text-sm text-white/70 hover:bg-white/5 transition-colors"
                                     onClick={() => setOpenDropdownId(null)}
                                   >
-                                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <svg className="w-4 h-4 text-white/40" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                     </svg>
                                     View Details
                                   </Link>
 
-                                  <div className="border-t border-gray-100 my-1" />
+                                  <div className="border-t border-white/10 my-1" />
 
                                   {/* Send OA */}
                                   <button
                                     onClick={() => handleSendOAToApp(app)}
                                     disabled={!jobAssessment}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     title={!jobAssessment ? "Create an assessment first" : `Send OA invite to ${app.candidateName}`}
                                   >
                                     <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -1935,10 +1935,10 @@ export default function RecruiterJobDetailPage() {
                                   {/* Reject */}
                                   {app.status !== "REJECTED" && app.status !== "WITHDRAWN" && (
                                     <>
-                                      <div className="border-t border-gray-100 my-1" />
+                                      <div className="border-t border-white/10 my-1" />
                                       <button
                                         onClick={() => handleOpenRejectModal(app)}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                                         title={`Reject ${app.candidateName}`}
                                       >
                                         <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -1960,11 +1960,11 @@ export default function RecruiterJobDetailPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <svg className="mx-auto w-12 h-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <svg className="mx-auto w-12 h-12 text-white/30 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
               </svg>
-              <h3 className="text-sm font-medium text-gray-900 mb-1">No applications yet</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="text-sm font-medium text-white mb-1">No applications yet</h3>
+              <p className="text-sm text-white/50">
                 {job.status === "DRAFT" ? "Publish this job to start receiving applications." : "Applications will appear here once candidates apply."}
               </p>
             </div>
@@ -1974,14 +1974,14 @@ export default function RecruiterJobDetailPage() {
       {/* ── Feedback Modal ────────────────────────────────────────────────────── */}
       {isReviewModalOpen && selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">
                 {selectedBooking.status === "COMPLETED" ? "Interview Review" : "Complete & Review Interview"}
               </h2>
               <button
                 onClick={() => setIsReviewModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-white/40 hover:text-white/60 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1989,34 +1989,34 @@ export default function RecruiterJobDetailPage() {
               </button>
             </div>
             <div className="p-6">
-              <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-100">
-                <p className="text-sm text-gray-500 mb-1">Candidate</p>
-                <p className="font-medium text-gray-900">
+              <div className="mb-6 bg-white/5 rounded-lg p-4 border border-white/10">
+                <p className="text-sm text-white/50 mb-1">Candidate</p>
+                <p className="font-medium text-white">
                   {applications.find(a => a.id === selectedBooking.applicationId)?.candidateName || "Candidate"}
                 </p>
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                <label className="block text-sm font-medium text-white/70 mb-2">Rating</label>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       disabled={selectedBooking.status === "COMPLETED"}
                       onClick={() => setReviewRating(star)}
-                      className={`text-2xl focus:outline-none transition-colors ${star <= reviewRating ? "text-yellow-400" : "text-gray-300 hover:text-yellow-200"
+                      className={`text-2xl focus:outline-none transition-colors ${star <= reviewRating ? "text-yellow-400" : "text-white/30 hover:text-yellow-200"
                         } ${selectedBooking.status === "COMPLETED" ? "cursor-default" : "cursor-pointer"}`}
                     >
                       ★
                     </button>
                   ))}
-                  <span className="ml-2 text-sm text-gray-500 font-medium">{reviewRating} / 5</span>
+                  <span className="ml-2 text-sm text-white/50 font-medium">{reviewRating} / 5</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Technical Skills (0-10)</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Technical Skills (0-10)</label>
                   <input
                     type="number"
                     min={0}
@@ -2024,12 +2024,12 @@ export default function RecruiterJobDetailPage() {
                     value={reviewTechnical ?? ""}
                     onChange={(e) => setReviewTechnical(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Problem Solving (0-10)</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Problem Solving (0-10)</label>
                   <input
                     type="number"
                     min={0}
@@ -2037,12 +2037,12 @@ export default function RecruiterJobDetailPage() {
                     value={reviewProblemSolving ?? ""}
                     onChange={(e) => setReviewProblemSolving(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Communication (0-10)</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Communication (0-10)</label>
                   <input
                     type="number"
                     min={0}
@@ -2050,12 +2050,12 @@ export default function RecruiterJobDetailPage() {
                     value={reviewCommunication ?? ""}
                     onChange={(e) => setReviewCommunication(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Behavioral & Professionalism (0-10)</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Behavioral & Professionalism (0-10)</label>
                   <input
                     type="number"
                     min={0}
@@ -2063,12 +2063,12 @@ export default function RecruiterJobDetailPage() {
                     value={reviewBehavioral ?? ""}
                     onChange={(e) => setReviewBehavioral(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Culture Fit (0-10)</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Culture Fit (0-10)</label>
                   <input
                     type="number"
                     min={0}
@@ -2076,64 +2076,64 @@ export default function RecruiterJobDetailPage() {
                     value={reviewCultureFit ?? ""}
                     onChange={(e) => setReviewCultureFit(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Recruiter Summary</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Recruiter Summary</label>
                   <textarea
                     value={reviewRecruiterSummary}
                     onChange={(e) => setReviewRecruiterSummary(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Detailed Feedback</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Detailed Feedback</label>
                   <textarea
                     value={reviewFeedback}
                     onChange={(e) => setReviewFeedback(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
                     placeholder="How did the interview go?"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px] disabled:bg-gray-50 disabled:text-gray-700"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px] disabled:bg-white/5 disabled:text-white/70"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Strengths</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Strengths</label>
                   <textarea
                     value={reviewStrengths}
                     onChange={(e) => setReviewStrengths(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
                     placeholder="Comma-separated or bulleted"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Weaknesses</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Weaknesses</label>
                   <textarea
                     value={reviewWeaknesses}
                     onChange={(e) => setReviewWeaknesses(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
                     placeholder="Comma-separated or bulleted"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hire Recommendation</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Hire Recommendation</label>
                   <select
                     value={reviewHireRecommendation}
                     onChange={(e) => setReviewHireRecommendation(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="Strong Hire">Strong Hire</option>
                     <option value="Hire">Hire</option>
@@ -2144,10 +2144,10 @@ export default function RecruiterJobDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+            <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
                 onClick={() => setIsReviewModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5"
               >
                 {selectedBooking.status === "COMPLETED" ? "Close" : "Cancel"}
               </button>
@@ -2168,14 +2168,14 @@ export default function RecruiterJobDetailPage() {
       {/* ── Offer Modal ──────────────────────────────────────────────────────── */}
       {isOfferModalOpen && offerApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">
                 Send Offer to {offerApp.candidateName}
               </h2>
               <button
                 onClick={() => setIsOfferModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-white/40 hover:text-white/60 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -2184,41 +2184,41 @@ export default function RecruiterJobDetailPage() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Offer Message *</label>
+                <label className="block text-sm font-medium text-white/70 mb-1">Offer Message *</label>
                 <textarea
                   value={offerMessage}
                   onChange={(e) => setOfferMessage(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                  className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                   placeholder="We are thrilled to offer you..."
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Salary (Optional)</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Salary (Optional)</label>
                   <input
                     type="text"
                     value={offerSalary}
                     onChange={(e) => setOfferSalary(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                     placeholder="$100,000 / year"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date (Optional)</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Start Date (Optional)</label>
                   <input
                     type="date"
                     value={offerStartDate}
                     onChange={(e) => setOfferStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                   />
                 </div>
               </div>
             </div>
-            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+            <div className="p-6 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
                 onClick={() => setIsOfferModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
               >
                 Cancel
               </button>
@@ -2237,20 +2237,20 @@ export default function RecruiterJobDetailPage() {
       {/* ── Rejection Modal ──────────────────────────────────────────────────── */}
       {isRejectModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-6 border-b border-gray-100 flex items-start justify-between">
+            <div className="p-6 border-b border-white/10 flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
                   <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h2 className="text-lg font-bold text-white">
                     {isBulkReject ? `Reject ${selectedAppIds.size} Candidates` : `Reject ${rejectApp?.candidateName}`}
                   </h2>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-sm text-white/50 mt-0.5">
                     {isBulkReject
                       ? "A rejection email will be sent to each selected candidate."
                       : `A rejection email will be sent to ${rejectApp?.candidateEmail}.`}
@@ -2259,7 +2259,7 @@ export default function RecruiterJobDetailPage() {
               </div>
               <button
                 onClick={() => setIsRejectModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                className="text-white/40 hover:text-white/60 transition-colors flex-shrink-0"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -2270,7 +2270,7 @@ export default function RecruiterJobDetailPage() {
             {/* Body */}
             <div className="p-6 space-y-4">
               {/* Warning banner */}
-              <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
                 <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
                 </svg>
@@ -2281,26 +2281,26 @@ export default function RecruiterJobDetailPage() {
 
               {/* Optional feedback */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-medium text-white/70 mb-1.5">
                   Feedback for Candidate
-                  <span className="ml-1.5 text-xs font-normal text-gray-400">(optional — included in the rejection email)</span>
+                  <span className="ml-1.5 text-xs font-normal text-white/40">(optional — included in the rejection email)</span>
                 </label>
                 <textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={4}
                   placeholder="e.g. We were impressed by your profile, however we are looking for candidates with more experience in..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all resize-none"
+                  className="w-full px-3 py-2 text-sm border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all resize-none"
                 />
-                <p className="mt-1 text-xs text-gray-400">Personalised feedback helps candidates grow professionally and reflects well on your company.</p>
+                <p className="mt-1 text-xs text-white/40">Personalised feedback helps candidates grow professionally and reflects well on your company.</p>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+            <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
                 onClick={() => setIsRejectModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
               >
                 Cancel
               </button>

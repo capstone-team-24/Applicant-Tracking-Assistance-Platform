@@ -182,7 +182,7 @@ export default function InterviewSchedulePage() {
                             className={`py-4 px-4 rounded-2xl text-sm font-bold transition-all duration-300 border-2 
                               ${isSelected 
                                 ? 'bg-white border-white text-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105' 
-                                : 'bg-white/5 border-white/10 text-white/80 hover:border-white/40 hover:bg-white/10'
+                                : 'bg-white/5 border-white/10 text-white/80 hover:border-white/20 hover:bg-white/10'
                               }`}
                           >
                             {timeString}

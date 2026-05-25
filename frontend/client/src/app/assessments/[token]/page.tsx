@@ -25,6 +25,27 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 
 import toast from "react-hot-toast";
 
+// --------------------------------------------------
+// PAGE WRAPPER
+// --------------------------------------------------
+
+const PageWrapper = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => (
+  <div className="relative min-h-screen text-white font-sans">
+    <div 
+      className="fixed inset-0 z-[-2] bg-cover bg-center pointer-events-none"
+      style={{ backgroundImage: "url(/bk.jpg)" }}
+    />
+    <div className="fixed inset-0 z-[-1] bg-black/40 backdrop-blur-[2px] pointer-events-none" />
+    <div className="relative z-10 py-8 min-h-screen">
+      {children}
+    </div>
+  </div>
+);
+
 export default function TakeAssessmentPage() {
   const params = useParams();
 
@@ -693,28 +714,6 @@ export default function TakeAssessmentPage() {
       .toString()
       .padStart(2, "0")}`;
   };
-
-  // --------------------------------------------------
-  // PAGE WRAPPER
-  // --------------------------------------------------
-
-  const PageWrapper = ({
-    children,
-  }: {
-    children: React.ReactNode;
-  }) => (
-    <div
-      className="min-h-screen bg-cover bg-center bg-fixed text-white font-sans"
-      style={{
-        backgroundImage:
-          "url(/bk.jpg)",
-      }}
-    >
-      <div className="min-h-screen bg-black/40 backdrop-blur-[2px] py-8">
-        {children}
-      </div>
-    </div>
-  );
 
   // --------------------------------------------------
   // LOADING

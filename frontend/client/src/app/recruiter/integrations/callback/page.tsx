@@ -58,7 +58,7 @@ function CallbackContent() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight">Connecting to Google Calendar...</h2>
-          <p className="text-gray-400 mt-3 font-medium">Please wait while we secure your connection.</p>
+          <p className="text-white/40 mt-3 font-medium">Please wait while we secure your connection.</p>
         </div>
       )}
 
@@ -72,7 +72,7 @@ function CallbackContent() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight">Connection Successful!</h2>
-          <p className="text-gray-400 mt-3 font-medium">Redirecting you back to settings...</p>
+          <p className="text-white/40 mt-3 font-medium">Redirecting you back to settings...</p>
         </div>
       )}
 
@@ -86,7 +86,7 @@ function CallbackContent() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight">Connection Failed</h2>
-          <p className="text-gray-400 mt-3 mb-8 font-medium">We couldn't connect your calendar. Please try again.</p>
+          <p className="text-white/40 mt-3 mb-8 font-medium">We couldn't connect your calendar. Please try again.</p>
           <button
             onClick={() => router.push("/recruiter/settings")}
             className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-xl shadow-blue-600/30 active:scale-95"
@@ -109,7 +109,7 @@ export default function GoogleCallbackPage() {
       <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-[2px]" />
       <div className="fixed top-[-5%] right-[-5%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <Suspense fallback={<div className="text-gray-400 font-medium animate-pulse relative z-10">Loading...</div>}>
+      <Suspense fallback={<div className="text-white/40 font-medium animate-pulse relative z-10">Loading...</div>}>
         <CallbackContent />
       </Suspense>
     </div>

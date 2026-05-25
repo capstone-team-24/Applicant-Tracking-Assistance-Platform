@@ -106,7 +106,7 @@ export default function FileUpload({
         onClick={() => fileInputRef.current?.click()}
         className={`group relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 backdrop-blur-md shadow-xl ${
           isDragging
-            ? "border-white/60 bg-white/20 scale-[1.01] shadow-white/5"
+            ? "border-white/20 bg-white/20 scale-[1.01] shadow-white/5"
             : selectedFile
             ? "border-emerald-500/40 bg-emerald-500/5 shadow-emerald-500/10"
             : "border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10"

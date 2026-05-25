@@ -307,7 +307,7 @@ export default function JobDetailPage() {
           {job.requirements && (
             <div className="bg-white/5 backdrop-blur-xl rounded-[3rem] border border-white/10 p-10 lg:p-14 shadow-xl">
               <h2 className="text-2xl font-black text-white mb-10 tracking-tight flex items-center gap-4 italic">
-                <span className="w-2 h-8 bg-white/30 rounded-full" />
+                <span className="w-2 h-8 bg-white/10 rounded-full" />
                 Prerequisites
               </h2>
 

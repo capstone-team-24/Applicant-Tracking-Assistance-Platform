@@ -78,7 +78,7 @@ const [index, setIndex] = useState(0);
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/jobs"
-                className="inline-flex items-center justify-center px-8 py-3 bg-white/90 backdrop-blur-sm text-base font-medium rounded-xl text-gray-900 hover:bg-white transition-all shadow-lg"
+                className="inline-flex items-center justify-center px-8 py-3 bg-white/90 backdrop-blur-sm text-base font-medium rounded-xl text-slate-900 hover:bg-white transition-all shadow-lg"
               >
                 Browse Jobs
               </Link>
@@ -199,10 +199,10 @@ const [index, setIndex] = useState(0);
           {/* Subtle Inner Glow */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
 
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
+          <h2 className="text-4xl font-extrabold text-white mb-4 tracking-tight">
             Ready to Get Started?
           </h2>
-          <p className="text-xl text-gray-700/80 mb-10 font-medium">
+          <p className="text-xl text-white/70 mb-10 font-medium">
             Join our platform today and transform your hiring process.
           </p>
 
@@ -219,7 +219,7 @@ const [index, setIndex] = useState(0);
 
             <Link
               href="/jobs"
-              className="px-10 py-4 bg-white/40 text-gray-900 font-bold rounded-2xl backdrop-blur-md border border-white/60 hover:bg-white/60 transition-all active:scale-95"
+              className="px-10 py-4 bg-white/20 text-white font-bold rounded-2xl backdrop-blur-md border border-white/20 hover:bg-white/10 transition-all active:scale-95"
             >
               Browse Open Positions
             </Link>

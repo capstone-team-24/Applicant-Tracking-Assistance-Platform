@@ -111,13 +111,13 @@ export default function OrgDashboardPage() {
 
   const statusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      PUBLISHED: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
-      DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
-      SUSPENDED: "bg-rose-50 text-rose-700 border-rose-200/60",
-      CLOSED: "bg-amber-50 text-amber-700 border-amber-200/60",
-      ARCHIVED: "bg-purple-50 text-purple-700 border-purple-200/60",
+      PUBLISHED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      DRAFT: "bg-white/5 text-white/50 border-white/10",
+      SUSPENDED: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+      CLOSED: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      ARCHIVED: "bg-purple-500/10 text-purple-400 border-purple-500/20",
     };
-    return `inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${colors[status] || "bg-slate-100 text-slate-600 border-slate-200"}`;
+    return `inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${colors[status] || "bg-white/5 text-white/50 border-white/10"}`;
   };
 
   return (

@@ -67,7 +67,7 @@ export default function PlatformAdminLoginPage() {
 
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
-              <label htmlFor="email" className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
+              <label htmlFor="email" className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2 ml-1">
                 Admin Email
               </label>
               <div className="mt-1">
@@ -84,7 +84,7 @@ export default function PlatformAdminLoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
+              <label htmlFor="password" className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2 ml-1">
                 Password
               </label>
               <div className="mt-1">

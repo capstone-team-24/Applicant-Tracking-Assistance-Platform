@@ -82,7 +82,7 @@ export default function OfferPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Offer Unavailable</h2>
-          <p className="text-gray-400">{error}</p>
+          <p className="text-white/40">{error}</p>
         </div>
       </div>
     );
@@ -102,7 +102,7 @@ export default function OfferPage() {
               <div>
                 <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Job Offer</h1>
                 <p className="text-lg text-indigo-400 font-medium">
-                  {offer.jobTitle} <span className="text-gray-500">at</span> {offer.companyName}
+                  {offer.jobTitle} <span className="text-white/50">at</span> {offer.companyName}
                 </p>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
@@ -116,7 +116,7 @@ export default function OfferPage() {
               </div>
             </div>
 
-            <div className="prose prose-invert max-w-none text-gray-300">
+            <div className="prose prose-invert max-w-none text-white/30">
               <p className="text-lg leading-relaxed mb-6">Dear {offer.candidateName},</p>
               <div className="whitespace-pre-wrap leading-relaxed bg-white/5 p-6 rounded-2xl border border-white/5 shadow-inner">
                 {offer.offerMessage}
@@ -133,7 +133,7 @@ export default function OfferPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Compensation</p>
+                      <p className="text-sm text-white/50">Compensation</p>
                       <p className="text-lg font-semibold text-white">{offer.salary}</p>
                     </div>
                   </div>
@@ -146,7 +146,7 @@ export default function OfferPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Start Date</p>
+                      <p className="text-sm text-white/50">Start Date</p>
                       <p className="text-lg font-semibold text-white">{offer.startDate}</p>
                     </div>
                   </div>
@@ -162,7 +162,7 @@ export default function OfferPage() {
                   <div className="flex flex-col sm:flex-row gap-4 justify-end">
                     <button
                       onClick={() => setShowDeclineReason(true)}
-                      className="px-6 py-3 rounded-xl text-gray-400 font-medium hover:text-white hover:bg-white/10 transition-all border border-transparent"
+                      className="px-6 py-3 rounded-xl text-white/40 font-medium hover:text-white hover:bg-white/10 transition-all border border-transparent"
                     >
                       Decline Offer
                     </button>
@@ -176,7 +176,7 @@ export default function OfferPage() {
                   </div>
                 ) : (
                   <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                    <label className="block text-sm font-medium text-white/40 mb-2">
                       Please let us know why you are declining (Optional)
                     </label>
                     <textarea
@@ -189,7 +189,7 @@ export default function OfferPage() {
                     <div className="flex gap-3 justify-end">
                       <button
                         onClick={() => setShowDeclineReason(false)}
-                        className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                        className="px-4 py-2 text-sm text-white/40 hover:text-white transition-colors"
                       >
                         Cancel
                       </button>
@@ -220,7 +220,7 @@ export default function OfferPage() {
                 <h3 className="text-xl font-medium text-white mb-2">
                   You have {offer.status.toLowerCase()} this offer.
                 </h3>
-                <p className="text-gray-400">
+                <p className="text-white/40">
                   {offer.status === 'ACCEPTED' 
                     ? "The recruiter has been notified and will be in touch with next steps." 
                     : "Thank you for letting us know."}

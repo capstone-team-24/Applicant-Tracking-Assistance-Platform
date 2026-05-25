@@ -130,15 +130,14 @@ function CandidateDashboard() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-cover bg-center bg-fixed relative flex flex-col items-center p-6 md:p-8 transition-all duration-500 text-slate-900"
-      style={{ backgroundImage: `url(/bk2.jpg)` }}>
+    <div className="min-h-screen w-full relative flex flex-col items-center p-6 md:p-8 transition-all duration-500">
 
 
-      <div className="mb-8 backdrop-blur-md bg-white/30 border border-white/40 rounded-2xl p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="mb-8 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
+        <h1 className="text-2xl font-bold text-white">
           Welcome back, {user?.firstName}!
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-white/60 mt-1">
           Here is an overview of your candidate profile and applications.
         </p>
       </div>
@@ -146,41 +145,41 @@ function CandidateDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Summary */}
         <div className="lg:col-span-1">
-          <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">
               Profile Summary
             </h2>
             {isLoadingProfile ? (
               <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-gray-200/60 rounded w-3/4" />
-                <div className="h-4 bg-gray-200/60 rounded w-1/2" />
-                <div className="h-4 bg-gray-200/60 rounded w-2/3" />
+                <div className="h-4 bg-white/10 rounded w-3/4" />
+                <div className="h-4 bg-white/10 rounded w-1/2" />
+                <div className="h-4 bg-white/10 rounded w-2/3" />
               </div>
             ) : profile ? (
               <div className="space-y-3">
                 {profile.bio && (
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-white">
                     {profile.bio}
                   </p>
                 )}
                 {profile.yearsOfExperience != null && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-white/60">
                     Experience: {profile.yearsOfExperience} year{profile.yearsOfExperience !== 1 ? 's' : ''}
                   </p>
                 )}
                 {profile.cvUrl ? (
-                  <div className="flex items-center gap-2 text-sm text-green-600">
+                  <div className="flex items-center gap-2 text-sm text-emerald-400">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     CV uploaded
                   </div>
                 ) : (
-                  <p className="text-sm text-yellow-600">No CV uploaded yet</p>
+                  <p className="text-sm text-amber-400">No CV uploaded yet</p>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-white/50">
                 No profile data yet. Complete your profile to improve your applications.
               </p>
             )}
@@ -193,7 +192,7 @@ function CandidateDashboard() {
                 {showUpload ? "Cancel Upload" : "Upload CV"}
               </button>
               {showUpload && (
-                <div className="mt-3 backdrop-blur-sm bg-white/40 p-4 border border-white/40 rounded-xl">
+                <div className="mt-3 backdrop-blur-sm bg-white/10 p-4 border border-white/20 rounded-xl">
                   <FileUpload
                     onFileSelect={handleCvUpload}
                     label="Upload your CV"
@@ -205,12 +204,12 @@ function CandidateDashboard() {
           </div>
 
           {/* Integrations */}
-          <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6 mt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6 mt-6">
+            <h2 className="text-lg font-semibold text-white mb-4">
               Integrations
             </h2>
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-white/60">
                 Connect your Google Calendar to automatically add scheduled interviews to your personal calendar.
               </p>
               <button
@@ -236,9 +235,9 @@ function CandidateDashboard() {
 
         {/* My Applications */}
         <div className="lg:col-span-2">
-          <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-white">
                 My Applications
               </h2>
               <Link
@@ -252,10 +251,10 @@ function CandidateDashboard() {
             {isLoadingApps ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse border border-white/40 backdrop-blur-sm bg-white/20 rounded-xl p-4">
-                    <div className="h-4 bg-gray-200/60 rounded w-1/3 mb-2" />
-                    <div className="h-3 bg-gray-200/60 rounded w-1/2 mb-2" />
-                    <div className="h-3 bg-gray-200/60 rounded w-1/4" />
+                  <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                    <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-white/10 rounded w-1/2 mb-2" />
+                    <div className="h-3 bg-white/10 rounded w-1/4" />
                   </div>
                 ))}
               </div>
@@ -264,11 +263,11 @@ function CandidateDashboard() {
                 {applications.map((app) => (
                   <div
                     key={app.id}
-                    className="backdrop-blur-sm bg-white/30 border border-white/40 rounded-xl p-4 hover:bg-white/60 hover:shadow-sm transition-all duration-200"
+                    className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/15 hover:border-white/20 transition-all duration-200"
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-medium text-gray-900">
+                        <h4 className="font-medium text-white">
                           {app.job?.title || "Job Application"}
                         </h4>
                         {app.job?.organizationName && (
@@ -276,7 +275,7 @@ function CandidateDashboard() {
                             {app.job.organizationName}
                           </p>
                         )}
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-white/50 mt-1">
                           Applied{" "}
                           {app.createdAt
                             ? formatDate(app.createdAt)
@@ -286,8 +285,8 @@ function CandidateDashboard() {
                       <StatusBadge status={app.status} type="application" />
                     </div>
                     {app.compositeScore !== undefined && app.compositeScore !== null && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        Score: <span className="font-semibold">{Math.round(app.compositeScore)}</span>
+                      <div className="mt-2 text-sm text-white/60">
+                        Score: <span className="font-semibold text-white">{Math.round(app.compositeScore)}</span>
                       </div>
                     )}
                   </div>
@@ -295,13 +294,13 @@ function CandidateDashboard() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <svg className="mx-auto w-12 h-12 text-gray-400/80 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg className="mx-auto w-12 h-12 text-white/20 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                 </svg>
-                <h3 className="text-sm font-medium text-gray-900 mb-1">
+                <h3 className="text-sm font-medium text-white mb-1">
                   No applications yet
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-white/50">
                   Start browsing jobs and submit your first application.
                 </p>
                 <Link
@@ -318,16 +317,16 @@ function CandidateDashboard() {
         {/* Upcoming Interviews */}
         {myBookings.length > 0 && (
           <div className="lg:col-span-3 mt-4">
-            <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+              <h2 className="text-lg font-semibold text-white mb-4">
                 Upcoming Interviews
               </h2>
               {isLoadingBookings ? (
                 <div className="space-y-3">
                   {[1].map((i) => (
-                    <div key={i} className="animate-pulse border border-white/40 backdrop-blur-sm bg-white/20 rounded-xl p-4">
-                      <div className="h-4 bg-gray-200/60 rounded w-1/3 mb-2" />
-                      <div className="h-3 bg-gray-200/60 rounded w-1/2" />
+                    <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                      <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                      <div className="h-3 bg-white/10 rounded w-1/2" />
                     </div>
                   ))}
                 </div>
@@ -364,7 +363,7 @@ function CandidateDashboard() {
                     </div>
                   ))}
                   {myBookings.filter(b => b.status === "SCHEDULED").length === 0 && (
-                    <p className="text-sm text-gray-500">No upcoming interviews scheduled.</p>
+                    <p className="text-sm text-white/50">No upcoming interviews scheduled.</p>
                   )}
                 </div>
               )}
@@ -383,17 +382,17 @@ function CandidateDashboard() {
 
           return (
             <div className="lg:col-span-3 mt-4">
-              <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+                <h2 className="text-lg font-semibold text-white mb-4">
                   Interview Invitations
                 </h2>
 
                 {isLoadingInterviews ? (
                   <div className="space-y-3">
                     {[1].map((i) => (
-                      <div key={i} className="animate-pulse border border-white/40 backdrop-blur-sm bg-white/20 rounded-xl p-4">
-                        <div className="h-4 bg-gray-200/60 rounded w-1/3 mb-2" />
-                        <div className="h-3 bg-gray-200/60 rounded w-1/2" />
+                      <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                        <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                        <div className="h-3 bg-white/10 rounded w-1/2" />
                       </div>
                     ))}
                   </div>
@@ -408,14 +407,14 @@ function CandidateDashboard() {
                         <div
                           key={invite.id}
                           className={`backdrop-blur-sm border rounded-xl p-4 shadow-sm transition-all duration-200 ${isExpired
-                            ? "border-gray-200 bg-gray-50/40"
+                            ? "border-white/10 bg-white/5"
                             : "border-indigo-200/50 bg-indigo-50/30"
                             }`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <h4 className={`font-medium ${isExpired ? "text-gray-500" : "text-indigo-900"}`}>
+                                <h4 className={`font-medium ${isExpired ? "text-white/50" : "text-indigo-300"}`}>
                                   Interview: {invite.jobTitle}
                                 </h4>
                                 {invite.organizationName && (
@@ -448,7 +447,7 @@ function CandidateDashboard() {
                             </div>
 
                             {isExpired ? (
-                              <span className="inline-flex items-center px-4 py-2 bg-gray-100/60 border border-gray-200/40 text-gray-400 text-sm font-medium rounded-xl whitespace-nowrap cursor-not-allowed">
+                              <span className="inline-flex items-center px-4 py-2 bg-white/10 border border-white/10 text-white/40 text-sm font-medium rounded-xl whitespace-nowrap cursor-not-allowed">
                                 Booking Closed
                               </span>
                             ) : (
@@ -486,17 +485,17 @@ function CandidateDashboard() {
 
           return (
             <div className="lg:col-span-3 mt-4">
-              <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+                <h2 className="text-lg font-semibold text-white mb-4">
                   Assessments
                 </h2>
 
                 {isLoadingInvites ? (
                   <div className="space-y-3">
                     {[1, 2].map((i) => (
-                      <div key={i} className="animate-pulse border border-white/40 backdrop-blur-sm bg-white/20 rounded-xl p-4">
-                        <div className="h-4 bg-gray-200/60 rounded w-1/3 mb-2" />
-                        <div className="h-3 bg-gray-200/60 rounded w-1/2" />
+                      <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                        <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                        <div className="h-3 bg-white/10 rounded w-1/2" />
                       </div>
                     ))}
                   </div>
@@ -515,14 +514,14 @@ function CandidateDashboard() {
                         <div
                           key={invite.id}
                           className={`backdrop-blur-sm border rounded-xl p-4 shadow-sm transition-all duration-200 ${isExpired
-                            ? "border-gray-200 bg-gray-50/40"
-                            : "border-white/40 hover:bg-white/60"
+                            ? "border-white/10 bg-white/5"
+                            : "border-white/20 hover:bg-white/10"
                             }`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-gray-900">
+                                <h4 className="font-medium text-white">
                                   {invite.assessmentTitle || "Online Assessment"}
                                 </h4>
                                 {isExpired && (
@@ -532,13 +531,13 @@ function CandidateDashboard() {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 mt-1">
-                                Job: <span className="font-medium">{invite.jobTitle}</span>
+                              <p className="text-sm text-white/60 mt-1">
+                                Job: <span className="font-medium text-white">{invite.jobTitle}</span>
                                 {invite.organizationName && (
-                                  <span className="ml-2 text-xs font-semibold text-indigo-600">@ {invite.organizationName}</span>
+                                  <span className="ml-2 text-xs font-semibold text-indigo-300">@ {invite.organizationName}</span>
                                 )}
                               </p>
-                              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+                              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/50">
                                 {invite.timeLimitMinutes != null && (
                                   <span>Time limit: {invite.timeLimitMinutes} min</span>
                                 )}
@@ -554,7 +553,7 @@ function CandidateDashboard() {
                             </div>
 
                             {isExpired ? (
-                              <span className="inline-flex items-center px-3 py-2 bg-gray-100/60 border border-gray-200/40 text-gray-400 text-sm font-medium rounded-xl whitespace-nowrap cursor-not-allowed">
+                              <span className="inline-flex items-center px-3 py-2 bg-white/10 border border-white/10 text-white/40 text-sm font-medium rounded-xl whitespace-nowrap cursor-not-allowed">
                                 Expired
                               </span>
                             ) : (
@@ -608,13 +607,13 @@ function RecruiterDashboard() {
   const draftJobs = jobs.filter((j) => j.status === "DRAFT").length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 p-6 md:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 backdrop-blur-md bg-white/30 border border-white/40 rounded-2xl p-6 shadow-sm">
+    <div className="min-h-screen p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-white">
             Welcome back, {user?.firstName}!
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-white/60 mt-1">
             Manage your job postings and review candidates.
           </p>
         </div>
@@ -631,37 +630,37 @@ function RecruiterDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
-          <p className="text-sm font-medium text-gray-500">Published Jobs</p>
-          <p className="text-3xl font-bold text-primary-600 mt-1">
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+          <p className="text-sm font-medium text-white/50">Published Jobs</p>
+          <p className="text-3xl font-bold text-emerald-400 mt-1">
             {publishedJobs}
           </p>
         </div>
-        <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
-          <p className="text-sm font-medium text-gray-500">Draft Jobs</p>
-          <p className="text-3xl font-bold text-gray-600 mt-1">{draftJobs}</p>
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+          <p className="text-sm font-medium text-white/50">Draft Jobs</p>
+          <p className="text-3xl font-bold text-white/60 mt-1">{draftJobs}</p>
         </div>
-        <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
-          <p className="text-sm font-medium text-gray-500">Total Applications</p>
-          <p className="text-3xl font-bold text-green-600 mt-1">
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+          <p className="text-sm font-medium text-white/50">Total Applications</p>
+          <p className="text-3xl font-bold text-blue-400 mt-1">
             {totalApplications}
           </p>
         </div>
       </div>
 
       {/* Jobs List */}
-      <div className="backdrop-blur-md bg-white/50 rounded-2xl shadow-sm border border-white/60 p-6">
+      <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">My Jobs</h2>
+          <h2 className="text-lg font-semibold text-white">My Jobs</h2>
         </div>
 
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse border border-white/40 backdrop-blur-sm bg-white/20 rounded-xl p-6">
-                <div className="h-5 bg-gray-200/60 rounded w-1/3 mb-3" />
-                <div className="h-4 bg-gray-200/60 rounded w-1/2 mb-2" />
-                <div className="h-4 bg-gray-200/60 rounded w-1/4" />
+              <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-6">
+                <div className="h-5 bg-white/10 rounded w-1/3 mb-3" />
+                <div className="h-4 bg-white/10 rounded w-1/2 mb-2" />
+                <div className="h-4 bg-white/10 rounded w-1/4" />
               </div>
             ))}
           </div>
@@ -678,13 +677,13 @@ function RecruiterDashboard() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <svg className="mx-auto w-12 h-12 text-gray-400/80 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <svg className="mx-auto w-12 h-12 text-white/20 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
             </svg>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">
+            <h3 className="text-sm font-medium text-white mb-1">
               No jobs created yet
             </h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-white/50">
               Create your first job posting to start receiving applications.
             </p>
             <button
@@ -713,8 +712,8 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen text-gray-900 transition-colors duration-300">
-        <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] pointer-events-none" />
+      <div className="min-h-screen text-white transition-colors duration-300">
+        <div className="absolute inset-0 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {user?.role === "RECRUITER" ? (
             <RecruiterDashboard />

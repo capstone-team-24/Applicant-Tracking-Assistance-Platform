@@ -165,16 +165,16 @@ export default function ApplicationDetailPage() {
       <ProtectedRoute requiredRole="RECRUITER">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-48" />
-            <div className="h-8 bg-gray-200 rounded w-1/3" />
+            <div className="h-4 bg-white/10 rounded w-48" />
+            <div className="h-8 bg-white/10 rounded w-1/3" />
             <div className="grid grid-cols-3 gap-6 mt-6">
               <div className="col-span-2 space-y-4">
-                <div className="h-40 bg-gray-200 rounded-xl" />
-                <div className="h-32 bg-gray-200 rounded-xl" />
+                <div className="h-40 bg-white/10 rounded-xl" />
+                <div className="h-32 bg-white/10 rounded-xl" />
               </div>
               <div className="space-y-4">
-                <div className="h-32 bg-gray-200 rounded-xl" />
-                <div className="h-48 bg-gray-200 rounded-xl" />
+                <div className="h-32 bg-white/10 rounded-xl" />
+                <div className="h-48 bg-white/10 rounded-xl" />
               </div>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function ApplicationDetailPage() {
       <ProtectedRoute requiredRole="RECRUITER">
         <div className="max-w-5xl mx-auto px-4 py-16 text-center">
           <svg
-            className="mx-auto w-16 h-16 text-gray-300 mb-4"
+            className="mx-auto w-16 h-16 text-white/30 mb-4"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -200,7 +200,7 @@ export default function ApplicationDetailPage() {
               d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
             />
           </svg>
-          <p className="text-gray-600 mb-4">Application not found.</p>
+          <p className="text-white/60 mb-4">Application not found.</p>
           <Link
             href={`/recruiter/jobs/${jobId}`}
             className="text-primary-600 font-medium hover:text-primary-500"
@@ -235,21 +235,21 @@ export default function ApplicationDetailPage() {
 
         <div className="relative z-10 w-full max-w-6xl">
           {/* ── Breadcrumb ── */}
-          <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-8 ml-2">
+          <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40 mb-8 ml-2">
             <Link
               href="/dashboard"
               className="hover:text-blue-400 transition-colors"
             >
               Dashboard
             </Link>
-            <span className="text-gray-600">/</span>
+            <span className="text-white/60">/</span>
             <Link
               href={`/recruiter/jobs/${jobId}`}
               className="hover:text-blue-400 transition-colors"
             >
               Job
             </Link>
-            <span className="text-gray-600">/</span>
+            <span className="text-white/60">/</span>
             <span className="text-white truncate max-w-[200px]">
               {application.candidateName || "Application"}
             </span>
@@ -265,13 +265,13 @@ export default function ApplicationDetailPage() {
                 <h1 className="text-4xl font-bold text-white tracking-tight drop-shadow-md">
                   {application.candidateName || "Unknown Candidate"}
                 </h1>
-                <p className="text-gray-400 font-medium mt-1">
+                <p className="text-white/40 font-medium mt-1">
                   {application.candidateEmail}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-xl">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">
                 Status
               </span>
               <StatusBadge status={application.status} type="application" />
@@ -284,7 +284,7 @@ export default function ApplicationDetailPage() {
             <div className="lg:col-span-2 space-y-8">
               {/* Contact Information */}
               <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 border-b border-white/10 pb-4">
+                <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6 border-b border-white/10 pb-4">
                   Contact Information
                 </h3>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -333,11 +333,11 @@ export default function ApplicationDetailPage() {
               {/* Cover Letter */}
               {application.coverLetter && (
                 <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">
                     Cover Letter
                   </h3>
                   <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                    <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed italic">
+                    <p className="text-sm text-white/30 whitespace-pre-wrap leading-relaxed italic">
                       "{application.coverLetter}"
                     </p>
                   </div>
@@ -348,7 +348,7 @@ export default function ApplicationDetailPage() {
               {application.portfolioLinks &&
                 application.portfolioLinks.filter(Boolean).length > 0 && (
                   <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">
                       Portfolio / Links
                     </h3>
                     <div className="flex flex-wrap gap-3">
@@ -372,7 +372,7 @@ export default function ApplicationDetailPage() {
               {/* Assessment Score */}
               {jobAssessment && (
                 <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
+                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6">
                     Assessment:{" "}
                     <span className="text-white">{jobAssessment.title}</span>
                   </h3>
@@ -393,7 +393,7 @@ export default function ApplicationDetailPage() {
                               ? `${Math.round(candidateSubmission.score)}%`
                               : "—"}
                           </p>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase mt-1">
+                          <p className="text-[10px] font-bold text-white/50 uppercase mt-1">
                             Final Score
                           </p>
                         </div>
@@ -404,7 +404,7 @@ export default function ApplicationDetailPage() {
                             type="assessment"
                           />
                           {candidateSubmission.submittedAt && (
-                            <p className="text-xs text-gray-500 mt-2 font-medium">
+                            <p className="text-xs text-white/50 mt-2 font-medium">
                               Submitted{" "}
                               {formatDateTime(candidateSubmission.submittedAt)}
                             </p>
@@ -415,7 +415,7 @@ export default function ApplicationDetailPage() {
                       {candidateSubmission.scoringDetails &&
                         candidateSubmission.scoringDetails.length > 0 && (
                           <div className="space-y-3">
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">
+                            <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest ml-1">
                               Score Breakdown
                             </p>
                             {candidateSubmission.scoringDetails.map((d, i) => (
@@ -424,7 +424,7 @@ export default function ApplicationDetailPage() {
                                 className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/5 transition-hover hover:bg-white/10"
                               >
                                 <div className="flex items-center gap-3">
-                                  <span className="text-xs font-bold text-gray-500">
+                                  <span className="text-xs font-bold text-white/50">
                                     Q{i + 1}
                                   </span>
                                   <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-md font-bold uppercase tracking-tighter border border-blue-500/20">
@@ -450,9 +450,9 @@ export default function ApplicationDetailPage() {
                         )}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-4 text-sm text-gray-400 bg-white/5 p-6 rounded-2xl border border-white/5 border-dashed">
+                    <div className="flex items-center gap-4 text-sm text-white/40 bg-white/5 p-6 rounded-2xl border border-white/5 border-dashed">
                       <svg
-                        className="w-6 h-6 text-gray-600"
+                        className="w-6 h-6 text-white/60"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -480,7 +480,7 @@ export default function ApplicationDetailPage() {
                     <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     {application.rankingPosition != null && (
                       <div className="mb-6">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
+                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">
                           Ranking Position
                         </p>
                         <p className="text-6xl font-black text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">
@@ -496,12 +496,12 @@ export default function ApplicationDetailPage() {
                             : ""
                         }
                       >
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
+                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">
                           Composite Score
                         </p>
                         <p className="text-4xl font-bold text-white">
                           {Math.round(application.compositeScore)}
-                          <span className="text-lg font-medium text-gray-500 ml-1">
+                          <span className="text-lg font-medium text-white/50 ml-1">
                             /100
                           </span>
                         </p>
@@ -513,7 +513,7 @@ export default function ApplicationDetailPage() {
               {/* Submitted File */}
               {application.originalFilename && (
                 <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">
                     Submitted File
                   </h3>
                   <button
@@ -540,7 +540,7 @@ export default function ApplicationDetailPage() {
 
               {/* Status Actions */}
               <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">
                   Update Status
                 </h3>
                 <div className="space-y-3">
@@ -561,7 +561,7 @@ export default function ApplicationDetailPage() {
                           disabled={isDisabled}
                           title={description}
                           className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-sm font-bold transition-all border
-                            ${isCurrent ? "bg-white/10 border-white/20 text-white cursor-default" : "bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:text-white cursor-pointer"}
+                            ${isCurrent ? "bg-white/10 border-white/20 text-white cursor-default" : "bg-white/5 border-white/5 text-white/40 hover:bg-white/15 hover:text-white cursor-pointer"}
                             ${isDisabled && !isCurrent ? "opacity-20 grayscale" : ""}`}
                         >
                           <span className="flex items-center gap-2">
@@ -608,7 +608,7 @@ export default function ApplicationDetailPage() {
                       application.status === "WITHDRAWN" ||
                       updatingStatus !== null
                     }
-                    className="w-full px-4 py-3 rounded-xl text-xs font-bold text-gray-500 border border-white/5 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 disabled:opacity-20 transition-all uppercase tracking-widest"
+                    className="w-full px-4 py-3 rounded-xl text-xs font-bold text-white/50 border border-white/5 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 disabled:opacity-20 transition-all uppercase tracking-widest"
                   >
                     {application.status === "WITHDRAWN"
                       ? "Withdrawn"
@@ -619,10 +619,10 @@ export default function ApplicationDetailPage() {
 
               {/* Manual Invites */}
               <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
+                <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1">
                   Manual Invites
                 </h3>
-                <p className="text-[10px] text-gray-500 mb-5 leading-relaxed">
+                <p className="text-[10px] text-white/50 mb-5 leading-relaxed">
                   Override AI ranking to manually send invites to this candidate.
                 </p>
 

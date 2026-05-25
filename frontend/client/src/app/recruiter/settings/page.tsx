@@ -47,7 +47,7 @@ export default function SettingsPage() {
           <h1 className="text-4xl font-bold text-white tracking-tight drop-shadow-md">
             Settings
           </h1>
-          <p className="text-gray-400 mt-2 font-medium">
+          <p className="text-white/40 mt-2 font-medium">
             Manage your account preferences and third-party integrations.
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function SettingsPage() {
                   </span>
                 )}
               </h3>
-              <p className="text-sm text-gray-400 leading-relaxed max-w-xl">
+              <p className="text-sm text-white/40 leading-relaxed max-w-xl">
                 Connect your Google Calendar to automatically schedule interviews and generate Google Meet links. This syncs availability in real-time.
               </p>
             </div>
@@ -107,7 +107,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="mt-8 pt-8 border-t border-white/5">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">
+            <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest text-center">
               Secure OAuth2 Encryption Enabled
             </p>
           </div>
