@@ -28,6 +28,12 @@ public class OrganizationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/organizations/{id}")
+    @Operation(summary = "Get an organization by ID (Platform Admin)")
+    public ResponseEntity<OrganizationResponse> getOrganization(@PathVariable UUID id) {
+        return ResponseEntity.ok(organizationService.getById(id));
+    }
+
     @GetMapping("/internal/organizations/{orgId}/name")
     @Operation(summary = "Get organization name by ID (internal)")
     public ResponseEntity<String> getOrganizationName(@PathVariable UUID orgId) {

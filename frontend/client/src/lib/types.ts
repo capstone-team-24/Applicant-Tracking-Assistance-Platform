@@ -425,6 +425,14 @@ export interface ContactMessage {
   createdAt: string;
 }
 
+export interface VerificationDocument {
+  id: string;
+  filename: string;
+  contentType: string;
+  fileSize: number | null;
+  uploadedAt: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -505,3 +513,26 @@ export interface OfferResponse {
   acceptedAt?: string;
   declinedAt?: string;
 }
+
+export interface OrgAdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "ORG_ADMIN";
+  orgId: string;
+  isSuspended: boolean;
+  createdAt: string;
+}
+
+export interface OrgMember {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "ORG_ADMIN" | "RECRUITER";
+  orgId: string;
+  isSuspended: boolean;
+  createdAt: string;
+}
+

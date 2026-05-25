@@ -157,6 +157,40 @@ public class AuthController {
     }
 
     // ──────────────────────────────────────────────────────────────
+    //  Platform Admin – Org Admin management (global, no org scope)
+    // ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "List all Org Admin accounts (Platform Admin only)")
+    @GetMapping("/auth/platform-admin/org-admins")
+    public ResponseEntity<List<AuthUser>> getAllOrgAdmins() {
+        return ResponseEntity.ok(authService.getAllOrgAdmins());
+    }
+
+    @Operation(summary = "Suspend or unsuspend an Org Admin (Platform Admin only)")
+    @PutMapping("/auth/platform-admin/org-admins/{id}/suspend")
+    public ResponseEntity<Map<String, String>> suspendOrgAdmin(
+            @PathVariable UUID id,
+            @RequestParam boolean suspend) {
+        authService.suspendOrgAdmin(id, suspend);
+        return ResponseEntity.ok(Map.of("message", "Org admin suspension updated successfully"));
+    }
+
+    @Operation(summary = "Get all admins and recruiters for an organization (Platform Admin only)")
+    @GetMapping("/auth/platform-admin/organizations/{orgId}/members")
+    public ResponseEntity<List<AuthUser>> getOrgMembers(@PathVariable UUID orgId) {
+        return ResponseEntity.ok(authService.getOrgMembers(orgId));
+    }
+
+    @Operation(summary = "Suspend or unsuspend any org member (Platform Admin only)")
+    @PutMapping("/auth/platform-admin/org-members/{id}/suspend")
+    public ResponseEntity<Map<String, String>> suspendOrgMember(
+            @PathVariable UUID id,
+            @RequestParam boolean suspend) {
+        authService.suspendOrgMember(id, suspend);
+        return ResponseEntity.ok(Map.of("message", "Member suspension updated successfully"));
+    }
+
+    // ──────────────────────────────────────────────────────────────
     //  JWKS / Key rotation
     // ──────────────────────────────────────────────────────────────
 

@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import { platformAdminApi } from "@/lib/api";
-import { ContactMessage, Organization } from "@/lib/types";
+import { ContactMessage, Organization, OrgAdminUser } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { getStoredUser, removeTokens } from "@/lib/auth";
 
-type Tab = "messages" | "organizations" | "create_admin";
+type Tab = "messages" | "organizations" | "org_admins" | "create_admin";
 
 function StatusBadge({ status }: { status: ContactMessage["status"] }) {
   const map = {
@@ -152,11 +152,39 @@ function RejectModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (re
   );
 }
 
+function EditOrgModal({ org, onClose, onSave }: { org: Organization; onClose: () => void; onSave: (name: string, policies: string) => Promise<void> }) {
+  const [name, setName] = useState(org.name);
+  const [policies, setPolicies] = useState(org.organizationPolicies || "");
+  const [loading, setLoading] = useState(false);
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl">
+        <h3 className="text-lg font-black text-white tracking-tighter uppercase mb-6">Edit Organization</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Name</label>
+            <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 text-sm" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Policies (JSON)</label>
+            <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 text-sm h-24 resize-none" value={policies} onChange={e => setPolicies(e.target.value)} />
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 text-xs font-black uppercase tracking-widest transition-all">Cancel</button>
+          <button disabled={!name.trim() || loading} onClick={async () => { setLoading(true); await onSave(name, policies); setLoading(false); }} className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40">{loading ? "Saving..." : "Save Changes"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PlatformAdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("messages");
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [orgAdmins, setOrgAdmins] = useState<OrgAdminUser[]>([]);
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgPolicies, setNewOrgPolicies] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState("");
@@ -166,6 +194,7 @@ export default function PlatformAdminDashboard() {
   const [actionStatus, setActionStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [inquiryTarget, setInquiryTarget] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [editOrgTarget, setEditOrgTarget] = useState<Organization | null>(null);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -179,6 +208,9 @@ export default function PlatformAdminDashboard() {
       if (activeTab === "messages") {
         const res = await platformAdminApi.getContactMessages();
         setMessages(res.content);
+      } else if (activeTab === "org_admins") {
+        const data = await platformAdminApi.getOrgAdmins();
+        setOrgAdmins(data);
       } else {
         const res = await platformAdminApi.getOrganizations();
         setOrganizations(res.content);
@@ -268,6 +300,20 @@ export default function PlatformAdminDashboard() {
           onSubmit={(reason) => handleReject(rejectTarget, reason)}
         />
       )}
+      {editOrgTarget && (
+        <EditOrgModal
+          org={editOrgTarget}
+          onClose={() => setEditOrgTarget(null)}
+          onSave={async (name, policies) => {
+            try {
+              await platformAdminApi.updateOrganization(editOrgTarget.id, { name, organizationPolicies: policies });
+              flash("success", "Organization updated.");
+              setEditOrgTarget(null);
+              loadData();
+            } catch { flash("error", "Failed to update organization."); }
+          }}
+        />
+      )}
 
       <div className="relative z-10 w-full max-w-7xl">
         {/* Header */}
@@ -283,8 +329,8 @@ export default function PlatformAdminDashboard() {
         {/* Tabs */}
         <div className="flex gap-2 p-1.5 bg-white/5 backdrop-blur-3xl rounded-2xl border border-white/10 w-fit mb-12 shadow-inner">
           <nav className="flex space-x-1">
-            {(["messages", "organizations", "create_admin"] as Tab[]).map((tab) => {
-              const labels = { messages: "Contact Messages", organizations: "Organizations", create_admin: "Create Org Admin" };
+            {(["messages", "organizations", "org_admins", "create_admin"] as Tab[]).map((tab) => {
+              const labels: Record<Tab, string> = { messages: "Contact Messages", organizations: "Organizations", org_admins: "Org Admins", create_admin: "Create Org Admin" };
               return (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-[0.2em] ${activeTab === tab ? "bg-white text-slate-950 shadow-xl" : "text-white/40 hover:text-white hover:bg-white/5"}`}>
@@ -380,10 +426,11 @@ export default function PlatformAdminDashboard() {
                               </span>
                             </td>
                             <td className="px-8 py-6 text-right">
-                              <button
-                                onClick={() => platformAdminApi.toggleSuspension(org.id, !org.isSuspended).then(() => loadData())}
-                                className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all ${org.isSuspended ? "text-emerald-400 hover:text-emerald-300" : "text-rose-400 hover:text-rose-300"}`}
-                              >{org.isSuspended ? "Unsuspend" : "Suspend"}</button>
+                              <div className="flex items-center justify-end gap-4">
+                                <button onClick={() => router.push(`/platform-admin/organizations/${org.id}`)} className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-all">View</button>
+                                <button onClick={() => setEditOrgTarget(org)} className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 hover:text-blue-300 transition-all">Edit</button>
+                                <button onClick={() => platformAdminApi.toggleSuspension(org.id, !org.isSuspended).then(() => loadData())} className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all ${org.isSuspended ? "text-emerald-400 hover:text-emerald-300" : "text-rose-400 hover:text-rose-300"}`}>{org.isSuspended ? "Unsuspend" : "Suspend"}</button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -406,6 +453,43 @@ export default function PlatformAdminDashboard() {
                       <button type="submit" className="w-full py-4 bg-white text-slate-950 text-[11px] font-black rounded-2xl hover:scale-105 active:scale-95 shadow-2xl transition-all uppercase tracking-[0.2em]">Create Organization</button>
                     </form>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ORG ADMINS TAB */}
+            {activeTab === "org_admins" && (
+              <div className={cardClass}>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        {["Name", "Email", "Organization", "Status", "Actions"].map((h) => (
+                          <th key={h} className={`px-6 py-5 text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ${h === "Actions" ? "text-right" : "text-left"}`}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {orgAdmins.length === 0 ? (
+                        <tr><td colSpan={5} className="px-8 py-12 text-center text-white/40 italic text-sm">No org admins found.</td></tr>
+                      ) : orgAdmins.map((admin) => (
+                        <tr key={admin.id} className="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                          <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-white italic">{admin.firstName} {admin.lastName}</td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-white/60">{admin.email}</td>
+                          <td className="px-6 py-5 whitespace-nowrap text-sm text-white/60">
+                            <button onClick={() => router.push(`/platform-admin/organizations/${admin.orgId}`)} className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-all">{admin.orgId}</button>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className={`px-3 py-1 inline-flex text-[9px] font-black rounded-full border uppercase tracking-widest ${admin.isSuspended ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>{admin.isSuspended ? "Suspended" : "Active"}</span>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <button onClick={() => platformAdminApi.suspendOrgAdmin(admin.id, !admin.isSuspended).then(() => loadData())} className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all ${admin.isSuspended ? "text-emerald-400 hover:text-emerald-300" : "text-rose-400 hover:text-rose-300"}`}>{admin.isSuspended ? "Unsuspend" : "Suspend"}</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { platformAdminApi } from "@/lib/api";
-import { ContactMessage } from "@/lib/types";
+import { ContactMessage, VerificationDocument } from "@/lib/types";
 import { useRouter, useParams } from "next/navigation";
 import { getStoredUser } from "@/lib/auth";
 
@@ -34,20 +34,14 @@ function InquiryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (m
       <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl">
         <h3 className="text-lg font-black text-white tracking-tighter uppercase mb-2">Send Inquiry</h3>
         <p className="text-white/40 text-xs mb-6">The organization will receive an email with a link to update their submission.</p>
-        <textarea
-          autoFocus
+        <textarea autoFocus
           className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-sm h-32 resize-none"
-          placeholder="What additional information do you need?"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
+          placeholder="What additional information do you need?" value={text} onChange={(e) => setText(e.target.value)} />
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 text-xs font-black uppercase tracking-widest">Cancel</button>
-          <button
-            disabled={!text.trim() || loading}
+          <button disabled={!text.trim() || loading}
             onClick={async () => { setLoading(true); await onSubmit(text); setLoading(false); }}
-            className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest disabled:opacity-40"
-          >
+            className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest disabled:opacity-40">
             {loading ? "Sending..." : "Send Inquiry"}
           </button>
         </div>
@@ -64,19 +58,13 @@ function RejectModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (re
       <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl">
         <h3 className="text-lg font-black text-white tracking-tighter uppercase mb-2">Reject Registration</h3>
         <p className="text-white/40 text-xs mb-6">A rejection email will be sent. You may include an optional reason.</p>
-        <textarea
-          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-sm h-28 resize-none"
-          placeholder="Reason for rejection (optional)..."
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
+        <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-sm h-28 resize-none"
+          placeholder="Reason for rejection (optional)..." value={reason} onChange={(e) => setReason(e.target.value)} />
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 text-xs font-black uppercase tracking-widest">Cancel</button>
-          <button
-            disabled={loading}
+          <button disabled={loading}
             onClick={async () => { setLoading(true); await onSubmit(reason || undefined); setLoading(false); }}
-            className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-widest disabled:opacity-40"
-          >
+            className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black uppercase tracking-widest disabled:opacity-40">
             {loading ? "Rejecting..." : "Confirm Reject"}
           </button>
         </div>
@@ -94,13 +82,34 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
+function FileIcon({ contentType }: { contentType: string }) {
+  const isPdf = contentType.includes("pdf");
+  const isImage = contentType.startsWith("image/");
+  const color = isPdf ? "text-rose-400" : isImage ? "text-emerald-400" : "text-indigo-400";
+  return (
+    <svg className={`w-5 h-5 flex-shrink-0 ${color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
+}
+
+function formatSize(bytes: number | null): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function ContactMessageDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
   const [msg, setMsg] = useState<ContactMessage | null>(null);
+  const [docs, setDocs] = useState<VerificationDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showInquiry, setShowInquiry] = useState(false);
@@ -115,8 +124,12 @@ export default function ContactMessageDetailPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await platformAdminApi.getContactMessage(id);
+      const [data, docList] = await Promise.all([
+        platformAdminApi.getContactMessage(id),
+        platformAdminApi.listDocuments(id).catch(() => [] as VerificationDocument[]),
+      ]);
       setMsg(data);
+      setDocs(docList);
     } catch { router.push("/platform-admin/dashboard"); }
     finally { setLoading(false); }
   };
@@ -161,6 +174,17 @@ export default function ContactMessageDetailPage() {
     }
   };
 
+  const openDocument = async (docId: string) => {
+    setOpeningDocId(docId);
+    try {
+      await platformAdminApi.openDocument(id, docId);
+    } catch (err: any) {
+      flash("error", err.response?.data?.message || "Failed to open document.");
+    } finally {
+      setOpeningDocId(null);
+    }
+  };
+
   const blocked = msg?.status === "APPROVED" || msg?.status === "REJECTED";
 
   return (
@@ -173,11 +197,8 @@ export default function ContactMessageDetailPage() {
       {showReject && <RejectModal onClose={() => setShowReject(false)} onSubmit={handleReject} />}
 
       <div className="relative z-10 w-full max-w-3xl">
-        {/* Back */}
-        <button
-          onClick={() => router.push("/platform-admin/dashboard")}
-          className="flex items-center gap-2 text-white/40 hover:text-white text-xs font-black uppercase tracking-widest mb-8 transition-colors"
-        >
+        <button onClick={() => router.push("/platform-admin/dashboard")}
+          className="flex items-center gap-2 text-white/40 hover:text-white text-xs font-black uppercase tracking-widest mb-8 transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -188,7 +209,6 @@ export default function ContactMessageDetailPage() {
           <div className="text-center py-20 text-white/40 font-black uppercase tracking-[0.3em] text-xs animate-pulse">Loading...</div>
         ) : msg && (
           <>
-            {/* Toast */}
             {toast && (
               <div className={`mb-8 p-5 rounded-2xl border flex justify-between items-center ${toast.type === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"}`}>
                 <span className="text-xs font-black uppercase tracking-widest">{toast.text}</span>
@@ -196,7 +216,7 @@ export default function ContactMessageDetailPage() {
               </div>
             )}
 
-            {/* Header card */}
+            {/* Header */}
             <div className="bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-8 mb-6 shadow-2xl">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
@@ -207,43 +227,32 @@ export default function ContactMessageDetailPage() {
                 <StatusBadge status={msg.status} />
               </div>
 
-              {/* Action buttons */}
               {!blocked && (
                 <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-white/10">
-                  <button
-                    disabled={processing}
-                    onClick={handleApprove}
-                    className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40 flex items-center gap-2"
-                  >
+                  <button disabled={processing} onClick={handleApprove}
+                    className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40 flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     {processing ? "Approving..." : "Approve"}
                   </button>
-                  <button
-                    onClick={() => setShowInquiry(true)}
-                    className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
-                  >
+                  <button onClick={() => setShowInquiry(true)}
+                    className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                     Send Inquiry
                   </button>
-                  <button
-                    onClick={() => setShowReject(true)}
-                    className="px-6 py-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
-                  >
+                  <button onClick={() => setShowReject(true)}
+                    className="px-6 py-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     Reject
                   </button>
                 </div>
               )}
 
-              {/* Approved info */}
               {msg.status === "APPROVED" && msg.approvedAt && (
                 <div className="mt-6 pt-6 border-t border-white/10 flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-emerald-400" />
                   <p className="text-xs text-emerald-400/80">Approved on {new Date(msg.approvedAt).toLocaleString()}</p>
                 </div>
               )}
-
-              {/* Rejected info */}
               {msg.status === "REJECTED" && msg.rejectedAt && (
                 <div className="mt-6 pt-6 border-t border-white/10 flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-rose-400" />
@@ -265,6 +274,64 @@ export default function ContactMessageDetailPage() {
                   <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                 </div>
               </div>
+            </div>
+
+            {/* Verification Documents */}
+            <div className="bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-8 mb-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">
+                  Verification Documents
+                  {docs.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-white/10 rounded-full text-white/50 text-[9px]">{docs.length}</span>
+                  )}
+                </h2>
+              </div>
+
+              {docsLoading ? (
+                <p className="text-white/30 text-xs animate-pulse text-center py-4">Loading documents...</p>
+              ) : docs.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-10 h-10 text-white/10 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-white/20 text-xs italic">No verification documents uploaded.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {docs.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-4 bg-white/5 hover:bg-white/8 border border-white/10 rounded-2xl px-5 py-4 transition-all group">
+                      <FileIcon contentType={doc.contentType} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium truncate">{doc.filename}</p>
+                        <p className="text-white/30 text-[10px] mt-0.5 uppercase tracking-wide">
+                          {doc.contentType.split("/")[1]?.toUpperCase() || doc.contentType}
+                          {doc.fileSize ? ` · ${formatSize(doc.fileSize)}` : ""}
+                          {" · "}
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => openDocument(doc.id)}
+                        disabled={openingDocId === doc.id}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 text-[10px] font-black uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100 disabled:opacity-60 disabled:cursor-wait"
+                        title="Open document"
+                      >
+                        {openingDocId === doc.id ? (
+                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        )}
+                        {openingDocId === doc.id ? "Loading..." : "Open"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Inquiry sent */}

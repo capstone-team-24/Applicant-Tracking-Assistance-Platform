@@ -35,6 +35,8 @@ import type {
   OfferResponse,
   RejectRequest,
   RejectResponse,
+  OrgAdminUser,
+  OrgMember,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -681,7 +683,26 @@ export const platformAdminApi = {
     );
     return response.data;
   },
-  
+
+  /** List verification documents for a submission (admin view) */
+  listDocuments: async (id: string): Promise<import("./types").VerificationDocument[]> => {
+    const response = await api.get<import("./types").VerificationDocument[]>(`/api/v1/contact-messages/${id}/documents`);
+    return response.data;
+  },
+
+  /** Fetch the document bytes with the auth token then open as a Blob URL in a new tab */
+  openDocument: async (id: string, docId: string): Promise<void> => {
+    const response = await api.get(`/api/v1/contact-messages/${id}/documents/${docId}`, {
+      responseType: "blob",
+    });
+    const blob = new Blob([response.data], { type: response.headers["content-type"] ?? "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    // Revoke after a short delay so the new tab has time to load it
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    if (!win) window.location.href = url;
+  },
+
   getOrganizations: async (params?: { page?: number; size?: number }): Promise<{ content: import("./types").Organization[]; totalElements: number; totalPages: number }> => {
     const response = await api.get("/api/v1/organizations", { params });
     return response.data;
@@ -710,6 +731,46 @@ export const platformAdminApi = {
     });
     return response.data;
   },
+
+  /** Get all org admin accounts across all organizations */
+  getOrgAdmins: async (): Promise<OrgAdminUser[]> => {
+    const response = await api.get<OrgAdminUser[]>("/api/v1/auth/platform-admin/org-admins");
+    return response.data;
+  },
+
+  /** Suspend or unsuspend a specific org admin (without affecting their org) */
+  suspendOrgAdmin: async (id: string, suspend: boolean): Promise<{ message: string }> => {
+    const response = await api.put<{ message: string }>(
+      `/api/v1/auth/platform-admin/org-admins/${id}/suspend`,
+      null,
+      { params: { suspend } },
+    );
+    return response.data;
+  },
+
+  /** Get a single organization by ID */
+  getOrganization: async (id: string): Promise<import("./types").Organization> => {
+    const response = await api.get<import("./types").Organization>(`/api/v1/organizations/${id}`);
+    return response.data;
+  },
+
+  /** Get all admins and recruiters for a specific organization */
+  getOrgMembers: async (orgId: string): Promise<OrgMember[]> => {
+    const response = await api.get<OrgMember[]>(
+      `/api/v1/auth/platform-admin/organizations/${orgId}/members`,
+    );
+    return response.data;
+  },
+
+  /** Suspend or unsuspend any org member (admin or recruiter) from platform admin context */
+  suspendOrgMember: async (id: string, suspend: boolean): Promise<{ message: string }> => {
+    const response = await api.put<{ message: string }>(
+      `/api/v1/auth/platform-admin/org-members/${id}/suspend`,
+      null,
+      { params: { suspend } },
+    );
+    return response.data;
+  },
 };
 
 // ---- Public Org Inquiry API (no auth required) ----
@@ -724,6 +785,41 @@ export const orgInquiryApi = {
   updateSubmission: async (id: string, data: { message: string; hrAdminName?: string; companyDetails?: string }): Promise<import("./types").ContactMessage> => {
     const response = await api.put<import("./types").ContactMessage>(`/api/v1/contact-messages/${id}`, data);
     return response.data;
+  },
+
+  /** Upload a verification document */
+  uploadDocument: async (id: string, file: File): Promise<import("./types").VerificationDocument> => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await api.post<import("./types").VerificationDocument>(
+      `/api/v1/contact-messages/${id}/documents`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return response.data;
+  },
+
+  /** List verification documents for a submission */
+  listDocuments: async (id: string): Promise<import("./types").VerificationDocument[]> => {
+    const response = await api.get<import("./types").VerificationDocument[]>(`/api/v1/contact-messages/${id}/documents`);
+    return response.data;
+  },
+
+  /** Delete a verification document */
+  deleteDocument: async (id: string, docId: string): Promise<void> => {
+    await api.delete(`/api/v1/contact-messages/${id}/documents/${docId}`);
+  },
+
+  /** Returns a direct URL to open/download the document inline */
+  /** Fetch the document bytes with the auth token then open as a Blob URL in a new tab */
+  openDocument: async (id: string, docId: string): Promise<void> => {
+    const response = await api.get(`/api/v1/contact-messages/${id}/documents/${docId}`, {
+      responseType: "blob",
+    });
+    const blob = new Blob([response.data], { type: response.headers["content-type"] ?? "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   },
 };
 

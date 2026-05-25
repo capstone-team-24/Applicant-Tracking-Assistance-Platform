@@ -1,8 +1,10 @@
 package com.ats.user.service;
 
+import com.ats.user.config.FileStorageConfig;
 import com.ats.user.dto.ContactMessageRequest;
 import com.ats.user.dto.ContactMessageResponse;
 import com.ats.user.dto.CreateOrganizationRequest;
+import com.ats.user.dto.DocumentResponse;
 import com.ats.user.dto.InquiryRequest;
 import com.ats.user.dto.OrganizationResponse;
 import com.ats.user.dto.RejectContactMessageRequest;
@@ -10,19 +12,35 @@ import com.ats.user.dto.SendNotificationRequest;
 import com.ats.user.dto.UpdateContactMessageRequest;
 import com.ats.user.entity.ContactMessage;
 import com.ats.user.entity.ContactMessageStatus;
+import com.ats.user.entity.Document;
 import com.ats.user.feign.AuthServiceClient;
 import com.ats.user.feign.NotificationServiceClient;
 import com.ats.user.exception.ResourceNotFoundException;
 import com.ats.user.repository.ContactMessageRepository;
+import com.ats.user.repository.DocumentRepository;
+import com.ats.user.util.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -34,6 +52,8 @@ public class ContactMessageService {
     private final OrganizationService organizationService;
     private final NotificationServiceClient notificationServiceClient;
     private final AuthServiceClient authServiceClient;
+    private final DocumentRepository documentRepository;
+    private final FileStorageConfig fileStorageConfig;
 
     @Value("${app.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -237,7 +257,117 @@ public class ContactMessageService {
     }
 
     // ──────────────────────────────────────────────────────────────
-    //  Mapping helpers
+    //  Documents — upload / list / download / delete
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional
+    public DocumentResponse uploadDocument(UUID contactMessageId, MultipartFile file) {
+        ContactMessage message = contactMessageRepository.findById(contactMessageId)
+                .orElseThrow(() -> new ResourceNotFoundException("ContactMessage", "id", contactMessageId));
+
+        if (message.getStatus() == ContactMessageStatus.APPROVED ||
+            message.getStatus() == ContactMessageStatus.REJECTED) {
+            throw new IllegalStateException("Cannot upload documents for a " + message.getStatus() + " submission.");
+        }
+
+        if (file.isEmpty()) throw new IllegalArgumentException("Uploaded file is empty");
+
+        String contentType = file.getContentType();
+        if (!FileUtils.isAllowedContentType(contentType)) {
+            throw new IllegalArgumentException("File type not allowed: " + contentType);
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String sanitized = FileUtils.sanitizeFilename(originalFilename);
+        if (!FileUtils.isAllowedExtension(sanitized)) {
+            throw new IllegalArgumentException("File extension not allowed");
+        }
+
+        // Store under: {basePath}/registrations/{contactMessageId}/{filename}
+        Path dir = Paths.get(fileStorageConfig.getBasePath(), "registrations", contactMessageId.toString());
+        try {
+            Files.createDirectories(dir);
+            // Prefix with timestamp to avoid collisions
+            String storedName = System.currentTimeMillis() + "_" + sanitized;
+            Path dest = dir.resolve(storedName);
+            Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
+
+            Document doc = Document.builder()
+                    .contactMessageId(contactMessageId)
+                    .filename(originalFilename != null ? originalFilename : sanitized)
+                    .path(dest.toString())
+                    .contentType(contentType)
+                    .fileSize(file.getSize())
+                    .build();
+            Document saved = documentRepository.save(doc);
+            log.info("Uploaded verification doc {} for contactMessage {}", storedName, contactMessageId);
+            return toDocumentResponse(saved);
+        } catch (IOException e) {
+            log.error("Failed to store verification doc for contactMessage={}", contactMessageId, e);
+            throw new RuntimeException("Failed to store file: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentResponse> listDocuments(UUID contactMessageId) {
+        // Verify the contact message exists
+        if (!contactMessageRepository.existsById(contactMessageId)) {
+            throw new ResourceNotFoundException("ContactMessage", "id", contactMessageId);
+        }
+        return documentRepository.findByContactMessageIdOrderByUploadedAtDesc(contactMessageId)
+                .stream().map(this::toDocumentResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadDocument(UUID contactMessageId, UUID documentId) {
+        Document doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document", "id", documentId));
+
+        if (!contactMessageId.equals(doc.getContactMessageId())) {
+            throw new ResourceNotFoundException("Document", "id", documentId);
+        }
+
+        try {
+            Path filePath = Paths.get(doc.getPath());
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new RuntimeException("File not found or not readable: " + doc.getPath());
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(doc.getContentType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + doc.getFilename() + "\"")
+                    .body(resource);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Failed to read file", e);
+        }
+    }
+
+    @Transactional
+    public void deleteDocument(UUID contactMessageId, UUID documentId) {
+        Document doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document", "id", documentId));
+
+        if (!contactMessageId.equals(doc.getContactMessageId())) {
+            throw new ResourceNotFoundException("Document", "id", documentId);
+        }
+
+        try { Files.deleteIfExists(Paths.get(doc.getPath())); } catch (IOException e) {
+            log.warn("Could not delete file from disk: {}", doc.getPath());
+        }
+        documentRepository.delete(doc);
+        log.info("Deleted document {} from contactMessage {}", documentId, contactMessageId);
+    }
+
+    private DocumentResponse toDocumentResponse(Document doc) {
+        return DocumentResponse.builder()
+                .id(doc.getId())
+                .filename(doc.getFilename())
+                .contentType(doc.getContentType())
+                .fileSize(doc.getFileSize())
+                .uploadedAt(doc.getUploadedAt())
+                .build();
+    }
     // ──────────────────────────────────────────────────────────────
 
     private ContactMessageResponse toResponse(ContactMessage message) {

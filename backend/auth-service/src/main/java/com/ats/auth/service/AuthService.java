@@ -298,6 +298,57 @@ public class AuthService {
     }
 
     // ──────────────────────────────────────────────────────────────
+    //  Platform Admin – Org Admin management
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<AuthUser> getAllOrgAdmins() {
+        return authUserRepository.findByRole(Role.ORG_ADMIN);
+    }
+
+    @Transactional
+    public void suspendOrgAdmin(UUID userId, boolean suspend) {
+        AuthUser user = authUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Org admin not found"));
+
+        if (user.getRole() != Role.ORG_ADMIN) {
+            throw new IllegalArgumentException("User is not an org admin");
+        }
+
+        user.setIsSuspended(suspend);
+        authUserRepository.save(user);
+        log.info("Org admin id={} suspension set to {}", userId, suspend);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuthUser> getOrgMembers(UUID orgId) {
+        return authUserRepository.findByOrgIdAndRoleIn(orgId, List.of(Role.ORG_ADMIN, Role.RECRUITER));
+    }
+
+    @Transactional
+    public void suspendOrgMember(UUID userId, boolean suspend) {
+        AuthUser user = authUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getRole() != Role.ORG_ADMIN && user.getRole() != Role.RECRUITER) {
+            throw new IllegalArgumentException("User is not an org admin or recruiter");
+        }
+
+        user.setIsSuspended(suspend);
+        authUserRepository.save(user);
+
+        if (user.getRole() == Role.RECRUITER) {
+            try {
+                jobServiceClient.suspendJobsByRecruiter(userId, suspend);
+            } catch (Exception e) {
+                log.error("Failed to notify jobs-service of recruiter suspension: {}", e.getMessage());
+            }
+        }
+
+        log.info("Org member id={} role={} suspension set to {}", userId, user.getRole(), suspend);
+    }
+
+    // ──────────────────────────────────────────────────────────────
     //  Auth – login / refresh / logout
     // ──────────────────────────────────────────────────────────────
 
