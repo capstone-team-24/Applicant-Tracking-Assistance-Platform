@@ -125,6 +125,7 @@ def rank_candidates(
     except Exception:
         logger.exception("Ranking job %s failed.", ranking_job_id)
         try:
+            db.rollback()  # clear any pending-rollback state before status update
             _update_job_status(ranking_job_id, "FAILED", db)
         except Exception:
             logger.exception("Could not mark job %s as FAILED.", ranking_job_id)

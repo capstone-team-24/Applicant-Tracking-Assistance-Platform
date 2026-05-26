@@ -205,6 +205,39 @@ public class OfferService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<OfferResponse> getMyOffers(UUID candidateAuthUserId) {
+        java.util.List<Application> applications = applicationRepository.findByCandidateAuthUserId(candidateAuthUserId);
+        if (applications.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        java.util.List<UUID> applicationIds = applications.stream()
+                .map(Application::getId)
+                .toList();
+
+        java.util.List<Offer> offers = offerRepository.findByApplicationIdIn(applicationIds);
+
+        return offers.stream().map(offer -> {
+            Application app = applications.stream()
+                    .filter(a -> a.getId().equals(offer.getApplicationId()))
+                    .findFirst().orElse(null);
+            
+            Job job = app != null ? jobRepository.findById(app.getJobId()).orElse(null) : null;
+            
+            String orgName = "The Company";
+            if (job != null) {
+                try {
+                    orgName = orgServiceClient.getOrganizationName(job.getOrgId());
+                } catch (Exception e) {
+                    log.warn("Failed to fetch org name for orgId {}", job.getOrgId());
+                }
+            }
+            
+            return mapToResponse(offer, app, job, orgName);
+        }).toList();
+    }
+
     private OfferResponse mapToResponse(Offer offer, Application application, Job job, String orgName) {
         String status = "PENDING";
         if (offer.getAcceptedAt() != null) status = "ACCEPTED";
@@ -213,6 +246,7 @@ public class OfferService {
         return OfferResponse.builder()
                 .id(offer.getId())
                 .applicationId(offer.getApplicationId())
+                .token(offer.getToken())
                 .jobTitle(job.getTitle())
                 .companyName(orgName)
                 .candidateName(application.getCandidateName())

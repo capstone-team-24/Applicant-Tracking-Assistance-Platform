@@ -140,6 +140,24 @@ public class AuthService {
         log.info("Org Admin invite created: token={}, email={}, orgId={}", invite.getToken(), email, orgId);
     }
 
+    @Transactional
+    public UUID generateOrgAdminInviteToken(String email, UUID orgId) {
+        if (authUserRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException(email);
+        }
+
+        InviteToken invite = InviteToken.builder()
+                .email(email)
+                .role(Role.ORG_ADMIN)
+                .orgId(orgId)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .build();
+
+        inviteTokenRepository.save(invite);
+        log.info("Org Admin invite token generated silently: token={}, email={}, orgId={}", invite.getToken(), email, orgId);
+        return invite.getToken();
+    }
+
     // ──────────────────────────────────────────────────────────────
     //  Invite: Recruiter (Org Admin action)
     // ──────────────────────────────────────────────────────────────

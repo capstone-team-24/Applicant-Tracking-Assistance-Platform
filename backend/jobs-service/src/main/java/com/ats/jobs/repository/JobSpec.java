@@ -30,6 +30,7 @@ public class JobSpec {
      */
     public static Specification<Job> withFilters(
             UUID orgId,
+            UUID assignedTo,
             JobStatus status,
             String search,
             String location,
@@ -41,6 +42,10 @@ public class JobSpec {
 
             if (orgId != null) {
                 predicates.add(cb.equal(root.get("orgId"), orgId));
+            }
+
+            if (assignedTo != null) {
+                predicates.add(cb.equal(root.get("assignedTo"), assignedTo));
             }
 
             if (status != null) {

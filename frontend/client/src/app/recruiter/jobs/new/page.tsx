@@ -124,7 +124,7 @@ export default function CreateJobPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-white/10 p-8">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-8">
           <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
             {/* Title */}
             <div>
@@ -140,7 +140,7 @@ export default function CreateJobPage() {
                 type="text"
                 value={formData.title}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-white placeholder-gray-400 ${errors.title ? "border-red-300" : "border-gray-300"
+                className={`w-full px-4 py-2.5 border rounded-lg bg-white/5 text-white placeholder-white/40 ${errors.title ? "border-red-500/50" : "border-white/20"
                   }`}
                 placeholder="e.g., Senior Software Engineer"
               />
@@ -163,7 +163,7 @@ export default function CreateJobPage() {
                 rows={8}
                 value={formData.description}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-white placeholder-gray-400 resize-y ${errors.description ? "border-red-300" : "border-gray-300"
+                className={`w-full px-4 py-2.5 border rounded-lg bg-white/5 text-white placeholder-white/40 resize-y ${errors.description ? "border-red-500/50" : "border-white/20"
                   }`}
                 placeholder="Describe the role, responsibilities, and what the candidate will be working on..."
               />
@@ -188,7 +188,7 @@ export default function CreateJobPage() {
                 rows={6}
                 value={formData.requirements}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-white placeholder-gray-400 resize-y"
+                className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y"
                 placeholder="List the qualifications, experience, and skills required..."
               />
             </div>
@@ -208,7 +208,7 @@ export default function CreateJobPage() {
                   type="text"
                   value={formData.location}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-white placeholder-gray-400 ${errors.location ? "border-red-300" : "border-gray-300"
+                  className={`w-full px-4 py-2.5 border rounded-lg bg-white/5 text-white placeholder-white/40 ${errors.location ? "border-red-500/50" : "border-white/20"
                     }`}
                   placeholder="e.g., San Francisco, CA"
                 />
@@ -229,7 +229,7 @@ export default function CreateJobPage() {
                   name="employmentType"
                   value={formData.employmentType}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-white ${errors.employmentType ? "border-red-300" : "border-gray-300"
+                  className={`w-full px-4 py-2.5 border rounded-lg bg-white/5 text-white ${errors.employmentType ? "border-red-500/50" : "border-white/20"
                     } ${!formData.employmentType ? "text-white/40" : ""}`}
                 >
                   <option value="">Select type</option>
@@ -260,7 +260,7 @@ export default function CreateJobPage() {
                 name="experienceLevel"
                 value={formData.experienceLevel}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-white ${errors.experienceLevel ? "border-red-300" : "border-gray-300"
+                className={`w-full px-4 py-2.5 border rounded-lg bg-white/5 text-white ${errors.experienceLevel ? "border-red-500/50" : "border-white/20"
                   } ${!formData.experienceLevel ? "text-white/40" : ""}`}
               >
                 <option value="">Select level</option>
@@ -291,7 +291,7 @@ export default function CreateJobPage() {
                 type="text"
                 value={formData.skills}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-white placeholder-gray-400"
+                className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40"
                 placeholder="e.g., React, TypeScript, Node.js, PostgreSQL (comma-separated)"
               />
               <p className="mt-1 text-xs text-white/50">
@@ -306,7 +306,7 @@ export default function CreateJobPage() {
                     .map((skill, i) => (
                       <span
                         key={i}
-                        className="inline-flex px-2 py-0.5 rounded-full text-xs bg-primary-100 text-primary-700"
+                        className="inline-flex px-2 py-0.5 rounded-full text-xs bg-primary-500/20 text-primary-300 border border-primary-500/20"
                       >
                         {skill}
                       </span>
@@ -340,7 +340,7 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.skillsMatchWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
                   />
                 </div>
                 <div>
@@ -358,7 +358,7 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.experienceMatchWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
                   />
                 </div>
                 <div>
@@ -376,7 +376,7 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.educationMatchWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
                   />
                 </div>
                 <div>
@@ -394,7 +394,7 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.overallFitWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
                   />
                 </div>
               </div>
@@ -416,7 +416,7 @@ export default function CreateJobPage() {
                 value={formData.applicationDeadline}
                 onChange={handleChange}
                 min={nowLocalInputValue()}
-                className="w-full sm:w-72 px-4 py-2.5 border border-gray-300 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full sm:w-72 px-4 py-2.5 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               {formData.applicationDeadline && (
                 <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">

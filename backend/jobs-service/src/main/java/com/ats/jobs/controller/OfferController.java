@@ -34,6 +34,13 @@ public class OfferController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/offers/me")
+    public ResponseEntity<java.util.List<OfferResponse>> getMyOffers(HttpServletRequest httpRequest) {
+        UUID candidateId = HeaderContext.getAuthUserId(httpRequest);
+        java.util.List<OfferResponse> response = offerService.getMyOffers(candidateId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/offers/{token}")
     public ResponseEntity<OfferResponse> getOffer(@PathVariable String token) {
         OfferResponse response = offerService.getOfferByToken(token);

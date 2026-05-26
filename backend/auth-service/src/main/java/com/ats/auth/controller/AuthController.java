@@ -86,6 +86,15 @@ public class AuthController {
                 .body(Map.of("message", "Invite sent to " + request.getEmail()));
     }
 
+    @Operation(summary = "Generate Org Admin invite token without sending email (Internal)")
+    @PostMapping("/auth/internal/invite-org-admin-token")
+    public ResponseEntity<Map<String, String>> generateOrgAdminInviteToken(
+            @Valid @RequestBody InviteOrgAdminRequest request) {
+        UUID token = authService.generateOrgAdminInviteToken(request.getEmail(), request.getOrgId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("token", token.toString()));
+    }
+
     // ──────────────────────────────────────────────────────────────
     //  Invite: Recruiter (Org Admin only)
     // ──────────────────────────────────────────────────────────────

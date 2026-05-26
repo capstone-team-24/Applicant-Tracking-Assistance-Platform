@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface OfferRepository extends JpaRepository<Offer, UUID> {
     Optional<Offer> findByToken(String token);
     Optional<Offer> findByApplicationId(UUID applicationId);
+    java.util.List<Offer> findByApplicationIdIn(java.util.List<UUID> applicationIds);
 }

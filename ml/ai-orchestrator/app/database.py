@@ -50,3 +50,34 @@ def create_tables() -> None:
             logger.warning("DEMO_MODE: continuing despite database error.")
         else:
             raise
+
+
+# ── Schema migrations ─────────────────────────────────────────────────────────
+
+# Add idempotent ALTER TABLE statements here whenever a new column is added to
+# an ORM model.  Each statement uses "IF NOT EXISTS" so it is safe to run on
+# every startup against both fresh and pre-existing databases — no manual
+# `docker exec` required on any device.
+
+_MIGRATIONS = [
+    """
+    ALTER TABLE ai_ranking_results
+        ADD COLUMN IF NOT EXISTS interview_score DOUBLE PRECISION NOT NULL DEFAULT 0.0
+    """,
+]
+
+
+def apply_migrations() -> None:
+    """Run idempotent DDL migrations against the live database."""
+    try:
+        with engine.connect() as conn:
+            for sql in _MIGRATIONS:
+                conn.execute(__import__("sqlalchemy").text(sql))
+            conn.commit()
+        logger.info("Schema migrations applied successfully.")
+    except Exception:
+        logger.exception("Failed to apply schema migrations.")
+        if settings.is_demo:
+            logger.warning("DEMO_MODE: continuing despite migration error.")
+        else:
+            raise

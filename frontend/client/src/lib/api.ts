@@ -775,24 +775,24 @@ export const platformAdminApi = {
 
 // ---- Public Org Inquiry API (no auth required) ----
 export const orgInquiryApi = {
-  /** Get a contact message by ID (for org revision page) */
-  getSubmission: async (id: string): Promise<import("./types").ContactMessage> => {
-    const response = await api.get<import("./types").ContactMessage>(`/api/v1/contact-messages/${id}`);
+  /** Get a contact message by token (for org revision page) */
+  getSubmission: async (token: string): Promise<import("./types").ContactMessage> => {
+    const response = await api.get<import("./types").ContactMessage>(`/api/v1/contact-messages/token/${token}`);
     return response.data;
   },
 
   /** Update the submission after inquiry */
-  updateSubmission: async (id: string, data: { message: string; hrAdminName?: string; companyDetails?: string }): Promise<import("./types").ContactMessage> => {
-    const response = await api.put<import("./types").ContactMessage>(`/api/v1/contact-messages/${id}`, data);
+  updateSubmission: async (token: string, data: { message: string; hrAdminName?: string; companyDetails?: string }): Promise<import("./types").ContactMessage> => {
+    const response = await api.put<import("./types").ContactMessage>(`/api/v1/contact-messages/token/${token}`, data);
     return response.data;
   },
 
   /** Upload a verification document */
-  uploadDocument: async (id: string, file: File): Promise<import("./types").VerificationDocument> => {
+  uploadDocument: async (token: string, file: File): Promise<import("./types").VerificationDocument> => {
     const form = new FormData();
     form.append("file", file);
     const response = await api.post<import("./types").VerificationDocument>(
-      `/api/v1/contact-messages/${id}/documents`,
+      `/api/v1/contact-messages/token/${token}/documents`,
       form,
       { headers: { "Content-Type": "multipart/form-data" } },
     );
@@ -800,14 +800,14 @@ export const orgInquiryApi = {
   },
 
   /** List verification documents for a submission */
-  listDocuments: async (id: string): Promise<import("./types").VerificationDocument[]> => {
-    const response = await api.get<import("./types").VerificationDocument[]>(`/api/v1/contact-messages/${id}/documents`);
+  listDocuments: async (token: string): Promise<import("./types").VerificationDocument[]> => {
+    const response = await api.get<import("./types").VerificationDocument[]>(`/api/v1/contact-messages/token/${token}/documents`);
     return response.data;
   },
 
   /** Delete a verification document */
-  deleteDocument: async (id: string, docId: string): Promise<void> => {
-    await api.delete(`/api/v1/contact-messages/${id}/documents/${docId}`);
+  deleteDocument: async (token: string, docId: string): Promise<void> => {
+    await api.delete(`/api/v1/contact-messages/token/${token}/documents/${docId}`);
   },
 
   /** Returns a direct URL to open/download the document inline */
@@ -874,6 +874,11 @@ export const offersApi = {
 
   getOffer: async (token: string): Promise<OfferResponse> => {
     const response = await api.get<OfferResponse>(`/api/v1/offers/${token}`);
+    return response.data;
+  },
+
+  getMyOffers: async (): Promise<OfferResponse[]> => {
+    const response = await api.get<OfferResponse[]>("/api/v1/offers/me");
     return response.data;
   },
 

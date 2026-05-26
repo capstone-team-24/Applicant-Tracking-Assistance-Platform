@@ -99,6 +99,13 @@ public class ContactMessageService {
         return toResponse(message);
     }
 
+    @Transactional(readOnly = true)
+    public ContactMessageResponse getByRevisionToken(String revisionToken) {
+        ContactMessage message = contactMessageRepository.findByRevisionToken(revisionToken)
+                .orElseThrow(() -> new ResourceNotFoundException("ContactMessage", "revisionToken", revisionToken));
+        return toResponse(message);
+    }
+
     // ──────────────────────────────────────────────────────────────
     //  Approve
     // ──────────────────────────────────────────────────────────────
@@ -129,18 +136,32 @@ public class ContactMessageService {
         message.setApprovedOrganizationId(organization.getId());
         contactMessageRepository.save(message);
 
-        // Send the org-admin invite via auth-service (sends a proper "Set Up My Account" email)
+        // Generate the org-admin invite token
+        String setupLink = null;
         try {
-            authServiceClient.inviteOrgAdmin(
+            AuthServiceClient.TokenResponse tokenResponse = authServiceClient.generateOrgAdminInviteToken(
                     AuthServiceClient.InviteOrgAdminRequest.builder()
                             .email(message.getEmail())
                             .orgId(organization.getId())
                             .build()
             );
-            log.info("Org-admin invite sent to {} for org {}", message.getEmail(), organization.getId());
+            setupLink = frontendBaseUrl + "/invite/setup?token=" + tokenResponse.getToken();
+            log.info("Org-admin invite token generated for {} for org {}", message.getEmail(), organization.getId());
         } catch (Exception e) {
-            log.warn("Org created ({}) but failed to send invite email to {}: {}",
+            log.warn("Org created ({}) but failed to generate invite token for {}: {}",
                     organization.getId(), message.getEmail(), e.getMessage());
+        }
+
+        // Send approval email with setup link
+        try {
+            notificationServiceClient.sendNotification(SendNotificationRequest.builder()
+                    .recipientEmail(message.getEmail())
+                    .subject("Your organization registration is approved!")
+                    .body(buildApprovalEmailHtml(message, organization, setupLink))
+                    .type("EMAIL")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Approved message {} but approval email to {} failed: {}", id, message.getEmail(), e.getMessage());
         }
 
         log.info("Approved contact message {} → org {}", id, organization.getId());
@@ -204,10 +225,12 @@ public class ContactMessageService {
 
         message.setStatus(ContactMessageStatus.PENDING_RESPONSE);
         message.setInquiryMessage(request.getMessage());
+        String token = UUID.randomUUID().toString();
+        message.setRevisionToken(token);
         ContactMessage saved = contactMessageRepository.save(message);
 
         // Build the link to the org's revision page
-        String revisionLink = frontendBaseUrl + "/org/inquiry/" + id;
+        String revisionLink = frontendBaseUrl + "/org/inquiry/" + token;
 
         // Send inquiry email
         try {
@@ -230,9 +253,9 @@ public class ContactMessageService {
     // ──────────────────────────────────────────────────────────────
 
     @Transactional
-    public ContactMessageResponse updateByOrg(UUID id, UpdateContactMessageRequest request) {
-        ContactMessage message = contactMessageRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("ContactMessage", "id", id));
+    public ContactMessageResponse updateByOrg(String revisionToken, UpdateContactMessageRequest request) {
+        ContactMessage message = contactMessageRepository.findByRevisionToken(revisionToken)
+                .orElseThrow(() -> new ResourceNotFoundException("ContactMessage", "revisionToken", revisionToken));
 
         if (message.getStatus() == ContactMessageStatus.APPROVED) {
             throw new IllegalStateException("This registration has already been approved.");
@@ -250,9 +273,10 @@ public class ContactMessageService {
         }
         // Reset status to PENDING_APPROVAL so admin can review again
         message.setStatus(ContactMessageStatus.PENDING_APPROVAL);
+        message.setRevisionToken(null); // Clear token since it's a one-time use
 
         ContactMessage saved = contactMessageRepository.save(message);
-        log.info("Org updated contact message {} → status=PENDING_APPROVAL", id);
+        log.info("Org updated contact message {} → status=PENDING_APPROVAL", message.getId());
         return toResponse(saved);
     }
 
@@ -316,6 +340,27 @@ public class ContactMessageService {
         }
         return documentRepository.findByContactMessageIdOrderByUploadedAtDesc(contactMessageId)
                 .stream().map(this::toDocumentResponse).toList();
+    }
+
+    @Transactional
+    public DocumentResponse uploadDocumentByToken(String revisionToken, MultipartFile file) {
+        ContactMessage message = contactMessageRepository.findByRevisionToken(revisionToken)
+                .orElseThrow(() -> new ResourceNotFoundException("ContactMessage", "revisionToken", revisionToken));
+        return uploadDocument(message.getId(), file);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentResponse> listDocumentsByToken(String revisionToken) {
+        ContactMessage message = contactMessageRepository.findByRevisionToken(revisionToken)
+                .orElseThrow(() -> new ResourceNotFoundException("ContactMessage", "revisionToken", revisionToken));
+        return listDocuments(message.getId());
+    }
+
+    @Transactional
+    public void deleteDocumentByToken(String revisionToken, UUID documentId) {
+        ContactMessage message = contactMessageRepository.findByRevisionToken(revisionToken)
+                .orElseThrow(() -> new ResourceNotFoundException("ContactMessage", "revisionToken", revisionToken));
+        deleteDocument(message.getId(), documentId);
     }
 
     @Transactional(readOnly = true)
@@ -506,5 +551,52 @@ public class ContactMessageService {
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
+    }
+
+    private String buildApprovalEmailHtml(ContactMessage message, OrganizationResponse org, String setupLink) {
+        String setupBlock = "";
+        if (setupLink != null) {
+            setupBlock = "<p style='margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
+                    + "Your Organization Admin account has been created. Click the button below to set up your password and activate your account.</p>"
+                    + "<table cellpadding='0' cellspacing='0' style='margin:0 auto 32px auto;'>"
+                    + "<tr><td align='center' style='background:linear-gradient(135deg,#10b981,#059669);border-radius:10px;'>"
+                    + "<a href='" + setupLink + "' target='_blank' "
+                    + "style='display:inline-block;padding:14px 36px;font-size:15px;font-weight:600;"
+                    + "color:#ffffff;text-decoration:none;letter-spacing:0.3px;'>Set Up My Account</a>"
+                    + "</td></tr></table>"
+                    + "<p style='margin:0 0 8px 0;font-size:12px;color:#64748b;'>If the button does not work, copy and paste this link:</p>"
+                    + "<p style='margin:0 0 24px 0;word-break:break-all;'>"
+                    + "<a href='" + setupLink + "' style='color:#34d399;text-decoration:underline;font-size:12px;'>" + setupLink + "</a></p>";
+        }
+
+        return "<!DOCTYPE html>"
+                + "<html lang='en'><head><meta charset='UTF-8'>"
+                + "<meta name='viewport' content='width=device-width,initial-scale=1'></head>"
+                + "<body style='margin:0;padding:0;background:#0f0f1a;font-family:Inter,Segoe UI,Arial,sans-serif;'>"
+                + "<table width='100%' cellpadding='0' cellspacing='0' style='background:#0f0f1a;padding:40px 16px;'>"
+                + "<tr><td align='center'>"
+                + "<table width='560' cellpadding='0' cellspacing='0' style='max-width:560px;width:100%;background:#1e1e30;"
+                + "border-radius:16px;overflow:hidden;border:1px solid #2e2e50;'>"
+                // Header
+                + "<tr><td style='background:linear-gradient(135deg,#059669,#10b981);padding:32px 40px;text-align:center;'>"
+                + "<p style='margin:0 0 6px 0;font-size:11px;font-weight:600;letter-spacing:2px;"
+                + "text-transform:uppercase;color:#a7f3d0;'>Recruitment Platform</p>"
+                + "<h1 style='margin:0;font-size:22px;font-weight:700;color:#ffffff;'>Registration Approved</h1>"
+                + "</td></tr>"
+                // Body
+                + "<tr><td style='padding:36px 40px 24px;'>"
+                + "<p style='margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
+                + "Dear <strong>" + escapeHtml(message.getName()) + "</strong>,</p>"
+                + "<p style='margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
+                + "Good news! Your organization registration request for <strong>" + escapeHtml(org.getName()) + "</strong> has been <strong style='color:#34d399;'>approved</strong>.</p>"
+                + setupBlock
+                + "</td></tr>"
+                // Footer
+                + "<tr><td style='padding:20px 40px 28px;border-top:1px solid #2e2e50;text-align:center;'>"
+                + "<p style='margin:0;font-size:11px;color:#334155;'>&#169; ATS Recruitment Platform</p>"
+                + "</td></tr>"
+                + "</table>"
+                + "</td></tr></table>"
+                + "</body></html>";
     }
 }

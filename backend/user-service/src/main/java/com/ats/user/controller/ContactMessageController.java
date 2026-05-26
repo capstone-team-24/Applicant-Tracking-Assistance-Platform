@@ -45,27 +45,30 @@ public class ContactMessageController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    //  Public — org updates their own submission (after inquiry)
-    // ──────────────────────────────────────────────────────────────
 
-    @PutMapping("/contact-messages/{id}")
-    @Operation(summary = "Organization updates their registration submission (Public — after receiving inquiry)")
-    public ResponseEntity<ContactMessageResponse> updateContactMessage(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateContactMessageRequest request) {
-        ContactMessageResponse response = contactMessageService.updateByOrg(id, request);
-        return ResponseEntity.ok(response);
+    @GetMapping("/contact-messages/{id}")
+    @Operation(summary = "Get a single contact message by ID (Admin)")
+    public ResponseEntity<ContactMessageResponse> getContactMessage(@PathVariable UUID id) {
+        return ResponseEntity.ok(contactMessageService.getById(id));
     }
 
     // ──────────────────────────────────────────────────────────────
-    //  Public — get single message by ID (for org revision page)
+    //  Public — Get and update by Token (for org revision page)
     // ──────────────────────────────────────────────────────────────
 
-    @GetMapping("/contact-messages/{id}")
-    @Operation(summary = "Get a single contact message by ID (Admin or Org revision page)")
-    public ResponseEntity<ContactMessageResponse> getContactMessage(@PathVariable UUID id) {
-        return ResponseEntity.ok(contactMessageService.getById(id));
+    @GetMapping("/contact-messages/token/{token}")
+    @Operation(summary = "Get a single contact message by token (Org revision page)")
+    public ResponseEntity<ContactMessageResponse> getContactMessageByToken(@PathVariable String token) {
+        return ResponseEntity.ok(contactMessageService.getByRevisionToken(token));
+    }
+
+    @PutMapping("/contact-messages/token/{token}")
+    @Operation(summary = "Organization updates their registration submission (Public — after receiving inquiry)")
+    public ResponseEntity<ContactMessageResponse> updateContactMessageByToken(
+            @PathVariable String token,
+            @Valid @RequestBody UpdateContactMessageRequest request) {
+        ContactMessageResponse response = contactMessageService.updateByOrg(token, request);
+        return ResponseEntity.ok(response);
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -75,7 +78,7 @@ public class ContactMessageController {
     @GetMapping("/contact-messages")
     @Operation(summary = "Get all contact messages with optional status filter (Platform Admin)")
     public ResponseEntity<Page<ContactMessageResponse>> getAllContactMessages(
-            @PageableDefault(size = 20) Pageable pageable,
+            @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) ContactMessageStatus status) {
         Page<ContactMessageResponse> messages = status != null
                 ? contactMessageService.getMessagesByStatus(status, pageable)
@@ -145,11 +148,39 @@ public class ContactMessageController {
     }
 
     @DeleteMapping("/contact-messages/{id}/documents/{docId}")
-    @Operation(summary = "Delete a verification document (Admin or Org before approval)")
+    @Operation(summary = "Delete a verification document (Admin)")
     public ResponseEntity<Void> deleteDocument(
             @PathVariable UUID id,
             @PathVariable UUID docId) {
         contactMessageService.deleteDocument(id, docId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Public Documents by Token
+    // ──────────────────────────────────────────────────────────────
+
+    @PostMapping(value = "/contact-messages/token/{token}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload a verification document by token (Public)")
+    public ResponseEntity<DocumentResponse> uploadDocumentByToken(
+            @PathVariable String token,
+            @RequestParam("file") MultipartFile file) {
+        DocumentResponse response = contactMessageService.uploadDocumentByToken(token, file);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/contact-messages/token/{token}/documents")
+    @Operation(summary = "List verification documents by token (Public)")
+    public ResponseEntity<List<DocumentResponse>> listDocumentsByToken(@PathVariable String token) {
+        return ResponseEntity.ok(contactMessageService.listDocumentsByToken(token));
+    }
+
+    @DeleteMapping("/contact-messages/token/{token}/documents/{docId}")
+    @Operation(summary = "Delete a verification document by token (Public)")
+    public ResponseEntity<Void> deleteDocumentByToken(
+            @PathVariable String token,
+            @PathVariable UUID docId) {
+        contactMessageService.deleteDocumentByToken(token, docId);
         return ResponseEntity.noContent().build();
     }
 }
