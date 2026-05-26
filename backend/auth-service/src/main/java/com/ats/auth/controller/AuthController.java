@@ -1,6 +1,7 @@
 package com.ats.auth.controller;
 
 import com.ats.auth.dto.AcceptInviteRequest;
+import com.ats.auth.dto.ChangePasswordRequest;
 import com.ats.auth.dto.InviteOrgAdminRequest;
 import com.ats.auth.dto.InviteRecruiterRequest;
 import com.ats.auth.dto.InviteTokenResponse;
@@ -71,6 +72,15 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> logout(@Valid @RequestBody RefreshRequest request) {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+
+    @Operation(summary = "Change the current user's password")
+    @PostMapping("/auth/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @RequestHeader("X-User-Id") String userId) {
+        authService.changePassword(UUID.fromString(userId), request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password updated successfully. Please sign in again."));
     }
 
     // ──────────────────────────────────────────────────────────────

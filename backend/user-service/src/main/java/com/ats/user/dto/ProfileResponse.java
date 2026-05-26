@@ -20,7 +20,12 @@ public class ProfileResponse {
     private String lastName;
     private String email;
     private String phone;
+    private String headline;
+    private String location;
     private String bio;
+    private String linkedinUrl;
+    private String portfolioUrl;
+    private String websiteUrl;
     private String cvUrl;
     private String role;
     private UUID orgId;

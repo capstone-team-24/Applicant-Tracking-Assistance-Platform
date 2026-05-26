@@ -68,6 +68,11 @@ export default function Navbar() {
                       Dashboard
                     </Link>
                   )}
+                  {isCandidate && (
+                    <Link href="/settings" className={linkClass("/settings")}>
+                      Settings
+                    </Link>
+                  )}
                   {isRecruiter && (
                     <>
                       <Link
@@ -159,6 +164,11 @@ export default function Navbar() {
               {isLoggedIn && (
                 <Link href="/dashboard" className={`block ${linkClass("/dashboard")}`} onClick={() => setMobileMenuOpen(false)}>
                   Dashboard
+                </Link>
+              )}
+              {isCandidate && (
+                <Link href="/settings" className={`block ${linkClass("/settings")}`} onClick={() => setMobileMenuOpen(false)}>
+                  Settings
                 </Link>
               )}
               {isRecruiter && (

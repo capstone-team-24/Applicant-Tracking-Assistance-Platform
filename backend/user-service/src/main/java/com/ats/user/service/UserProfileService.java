@@ -86,8 +86,23 @@ public class UserProfileService {
         if (request.getPhone() != null) {
             profile.setPhone(request.getPhone());
         }
+        if (request.getHeadline() != null) {
+            profile.setHeadline(request.getHeadline());
+        }
+        if (request.getLocation() != null) {
+            profile.setLocation(request.getLocation());
+        }
         if (request.getBio() != null) {
             profile.setBio(request.getBio());
+        }
+        if (request.getLinkedinUrl() != null) {
+            profile.setLinkedinUrl(request.getLinkedinUrl());
+        }
+        if (request.getPortfolioUrl() != null) {
+            profile.setPortfolioUrl(request.getPortfolioUrl());
+        }
+        if (request.getWebsiteUrl() != null) {
+            profile.setWebsiteUrl(request.getWebsiteUrl());
         }
         if (request.getYearsOfExperience() != null) {
             profile.setYearsOfExperience(request.getYearsOfExperience());
@@ -174,7 +189,12 @@ public class UserProfileService {
                 .lastName(profile.getLastName())
                 .email(profile.getEmail())
                 .phone(profile.getPhone())
+                .headline(profile.getHeadline())
+                .location(profile.getLocation())
                 .bio(profile.getBio())
+                .linkedinUrl(profile.getLinkedinUrl())
+                .portfolioUrl(profile.getPortfolioUrl())
+                .websiteUrl(profile.getWebsiteUrl())
                 .cvUrl(profile.getCvUrl())
                 .role(profile.getRole())
                 .orgId(profile.getOrgId())

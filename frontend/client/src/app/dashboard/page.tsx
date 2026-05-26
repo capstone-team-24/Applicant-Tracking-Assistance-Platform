@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
-import { jobsApi, profilesApi, applicationsApi, assessmentsApi, interviewsApi, integrationsApi, offersApi } from "@/lib/api";
+import { jobsApi, profilesApi, applicationsApi, assessmentsApi, interviewsApi, offersApi } from "@/lib/api";
 import type { Job, Application, Profile, ReceivedAssessmentInvite, InterviewInvite, CandidateBookingResponse, OfferResponse } from "@/lib/types";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import JobCard from "@/components/JobCard";
@@ -28,8 +28,6 @@ function CandidateDashboard() {
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [isLoadingOffers, setIsLoadingOffers] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
-  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
-  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -104,16 +102,6 @@ function CandidateDashboard() {
       }
     };
     fetchOffers();
-
-    const fetchIntegrationStatus = async () => {
-      try {
-        const res = await integrationsApi.getGoogleIntegrationStatus();
-        setIsGoogleConnected(res.connected);
-      } catch (error) {
-        console.error("Failed to fetch integration status:", error);
-      }
-    };
-    fetchIntegrationStatus();
   }, [fetchProfile]);
 
   const handleCvUpload = async (file: File) => {
@@ -128,18 +116,6 @@ function CandidateDashboard() {
       fetchProfile();
     } catch {
       toast.error("Failed to upload CV");
-    }
-  };
-
-  const handleConnectCalendar = async () => {
-    setIsConnectingGoogle(true);
-    try {
-      const response = await integrationsApi.getGoogleAuthUrl();
-      window.location.href = response.url;
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to fetch Google Auth URL");
-      setIsConnectingGoogle(false);
     }
   };
 
@@ -171,6 +147,16 @@ function CandidateDashboard() {
               </div>
             ) : profile ? (
               <div className="space-y-3">
+                {(profile.firstName || profile.lastName) && (
+                  <p className="text-sm text-white/70">
+                    {profile.firstName} {profile.lastName}
+                  </p>
+                )}
+                {profile.headline && (
+                  <p className="text-sm text-indigo-200">
+                    {profile.headline}
+                  </p>
+                )}
                 {profile.bio && (
                   <p className="text-sm font-medium text-white">
                     {profile.bio}
@@ -180,6 +166,9 @@ function CandidateDashboard() {
                   <p className="text-sm text-white/60">
                     Experience: {profile.yearsOfExperience} year{profile.yearsOfExperience !== 1 ? 's' : ''}
                   </p>
+                )}
+                {profile.location && (
+                  <p className="text-sm text-white/60">Location: {profile.location}</p>
                 )}
                 {profile.cvUrl ? (
                   <div className="flex items-center gap-2 text-sm text-emerald-400">
@@ -217,32 +206,27 @@ function CandidateDashboard() {
             </div>
           </div>
 
-          {/* Integrations */}
+          {/* Account setup */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6 mt-6">
             <h2 className="text-lg font-semibold text-white mb-4">
-              Integrations
+              Account Setup
             </h2>
             <div className="space-y-3">
               <p className="text-sm text-white/60">
-                Connect your Google Calendar to automatically add scheduled interviews to your personal calendar.
+                Update your profile, change your password, and connect Google Calendar from one dedicated settings page.
               </p>
-              <button
-                onClick={handleConnectCalendar}
-                disabled={isConnectingGoogle || isGoogleConnected === true}
-                className={`w-full py-2 px-4 text-sm font-medium rounded-xl shadow-sm transition-all duration-200 flex justify-center items-center gap-2 disabled:opacity-50 ${isGoogleConnected
-                  ? "bg-green-100/60 text-green-700 border border-green-200/40 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 text-white hover:shadow"
-                  }`}
+              <Link
+                href="/account/setup"
+                className="block w-full rounded-xl bg-white/10 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-white/15"
               >
-                {isConnectingGoogle ? (
-                  <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                ) : isGoogleConnected ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                )}
-                {isGoogleConnected ? "Connected" : "Connect Google Calendar"}
-              </button>
+                Open Account Setup
+              </Link>
+              <Link
+                href="/settings"
+                className="block w-full rounded-xl bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-blue-700"
+              >
+                Go to Settings
+              </Link>
             </div>
           </div>
         </div>
