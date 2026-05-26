@@ -6,6 +6,7 @@ import com.ats.jobs.enums.JobStatus;
 import com.ats.jobs.exception.BadRequestException;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
+import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.repository.JobRepository;
 import com.ats.jobs.repository.JobSpec;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class JobService {
 
     private final JobRepository jobRepository;
+    private final OrgServiceClient orgServiceClient;
 
     @Transactional
     public JobResponse createJob(CreateJobRequest request, UUID userId, UUID orgId) {
@@ -285,9 +287,18 @@ public class JobService {
     }
 
     private JobResponse mapToResponse(Job job) {
+        String orgName = null;
+        if (job.getOrgId() != null) {
+            try {
+                orgName = orgServiceClient.getOrganizationName(job.getOrgId());
+            } catch (Exception e) {
+                log.warn("Could not resolve org name for orgId={}: {}", job.getOrgId(), e.getMessage());
+            }
+        }
         return JobResponse.builder()
                 .id(job.getId())
                 .orgId(job.getOrgId())
+                .organizationName(orgName)
                 .title(job.getTitle())
                 .description(job.getDescription())
                 .requirements(job.getRequirements())

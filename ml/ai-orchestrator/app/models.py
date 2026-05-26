@@ -73,6 +73,7 @@ class RankingResult(Base):
     application_id = Column(UUID(as_uuid=True), nullable=True)
     semantic_score = Column(Float, nullable=False, default=0.0)
     assessment_score = Column(Float, nullable=False, default=0.0)
+    interview_score = Column(Float, nullable=False, default=0.0)
     llm_quality_score = Column(Float, nullable=False, default=0.0)
     composite_score = Column(Float, nullable=False, default=0.0)
     summary = Column(Text, nullable=True)
@@ -132,6 +133,7 @@ class CandidateRankResult(BaseModel):
     applicationId: Optional[str] = None
     semanticScore: float = 0.0
     assessmentScore: float = 0.0
+    interviewScore: float = 0.0
     llmQualityScore: float = 0.0
     compositeScore: float = 0.0
     summary: Optional[str] = None

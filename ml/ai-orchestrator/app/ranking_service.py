@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_WEIGHTS: Dict[str, float] = {
     "semantic": 0.40,
     "assessment": 0.20,
+    "interview": 0.0,
     "llm": 0.40,
 }
 
@@ -163,6 +164,14 @@ def _score_single_candidate(
     # c. Assessment score (would come from DB/external service; demo=0)
     assessment_score = _fetch_assessment_score(application_id)
 
+    # d. Interview score (if available) — application-level /50 score; normalised to 0-100
+    interview_score = _fetch_interview_score(application_id)
+    # normalise interview (0-50) to 0-100 for composite compatibility
+    if interview_score is not None:
+        interview_score_normalised = round(min(max(interview_score * 2.0, 0.0), 100.0), 2)
+    else:
+        interview_score_normalised = 0.0
+
     # d. LLM quality score
     llm_result = llm_adapter.score_candidate(
         job_desc=job_desc,
@@ -174,9 +183,10 @@ def _score_single_candidate(
 
     # e. Composite score
     composite = (
-        semantic_score * weights["semantic"]
-        + assessment_score * weights["assessment"]
-        + llm_quality_score * weights["llm"]
+        semantic_score * weights.get("semantic", 0.0)
+        + assessment_score * weights.get("assessment", 0.0)
+        + interview_score_normalised * weights.get("interview", 0.0)
+        + llm_quality_score * weights.get("llm", 0.0)
     )
     composite = round(composite, 2)
 
@@ -191,6 +201,7 @@ def _score_single_candidate(
         application_id=uuid.UUID(application_id),
         semantic_score=semantic_score,
         assessment_score=assessment_score,
+        interview_score=interview_score,
         llm_quality_score=llm_quality_score,
         composite_score=composite,
         summary=summary,
@@ -224,6 +235,7 @@ def _score_single_candidate(
         "applicationId": application_id,
         "semanticScore": semantic_score,
         "assessmentScore": assessment_score,
+        "interviewScore": interview_score,
         "llmQualityScore": llm_quality_score,
         "compositeScore": composite,
         "summary": summary,
@@ -263,6 +275,33 @@ def _fetch_assessment_score(candidate_id: str) -> float:
         # Deterministic demo score based on candidate ID
         seed = int(hashlib.md5(candidate_id.encode()).hexdigest(), 16) % 100
         return float(seed)
+    return 0.0
+
+
+def _fetch_interview_score(application_id: str) -> Optional[float]:
+    """Try to fetch an interview score from the jobs-service application endpoint.
+
+    Returns the interview score as a float (0-50) or 0.0 when unavailable.
+    """
+    if settings.is_demo:
+        # deterministic demo: reuse assessment-style seeding to produce a 0-50 value
+        seed = int(hashlib.md5(application_id.encode()).hexdigest(), 16) % 51
+        return float(seed)
+
+    try:
+        import httpx
+
+        url = f"http://jobs-service:8083/api/v1/applications/{application_id}"
+        resp = httpx.get(url, timeout=5.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            # application detail now exposes interviewScore (0-50)
+            val = data.get("interviewScore")
+            if val is None:
+                return 0.0
+            return float(val)
+    except Exception:
+        logger.debug("Could not fetch interview score for application %s", application_id)
     return 0.0
 
 

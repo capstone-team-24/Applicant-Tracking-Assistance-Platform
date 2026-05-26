@@ -31,7 +31,7 @@ export default function Navbar() {
   const linkClass = (path: string) =>
     `px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
       isActive(path)
-        ? "bg-white/30 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-white/30"
+        ? "bg-white/10 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-white/30"
         : "text-white hover:bg-white/15"
     }`;
 

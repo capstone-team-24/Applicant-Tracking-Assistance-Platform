@@ -15,4 +15,8 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
     Optional<AuthUser> findByEmail(String email);
 
     List<AuthUser> findByOrgIdAndRole(UUID orgId, Role role);
+
+    List<AuthUser> findByRole(Role role);
+
+    List<AuthUser> findByOrgIdAndRoleIn(UUID orgId, List<Role> roles);
 }

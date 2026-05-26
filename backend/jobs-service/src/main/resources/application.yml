@@ -32,9 +32,9 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       auto-offset-reset: latest
       properties:
-        spring.json.trusted.packages: "com.ats.jobs.dto"
+        spring.json.trusted.packages: "com.ats.jobs.dto,java.util"
         spring.json.use.type.headers: false
-        spring.json.value.default.type: com.ats.jobs.dto.RankResultEvent
+        spring.json.value.default.type: java.util.LinkedHashMap
 eureka:
   client:
     service-url:

@@ -29,7 +29,15 @@ public class ApplicationDetailResponse {
     private ApplicationStatus status;
     private Double parseConfidence;
     private Double compositeScore;
+    private Double oaScore;
+    private Double interviewScore;
+    private Double finalRankingScore;
     private Integer rankingPosition;
+    private Integer finalRank;
+    private Boolean isWaitlisted;
+    private String rejectionReason;
+    private java.time.LocalDateTime rejectedAt;
+    private java.util.UUID rejectedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -21,4 +21,11 @@ public class ContactMessageRequest {
 
     @NotBlank(message = "Message is required")
     private String message;
+
+    /** Optional: name of the HR admin who will manage this organization */
+    private String hrAdminName;
+
+    /** Optional: additional details about the company */
+    private String companyDetails;
 }
+

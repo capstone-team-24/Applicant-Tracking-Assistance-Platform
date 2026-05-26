@@ -40,6 +40,9 @@ public class AssessmentInvite implements Persistable<UUID> {
     @Column(name = "job_title", nullable = false)
     private String jobTitle;
 
+    @Column(name = "organization_name")
+    private String organizationName;
+
     @Column(name = "assessment_token", nullable = false)
     private String assessmentToken;
 

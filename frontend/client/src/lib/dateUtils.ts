@@ -84,18 +84,14 @@ export function nowLocalInputValue(): string {
 
 /**
  * Converts a datetime-local input value ("YYYY-MM-DDTHH:mm" in local time)
- * to a Spring-compatible LocalDateTime string in UTC ("YYYY-MM-DDTHH:mm:ss").
- *
- * The backend JVM runs in UTC, so all stored LocalDateTime values must be in
- * UTC for the deadline scheduler and JobSpec comparisons to work correctly.
- *
- * `new Date("YYYY-MM-DDTHH:mm")` (no timezone suffix) is treated as LOCAL
- * time by all modern browsers, so `.toISOString()` gives the correct UTC value.
+ * to a Spring-compatible LocalDateTime string ("YYYY-MM-DDTHH:mm:ss").
+ * Spring's LocalDateTime deserializer rejects ISO strings ending in 'Z'
+ * or with milliseconds.
  */
 export function toBackendDatetime(localInputValue: string): string {
   if (!localInputValue) return "";
-  const d = new Date(localInputValue);
-  if (isNaN(d.getTime())) return "";
-  // Slice to "YYYY-MM-DDTHH:mm:ss" — Spring LocalDateTime rejects Z and ms
-  return d.toISOString().slice(0, 19);
+  // datetime-local gives "2026-05-15T14:30" — just append seconds
+  return localInputValue.length === 16
+    ? localInputValue + ":00"
+    : localInputValue;
 }

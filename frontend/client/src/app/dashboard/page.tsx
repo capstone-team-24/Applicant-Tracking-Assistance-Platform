@@ -130,12 +130,14 @@ function CandidateDashboard() {
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
+    <div className="min-h-screen w-full relative flex flex-col items-center p-6 md:p-8 transition-all duration-500">
+
+
+      <div className="mb-8 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
+        <h1 className="text-2xl font-bold text-white">
           Welcome back, {user?.firstName}!
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-white/60 mt-1">
           Here is an overview of your candidate profile and applications.
         </p>
       </div>
@@ -143,41 +145,41 @@ function CandidateDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">
               Profile Summary
             </h2>
             {isLoadingProfile ? (
               <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
-                <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="h-4 bg-white/10 rounded w-3/4" />
+                <div className="h-4 bg-white/10 rounded w-1/2" />
+                <div className="h-4 bg-white/10 rounded w-2/3" />
               </div>
             ) : profile ? (
               <div className="space-y-3">
                 {profile.bio && (
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-white">
                     {profile.bio}
                   </p>
                 )}
                 {profile.yearsOfExperience != null && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-white/60">
                     Experience: {profile.yearsOfExperience} year{profile.yearsOfExperience !== 1 ? 's' : ''}
                   </p>
                 )}
                 {profile.cvUrl ? (
-                  <div className="flex items-center gap-2 text-sm text-green-600">
+                  <div className="flex items-center gap-2 text-sm text-emerald-400">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     CV uploaded
                   </div>
                 ) : (
-                  <p className="text-sm text-yellow-600">No CV uploaded yet</p>
+                  <p className="text-sm text-amber-400">No CV uploaded yet</p>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-white/50">
                 No profile data yet. Complete your profile to improve your applications.
               </p>
             )}
@@ -185,12 +187,12 @@ function CandidateDashboard() {
             <div className="mt-6 space-y-3">
               <button
                 onClick={() => setShowUpload(!showUpload)}
-                className="w-full py-2 px-4 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl shadow-sm hover:shadow transition-all duration-200"
               >
                 {showUpload ? "Cancel Upload" : "Upload CV"}
               </button>
               {showUpload && (
-                <div className="mt-3">
+                <div className="mt-3 backdrop-blur-sm bg-white/10 p-4 border border-white/20 rounded-xl">
                   <FileUpload
                     onFileSelect={handleCvUpload}
                     label="Upload your CV"
@@ -202,22 +204,21 @@ function CandidateDashboard() {
           </div>
 
           {/* Integrations */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6 mt-6">
+            <h2 className="text-lg font-semibold text-white mb-4">
               Integrations
             </h2>
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-white/60">
                 Connect your Google Calendar to automatically add scheduled interviews to your personal calendar.
               </p>
               <button
                 onClick={handleConnectCalendar}
                 disabled={isConnectingGoogle || isGoogleConnected === true}
-                className={`w-full py-2 px-4 text-sm font-medium rounded-lg shadow-sm transition flex justify-center items-center gap-2 disabled:opacity-50 ${
-                  isGoogleConnected
-                    ? "bg-green-100 text-green-700 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
+                className={`w-full py-2 px-4 text-sm font-medium rounded-xl shadow-sm transition-all duration-200 flex justify-center items-center gap-2 disabled:opacity-50 ${isGoogleConnected
+                  ? "bg-green-100/60 text-green-700 border border-green-200/40 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 text-white hover:shadow"
+                  }`}
               >
                 {isConnectingGoogle ? (
                   <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -234,9 +235,9 @@ function CandidateDashboard() {
 
         {/* My Applications */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-white">
                 My Applications
               </h2>
               <Link
@@ -250,10 +251,10 @@ function CandidateDashboard() {
             {isLoadingApps ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse border rounded-lg p-4">
-                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
-                    <div className="h-3 bg-gray-200 rounded w-1/4" />
+                  <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                    <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-white/10 rounded w-1/2 mb-2" />
+                    <div className="h-3 bg-white/10 rounded w-1/4" />
                   </div>
                 ))}
               </div>
@@ -262,14 +263,19 @@ function CandidateDashboard() {
                 {applications.map((app) => (
                   <div
                     key={app.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/15 hover:border-white/20 transition-all duration-200"
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-medium text-gray-900">
+                        <h4 className="font-medium text-white">
                           {app.job?.title || "Job Application"}
                         </h4>
-                        <p className="text-sm text-gray-500 mt-1">
+                        {app.job?.organizationName && (
+                          <p className="text-xs font-semibold text-indigo-600 mt-0.5">
+                            {app.job.organizationName}
+                          </p>
+                        )}
+                        <p className="text-sm text-white/50 mt-1">
                           Applied{" "}
                           {app.createdAt
                             ? formatDate(app.createdAt)
@@ -279,8 +285,8 @@ function CandidateDashboard() {
                       <StatusBadge status={app.status} type="application" />
                     </div>
                     {app.compositeScore !== undefined && app.compositeScore !== null && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        Score: <span className="font-semibold">{Math.round(app.compositeScore)}</span>
+                      <div className="mt-2 text-sm text-white/60">
+                        Score: <span className="font-semibold text-white">{Math.round(app.compositeScore)}</span>
                       </div>
                     )}
                   </div>
@@ -288,18 +294,18 @@ function CandidateDashboard() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <svg className="mx-auto w-12 h-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg className="mx-auto w-12 h-12 text-white/20 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                 </svg>
-                <h3 className="text-sm font-medium text-gray-900 mb-1">
+                <h3 className="text-sm font-medium text-white mb-1">
                   No applications yet
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-white/50">
                   Start browsing jobs and submit your first application.
                 </p>
                 <Link
                   href="/jobs"
-                  className="inline-flex items-center mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                  className="inline-flex items-center mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 shadow-sm transition-all duration-200"
                 >
                   Browse Jobs
                 </Link>
@@ -311,16 +317,16 @@ function CandidateDashboard() {
         {/* Upcoming Interviews */}
         {myBookings.length > 0 && (
           <div className="lg:col-span-3 mt-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+              <h2 className="text-lg font-semibold text-white mb-4">
                 Upcoming Interviews
               </h2>
               {isLoadingBookings ? (
                 <div className="space-y-3">
                   {[1].map((i) => (
-                    <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4">
-                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                      <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                      <div className="h-3 bg-white/10 rounded w-1/2" />
                     </div>
                   ))}
                 </div>
@@ -329,7 +335,7 @@ function CandidateDashboard() {
                   {myBookings.filter(b => b.status === "SCHEDULED").map((booking) => (
                     <div
                       key={booking.id}
-                      className="border border-emerald-200 bg-emerald-50/50 rounded-lg p-4 transition-colors"
+                      className="backdrop-blur-sm bg-emerald-50/30 border border-emerald-200/50 rounded-xl p-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -348,7 +354,7 @@ function CandidateDashboard() {
                             href={booking.meetingLink}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 shadow-sm transition-colors whitespace-nowrap"
+                            className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 shadow-sm hover:shadow transition-all duration-200 whitespace-nowrap"
                           >
                             Join Meeting
                           </a>
@@ -357,7 +363,7 @@ function CandidateDashboard() {
                     </div>
                   ))}
                   {myBookings.filter(b => b.status === "SCHEDULED").length === 0 && (
-                    <p className="text-sm text-gray-500">No upcoming interviews scheduled.</p>
+                    <p className="text-sm text-white/50">No upcoming interviews scheduled.</p>
                   )}
                 </div>
               )}
@@ -371,94 +377,98 @@ function CandidateDashboard() {
             return myBookings.some(b => b.jobId === jobId && (b.status === "SCHEDULED" || b.status === "COMPLETED"));
           };
           const pendingInterviews = interviewInvites.filter(invite => !isInterviewBooked(invite.jobId));
-          
+
           if (pendingInterviews.length === 0 && !isLoadingInterviews) return null;
 
           return (
             <div className="lg:col-span-3 mt-4">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+                <h2 className="text-lg font-semibold text-white mb-4">
                   Interview Invitations
                 </h2>
 
                 {isLoadingInterviews ? (
                   <div className="space-y-3">
                     {[1].map((i) => (
-                      <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4">
-                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                      <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                        <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                        <div className="h-3 bg-white/10 rounded w-1/2" />
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {pendingInterviews.map((invite) => {
-                    const isExpired = invite.expiresAt
-                      ? (parseDate(invite.expiresAt) || new Date()) < new Date()
-                      : false;
+                      const isExpired = invite.expiresAt
+                        ? (parseDate(invite.expiresAt) || new Date()) < new Date()
+                        : false;
 
-                    return (
-                    <div
-                      key={invite.id}
-                      className={`border rounded-lg p-4 transition-colors ${
-                        isExpired
-                          ? "border-gray-200 bg-gray-50"
-                          : "border-indigo-200 bg-indigo-50/50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className={`font-medium ${ isExpired ? "text-gray-500" : "text-indigo-900"}`}>
-                              Interview: {invite.jobTitle}
-                            </h4>
-                            {isExpired && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                      return (
+                        <div
+                          key={invite.id}
+                          className={`backdrop-blur-sm border rounded-xl p-4 shadow-sm transition-all duration-200 ${isExpired
+                            ? "border-white/10 bg-white/5"
+                            : "border-indigo-200/50 bg-indigo-50/30"
+                            }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className={`font-medium ${isExpired ? "text-white/50" : "text-indigo-300"}`}>
+                                  Interview: {invite.jobTitle}
+                                </h4>
+                                {invite.organizationName && (
+                                  <p className="text-xs font-semibold text-indigo-500 mt-0.5">
+                                    {invite.organizationName}
+                                  </p>
+                                )}
+                                {isExpired && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100/60 text-red-700 border border-red-200/30">
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                    Booking Closed
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-indigo-700">
+                                {invite.oaScore != null && (
+                                  <span className="font-semibold">
+                                    OA Score: {Math.round(invite.oaScore)}
+                                  </span>
+                                )}
+                                {invite.sentAt && (
+                                  <span>Invited {formatDate(invite.sentAt)}</span>
+                                )}
+                                {invite.expiresAt && (
+                                  <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
+                                    {isExpired ? "Booking closed" : "Book by"}: {formatDateTime(invite.expiresAt)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {isExpired ? (
+                              <span className="inline-flex items-center px-4 py-2 bg-white/10 border border-white/10 text-white/40 text-sm font-medium rounded-xl whitespace-nowrap cursor-not-allowed">
                                 Booking Closed
                               </span>
-                            )}
-                          </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-indigo-700">
-                            {invite.oaScore != null && (
-                              <span className="font-semibold">
-                                OA Score: {Math.round(invite.oaScore)}
-                              </span>
-                            )}
-                            {invite.sentAt && (
-                              <span>Invited {formatDate(invite.sentAt)}</span>
-                            )}
-                            {invite.expiresAt && (
-                              <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
-                                {isExpired ? "Booking closed" : "Book by"}: {formatDateTime(invite.expiresAt)}
-                              </span>
+                            ) : (
+                              invite.schedulingUrl && (
+                                <Link
+                                  href={invite.schedulingUrl}
+                                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 shadow-sm hover:shadow transition-all duration-200 whitespace-nowrap"
+                                >
+                                  Book Interview
+                                </Link>
+                              )
                             )}
                           </div>
                         </div>
-
-                        {isExpired ? (
-                          <span className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg whitespace-nowrap cursor-not-allowed">
-                            Booking Closed
-                          </span>
-                        ) : (
-                          invite.schedulingUrl && (
-                            <Link
-                              href={invite.schedulingUrl}
-                              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap"
-                            >
-                              Book Interview
-                            </Link>
-                          )
-                        )}
-                      </div>
-                    </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
+          );
         })()}
 
         {/* Pending Assessments */}
@@ -470,97 +480,99 @@ function CandidateDashboard() {
             return pastStatuses.includes(app.status);
           };
           const pendingOAs = invites.filter(invite => !isOATaken(invite.jobId));
-          
+
           if (pendingOAs.length === 0 && !isLoadingInvites) return null;
 
           return (
             <div className="lg:col-span-3 mt-4">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+                <h2 className="text-lg font-semibold text-white mb-4">
                   Assessments
                 </h2>
 
                 {isLoadingInvites ? (
-                <div className="space-y-3">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4">
-                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pendingOAs.map((invite) => {
-                    const token = invite.assessmentToken;
-                    const href = user?.id
-                      ? `/assessments/${token}?candidateId=${user.id}`
-                      : `/assessments/${token}`;
-                    const isExpired = invite.expiresAt
-                      ? (parseDate(invite.expiresAt) || new Date()) < new Date()
-                      : false;
-
-                    return (
-                      <div
-                        key={invite.id}
-                        className={`border rounded-lg p-4 transition-colors ${
-                          isExpired
-                            ? "border-gray-200 bg-gray-50"
-                            : "border-gray-200 hover:bg-gray-50"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-gray-900">
-                                {invite.assessmentTitle || "Online Assessment"}
-                              </h4>
-                              {isExpired && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                                  Expired
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Job: <span className="font-medium">{invite.jobTitle}</span>
-                            </p>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
-                              {invite.timeLimitMinutes != null && (
-                                <span>Time limit: {invite.timeLimitMinutes} min</span>
-                              )}
-                              {invite.sentAt && (
-                                <span>Sent {formatDateTime(invite.sentAt)}</span>
-                              )}
-                              {invite.expiresAt && (
-                                <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
-                                  {isExpired ? "Expired" : "Due by"}: {formatDateTime(invite.expiresAt)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {isExpired ? (
-                            <span className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg whitespace-nowrap cursor-not-allowed">
-                              Expired
-                            </span>
-                          ) : (
-                            <Link
-                              href={href}
-                              className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
-                            >
-                              Start
-                            </Link>
-                          )}
-                        </div>
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                        <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                        <div className="h-3 bg-white/10 rounded w-1/2" />
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingOAs.map((invite) => {
+                      const token = invite.assessmentToken;
+                      const href = user?.id
+                        ? `/assessments/${token}?candidateId=${user.id}`
+                        : `/assessments/${token}`;
+                      const isExpired = invite.expiresAt
+                        ? (parseDate(invite.expiresAt) || new Date()) < new Date()
+                        : false;
+
+                      return (
+                        <div
+                          key={invite.id}
+                          className={`backdrop-blur-sm border rounded-xl p-4 shadow-sm transition-all duration-200 ${isExpired
+                            ? "border-white/10 bg-white/5"
+                            : "border-white/20 hover:bg-white/10"
+                            }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-white">
+                                  {invite.assessmentTitle || "Online Assessment"}
+                                </h4>
+                                {isExpired && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100/60 text-red-700 border border-red-200/30">
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                    Expired
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-white/60 mt-1">
+                                Job: <span className="font-medium text-white">{invite.jobTitle}</span>
+                                {invite.organizationName && (
+                                  <span className="ml-2 text-xs font-semibold text-indigo-300">@ {invite.organizationName}</span>
+                                )}
+                              </p>
+                              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/50">
+                                {invite.timeLimitMinutes != null && (
+                                  <span>Time limit: {invite.timeLimitMinutes} min</span>
+                                )}
+                                {invite.sentAt && (
+                                  <span>Sent {formatDateTime(invite.sentAt)}</span>
+                                )}
+                                {invite.expiresAt && (
+                                  <span className={isExpired ? "text-red-500 font-medium" : "text-amber-600 font-medium"}>
+                                    {isExpired ? "Expired" : "Due by"}: {formatDateTime(invite.expiresAt)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {isExpired ? (
+                              <span className="inline-flex items-center px-3 py-2 bg-white/10 border border-white/10 text-white/40 text-sm font-medium rounded-xl whitespace-nowrap cursor-not-allowed">
+                                Expired
+                              </span>
+                            ) : (
+                              <Link
+                                href={href}
+                                className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 shadow-sm hover:shadow transition-all duration-200 whitespace-nowrap"
+                              >
+                                Start
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
+          );
         })()}
       </div>
     </div>
@@ -595,19 +607,19 @@ function RecruiterDashboard() {
   const draftJobs = jobs.filter((j) => j.status === "DRAFT").length;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-white">
             Welcome back, {user?.firstName}!
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-white/60 mt-1">
             Manage your job postings and review candidates.
           </p>
         </div>
         <button
           onClick={() => router.push("/recruiter/jobs/new")}
-          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          className="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 shadow-sm hover:shadow transition-all duration-200 self-start sm:self-auto"
         >
           <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -618,37 +630,37 @@ function RecruiterDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Published Jobs</p>
-          <p className="text-3xl font-bold text-primary-600 mt-1">
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+          <p className="text-sm font-medium text-white/50">Published Jobs</p>
+          <p className="text-3xl font-bold text-emerald-400 mt-1">
             {publishedJobs}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Draft Jobs</p>
-          <p className="text-3xl font-bold text-gray-600 mt-1">{draftJobs}</p>
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+          <p className="text-sm font-medium text-white/50">Draft Jobs</p>
+          <p className="text-3xl font-bold text-white/60 mt-1">{draftJobs}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Total Applications</p>
-          <p className="text-3xl font-bold text-green-600 mt-1">
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+          <p className="text-sm font-medium text-white/50">Total Applications</p>
+          <p className="text-3xl font-bold text-blue-400 mt-1">
             {totalApplications}
           </p>
         </div>
       </div>
 
       {/* Jobs List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">My Jobs</h2>
+          <h2 className="text-lg font-semibold text-white">My Jobs</h2>
         </div>
 
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse border rounded-lg p-6">
-                <div className="h-5 bg-gray-200 rounded w-1/3 mb-3" />
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
+              <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-6">
+                <div className="h-5 bg-white/10 rounded w-1/3 mb-3" />
+                <div className="h-4 bg-white/10 rounded w-1/2 mb-2" />
+                <div className="h-4 bg-white/10 rounded w-1/4" />
               </div>
             ))}
           </div>
@@ -665,18 +677,18 @@ function RecruiterDashboard() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <svg className="mx-auto w-12 h-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <svg className="mx-auto w-12 h-12 text-white/20 mb-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
             </svg>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">
+            <h3 className="text-sm font-medium text-white mb-1">
               No jobs created yet
             </h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-white/50">
               Create your first job posting to start receiving applications.
             </p>
             <button
               onClick={() => router.push("/recruiter/jobs/new")}
-              className="inline-flex items-center mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+              className="inline-flex items-center mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 shadow-sm transition-all duration-200"
             >
               Create Job
             </button>
@@ -700,12 +712,15 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {user?.role === "RECRUITER" ? (
-          <RecruiterDashboard />
-        ) : (
-          <CandidateDashboard />
-        )}
+      <div className="min-h-screen text-white transition-colors duration-300">
+        <div className="absolute inset-0 pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {user?.role === "RECRUITER" ? (
+            <RecruiterDashboard />
+          ) : (
+            <CandidateDashboard />
+          )}
+        </div>
       </div>
     </ProtectedRoute>
   );

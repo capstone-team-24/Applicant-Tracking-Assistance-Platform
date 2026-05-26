@@ -264,11 +264,63 @@ public class InterviewSchedulingService {
         booking.setRating(request.getRating());
         booking.setFeedback(request.getFeedback());
 
+        // store detailed interview metrics if provided
+        booking.setTechnical(request.getTechnical());
+        booking.setProblemSolving(request.getProblemSolving());
+        booking.setCommunication(request.getCommunication());
+        booking.setBehavioral(request.getBehavioral());
+        booking.setCultureFit(request.getCultureFit());
+        
+        booking.setRecruiterSummary(request.getRecruiterSummary());
+        booking.setStrengths(request.getStrengths());
+        booking.setWeaknesses(request.getWeaknesses());
+        booking.setHireRecommendation(request.getHireRecommendation());
+
         // Update the application status to INTERVIEW_COMPLETED
         Application app = applicationRepository.findById(booking.getApplicationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found for booking: " + booking.getApplicationId()));
         app.setStatus(ApplicationStatus.INTERVIEW_COMPLETED);
+        // Compute interview score according to weights provided by product:
+        // Final (/50) = ((Technical*0.40) + (ProblemSolving*0.25) + (Communication*0.15) + (Behavioral*0.10) + (CultureFit*0.10)) * 5
+        Integer tech = request.getTechnical() != null ? request.getTechnical() : 0;
+        Integer prob = request.getProblemSolving() != null ? request.getProblemSolving() : 0;
+        Integer comm = request.getCommunication() != null ? request.getCommunication() : 0;
+        Integer beh = request.getBehavioral() != null ? request.getBehavioral() : 0;
+        Integer cult = request.getCultureFit() != null ? request.getCultureFit() : 0;
+
+        double weighted = (tech * 0.40) + (prob * 0.25) + (comm * 0.15) + (beh * 0.10) + (cult * 0.10);
+        double finalInterviewScore = Math.round((weighted * 5.0) * 100.0) / 100.0; // round to 2 dp
+        app.setInterviewScore(finalInterviewScore);
+        booking.setFinalScore(finalInterviewScore);
+
+        // Calculate final ranking score combining CV, OA, and Interview
+        List<com.ats.jobs.entity.InterviewInvite> invites = interviewInviteRepository.findByJobIdAndCandidateAuthUserId(jobId, booking.getCandidateAuthUserId());
+        if (!invites.isEmpty() && invites.get(0).getOaScore() != null) {
+            app.setOaScore(invites.get(0).getOaScore());
+        }
+
+        double cvScore = app.getCompositeScore() != null ? app.getCompositeScore() : 0.0;
+        double oaScore = app.getOaScore() != null ? app.getOaScore() : 0.0;
+        // CV (100) + OA (100) + Interview (50*2=100) / 3
+        double finalRankingScore = Math.round(((cvScore + oaScore + (finalInterviewScore * 2)) / 3.0) * 100.0) / 100.0;
+        app.setFinalRankingScore(finalRankingScore);
+
         applicationRepository.save(app);
+
+        // Update finalRank for all applications in this job
+        List<Application> allApps = applicationRepository.findByJobId(jobId);
+        allApps.sort((a, b) -> {
+            double scoreA = a.getFinalRankingScore() != null ? a.getFinalRankingScore() : 0.0;
+            double scoreB = b.getFinalRankingScore() != null ? b.getFinalRankingScore() : 0.0;
+            return Double.compare(scoreB, scoreA); // descending
+        });
+        int rank = 1;
+        for (Application a : allApps) {
+            if (a.getFinalRankingScore() != null && a.getFinalRankingScore() > 0) {
+                a.setFinalRank(rank++);
+            }
+        }
+        applicationRepository.saveAll(allApps);
 
         InterviewBooking saved = interviewBookingRepository.save(booking);
 

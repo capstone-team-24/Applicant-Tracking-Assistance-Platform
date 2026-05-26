@@ -22,8 +22,13 @@ public class Document {
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "profile_id", nullable = false)
+    /** Set for candidate CV / profile documents */
+    @Column(name = "profile_id")
     private UUID profileId;
+
+    /** Set for organization registration verification documents */
+    @Column(name = "contact_message_id")
+    private UUID contactMessageId;
 
     @Column(nullable = false, length = 255)
     private String filename;

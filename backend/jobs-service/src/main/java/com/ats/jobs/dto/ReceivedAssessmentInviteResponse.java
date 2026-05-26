@@ -13,6 +13,7 @@ public class ReceivedAssessmentInviteResponse {
     private UUID id;
     private UUID jobId;
     private String jobTitle;
+    private String organizationName;
     private String assessmentToken;
     private String assessmentTitle;
     private Integer timeLimitMinutes;

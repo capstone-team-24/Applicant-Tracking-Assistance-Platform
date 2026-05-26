@@ -72,8 +72,33 @@ public class Application implements Persistable<UUID> {
     @Column(name = "composite_score")
     private Double compositeScore;
 
+    @Column(name = "interview_score")
+    private Double interviewScore;
+
     @Column(name = "ranking_position")
     private Integer rankingPosition;
+
+    @Column(name = "oa_score")
+    private Double oaScore;
+
+    @Column(name = "final_ranking_score")
+    private Double finalRankingScore;
+
+    @Column(name = "final_rank")
+    private Integer finalRank;
+
+    @Builder.Default
+    @Column(name = "is_waitlisted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isWaitlisted = false;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
+
+    @Column(name = "rejected_by")
+    private UUID rejectedBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

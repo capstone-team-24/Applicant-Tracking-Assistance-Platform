@@ -11,4 +11,7 @@ import java.util.UUID;
 public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     List<Document> findByProfileIdOrderByUploadedAtDesc(UUID profileId);
+
+    List<Document> findByContactMessageIdOrderByUploadedAtDesc(UUID contactMessageId);
 }
+

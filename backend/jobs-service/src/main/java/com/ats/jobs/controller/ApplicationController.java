@@ -163,4 +163,75 @@ public class ApplicationController {
         SendInterviewInviteResponse response = interviewInviteService.sendInterviewInviteToApplication(id, request, orgId);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * POST /api/v1/jobs/{jobId}/applications/waitlist
+     *
+     * Bulk waitlist candidates.
+     */
+    @PostMapping("/api/v1/jobs/{jobId}/applications/waitlist")
+    public ResponseEntity<Void> waitlistApplications(
+            @PathVariable UUID jobId,
+            @RequestBody java.util.List<UUID> applicationIds,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        applicationService.waitlistApplications(jobId, applicationIds, orgId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * POST /api/v1/jobs/{jobId}/applications/recalculate-ranking
+     *
+     * Recalculates the final ranking for all applications of a job.
+     */
+    @PostMapping("/api/v1/jobs/{jobId}/applications/recalculate-ranking")
+    public ResponseEntity<Void> recalculateFinalRanking(
+            @PathVariable UUID jobId,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        applicationService.recalculateFinalRanking(jobId, orgId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * POST /api/v1/applications/{id}/reject
+     *
+     * Reject a single application and send a styled rejection email.
+     * Stores rejectionReason, rejectedAt, and rejectedBy on the application.
+     */
+    @PostMapping("/api/v1/applications/{id}/reject")
+    public ResponseEntity<ApplicationDetailResponse> rejectApplication(
+            @PathVariable UUID id,
+            @RequestBody(required = false) RejectRequest request,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID rejectorId = HeaderContext.getAuthUserId(httpRequest);
+        String reason = request != null ? request.getReason() : null;
+        ApplicationDetailResponse response = applicationService.rejectApplication(id, rejectorId, reason);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/v1/jobs/{jobId}/applications/bulk-reject
+     *
+     * Bulk-reject a list of applications and send rejection emails to each.
+     */
+    @PostMapping("/api/v1/jobs/{jobId}/applications/bulk-reject")
+    public ResponseEntity<RejectResponse> bulkRejectApplications(
+            @PathVariable UUID jobId,
+            @RequestBody RejectRequest request,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID rejectorId = HeaderContext.getAuthUserId(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        RejectResponse response = applicationService.bulkRejectApplications(
+                jobId, request.getApplicationIds(), rejectorId, request.getReason(), orgId);
+        return ResponseEntity.ok(response);
+    }
 }

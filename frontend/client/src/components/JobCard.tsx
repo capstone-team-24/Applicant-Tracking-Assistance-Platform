@@ -24,7 +24,18 @@ export default function JobCard({ job, showStatus = false, recruiterView = false
             </h3>
             {showStatus && <StatusBadge status={job.status} type="job" />}
           </div>
-          
+
+          {job.organizationName && (
+            <div className="flex items-center gap-1.5 mb-3">
+              <svg className="w-3.5 h-3.5 text-white/40 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+              </svg>
+              <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
+                {job.organizationName}
+              </span>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/50 mb-4 font-medium">
             {job.location && (
               <span className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
@@ -89,11 +100,10 @@ export default function JobCard({ job, showStatus = false, recruiterView = false
             </span>
           )}
           {job.applicationDeadline && (
-            <span className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest ${
-              (parseDate(job.applicationDeadline) || new Date()) < new Date()
+            <span className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest ${(parseDate(job.applicationDeadline) || new Date()) < new Date()
                 ? "text-red-400"
                 : "text-amber-400"
-            }`}>
+              }`}>
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
               {(parseDate(job.applicationDeadline) || new Date()) < new Date()
                 ? "Closed"

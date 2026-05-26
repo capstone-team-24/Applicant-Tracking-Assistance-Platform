@@ -70,6 +70,7 @@ export interface Job {
   orgId?: string;
   recruiterId?: string;
   createdBy?: string;
+  organizationName?: string;
   title: string;
   description: string;
   requirements: string;
@@ -152,10 +153,21 @@ export interface Application {
     | "INTERVIEW_SCHEDULED"
     | "INTERVIEW_COMPLETED"
     | "OFFERED"
+    | "OFFER_SENT"
+    | "OFFER_ACCEPTED"
+    | "OFFER_DECLINED"
     | "REJECTED"
     | "WITHDRAWN";
   compositeScore?: number;
+  oaScore?: number;
+  interviewScore?: number;
+  finalRankingScore?: number;
   rankingPosition?: number;
+  finalRank?: number;
+  isWaitlisted?: boolean;
+  rejectionReason?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -288,6 +300,7 @@ export interface ReceivedAssessmentInvite {
   id: string;
   jobId: string;
   jobTitle: string;
+  organizationName?: string;
   assessmentToken: string;
   assessmentTitle?: string;
   timeLimitMinutes?: number;
@@ -300,6 +313,7 @@ export interface InterviewInvite {
   id: string;
   jobId: string;
   jobTitle: string;
+  organizationName?: string;
   oaScore?: number;
   schedulingUrl?: string;
   sentAt: string;
@@ -341,12 +355,31 @@ export interface InterviewBooking {
   status: "SCHEDULED" | "COMPLETED" | "CANCELLED";
   feedback?: string;
   rating?: number;
+  technical?: number;
+  problemSolving?: number;
+  communication?: number;
+  behavioral?: number;
+  cultureFit?: number;
+  recruiterSummary?: string;
+  strengths?: string;
+  weaknesses?: string;
+  hireRecommendation?: string;
+  finalScore?: number;
   createdAt: string;
 }
 
 export interface SubmitInterviewFeedbackRequest {
   rating: number;
   feedback: string;
+  technical?: number;
+  problemSolving?: number;
+  communication?: number;
+  behavioral?: number;
+  cultureFit?: number;
+  recruiterSummary?: string;
+  strengths?: string;
+  weaknesses?: string;
+  hireRecommendation?: string;
 }
 
 export interface CandidateBookingResponse {
@@ -370,12 +403,34 @@ export interface BookInterviewRequest {
   slotId: string;
 }
 
+export type ContactMessageStatus =
+  | "PENDING_APPROVAL"
+  | "PENDING_RESPONSE"
+  | "APPROVED"
+  | "REJECTED";
+
 export interface ContactMessage {
   id: string;
   name: string;
   email: string;
   message: string;
+  hrAdminName?: string;
+  companyDetails?: string;
+  status: ContactMessageStatus;
+  inquiryMessage?: string;
+  rejectionReason?: string;
+  rejectedAt?: string;
+  approvedAt?: string;
+  approvedOrganizationId?: string;
   createdAt: string;
+}
+
+export interface VerificationDocument {
+  id: string;
+  filename: string;
+  contentType: string;
+  fileSize: number | null;
+  uploadedAt: string;
 }
 
 export interface Organization {
@@ -422,5 +477,62 @@ export interface AcceptInviteRequest {
   firstName: string;
   lastName: string;
   password: string;
+}
+
+export interface SendOfferRequest {
+  offerMessage: string;
+  salary?: string;
+  startDate?: string; // YYYY-MM-DD
+}
+
+export interface DeclineOfferRequest {
+  reason?: string;
+}
+
+export interface RejectRequest {
+  reason?: string;
+  applicationIds?: string[];
+}
+
+export interface RejectResponse {
+  rejectedCount: number;
+  sentTo: string[];
+}
+
+export interface OfferResponse {
+  id: string;
+  applicationId: string;
+  jobTitle: string;
+  companyName: string;
+  candidateName: string;
+  offerMessage: string;
+  salary?: string;
+  startDate?: string;
+  status: "PENDING" | "ACCEPTED" | "DECLINED";
+  sentAt: string;
+  acceptedAt?: string;
+  declinedAt?: string;
+}
+
+export interface OrgAdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "ORG_ADMIN";
+  orgId: string;
+  isSuspended: boolean;
+  createdAt: string;
+}
+
+export interface OrgMember {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "ORG_ADMIN" | "RECRUITER";
+  orgId: string;
+  isSuspended: boolean;
+  createdAt: string;
 }
 

@@ -116,21 +116,21 @@ export default function CreateJobPage() {
     <ProtectedRoute requiredRole="RECRUITER">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-white">
             Create New Job Posting
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-white/60 mt-1">
             Fill in the details to create a new job listing.
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white rounded-xl shadow-sm border border-white/10 p-8">
           <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
             {/* Title */}
             <div>
               <label
                 htmlFor="title"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-white/70 mb-1"
               >
                 Job Title <span className="text-red-500">*</span>
               </label>
@@ -140,9 +140,8 @@ export default function CreateJobPage() {
                 type="text"
                 value={formData.title}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 ${
-                  errors.title ? "border-red-300" : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2.5 border rounded-lg text-white placeholder-gray-400 ${errors.title ? "border-red-300" : "border-gray-300"
+                  }`}
                 placeholder="e.g., Senior Software Engineer"
               />
               {errors.title && (
@@ -154,7 +153,7 @@ export default function CreateJobPage() {
             <div>
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-white/70 mb-1"
               >
                 Job Description <span className="text-red-500">*</span>
               </label>
@@ -164,9 +163,8 @@ export default function CreateJobPage() {
                 rows={8}
                 value={formData.description}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 resize-y ${
-                  errors.description ? "border-red-300" : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2.5 border rounded-lg text-white placeholder-gray-400 resize-y ${errors.description ? "border-red-300" : "border-gray-300"
+                  }`}
                 placeholder="Describe the role, responsibilities, and what the candidate will be working on..."
               />
               {errors.description && (
@@ -180,7 +178,7 @@ export default function CreateJobPage() {
             <div>
               <label
                 htmlFor="requirements"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-white/70 mb-1"
               >
                 Requirements
               </label>
@@ -190,7 +188,7 @@ export default function CreateJobPage() {
                 rows={6}
                 value={formData.requirements}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 resize-y"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-white placeholder-gray-400 resize-y"
                 placeholder="List the qualifications, experience, and skills required..."
               />
             </div>
@@ -200,7 +198,7 @@ export default function CreateJobPage() {
               <div>
                 <label
                   htmlFor="location"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-white/70 mb-1"
                 >
                   Location <span className="text-red-500">*</span>
                 </label>
@@ -210,9 +208,8 @@ export default function CreateJobPage() {
                   type="text"
                   value={formData.location}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 ${
-                    errors.location ? "border-red-300" : "border-gray-300"
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-white placeholder-gray-400 ${errors.location ? "border-red-300" : "border-gray-300"
+                    }`}
                   placeholder="e.g., San Francisco, CA"
                 />
                 {errors.location && (
@@ -223,7 +220,7 @@ export default function CreateJobPage() {
               <div>
                 <label
                   htmlFor="employmentType"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-white/70 mb-1"
                 >
                   Employment Type <span className="text-red-500">*</span>
                 </label>
@@ -232,9 +229,8 @@ export default function CreateJobPage() {
                   name="employmentType"
                   value={formData.employmentType}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 ${
-                    errors.employmentType ? "border-red-300" : "border-gray-300"
-                  } ${!formData.employmentType ? "text-gray-400" : ""}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-white ${errors.employmentType ? "border-red-300" : "border-gray-300"
+                    } ${!formData.employmentType ? "text-white/40" : ""}`}
                 >
                   <option value="">Select type</option>
                   <option value="FULL_TIME">Full Time</option>
@@ -255,7 +251,7 @@ export default function CreateJobPage() {
             <div>
               <label
                 htmlFor="experienceLevel"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-white/70 mb-1"
               >
                 Experience Level <span className="text-red-500">*</span>
               </label>
@@ -264,9 +260,8 @@ export default function CreateJobPage() {
                 name="experienceLevel"
                 value={formData.experienceLevel}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 ${
-                  errors.experienceLevel ? "border-red-300" : "border-gray-300"
-                } ${!formData.experienceLevel ? "text-gray-400" : ""}`}
+                className={`w-full px-4 py-2.5 border rounded-lg text-white ${errors.experienceLevel ? "border-red-300" : "border-gray-300"
+                  } ${!formData.experienceLevel ? "text-white/40" : ""}`}
               >
                 <option value="">Select level</option>
                 <option value="ENTRY">Entry Level</option>
@@ -286,7 +281,7 @@ export default function CreateJobPage() {
             <div>
               <label
                 htmlFor="skills"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-white/70 mb-1"
               >
                 Required Skills
               </label>
@@ -296,10 +291,10 @@ export default function CreateJobPage() {
                 type="text"
                 value={formData.skills}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-white placeholder-gray-400"
                 placeholder="e.g., React, TypeScript, Node.js, PostgreSQL (comma-separated)"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-white/50">
                 Separate skills with commas
               </p>
               {formData.skills && (
@@ -321,11 +316,11 @@ export default function CreateJobPage() {
             </div>
 
             {/* Scoring Weights */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+            <div className="border-t border-white/10 pt-6">
+              <h3 className="text-sm font-semibold text-white mb-3">
                 Scoring Weights
               </h3>
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-xs text-white/50 mb-4">
                 Assign weights to different scoring criteria. These weights will
                 be used when ranking candidates.
               </p>
@@ -333,7 +328,7 @@ export default function CreateJobPage() {
                 <div>
                   <label
                     htmlFor="skillsMatchWeight"
-                    className="block text-xs font-medium text-gray-600 mb-1"
+                    className="block text-xs font-medium text-white/60 mb-1"
                   >
                     Skills Match
                   </label>
@@ -345,13 +340,13 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.skillsMatchWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="experienceMatchWeight"
-                    className="block text-xs font-medium text-gray-600 mb-1"
+                    className="block text-xs font-medium text-white/60 mb-1"
                   >
                     Experience
                   </label>
@@ -363,13 +358,13 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.experienceMatchWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="educationMatchWeight"
-                    className="block text-xs font-medium text-gray-600 mb-1"
+                    className="block text-xs font-medium text-white/60 mb-1"
                   >
                     Education
                   </label>
@@ -381,13 +376,13 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.educationMatchWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="overallFitWeight"
-                    className="block text-xs font-medium text-gray-600 mb-1"
+                    className="block text-xs font-medium text-white/60 mb-1"
                   >
                     Overall Fit
                   </label>
@@ -399,19 +394,19 @@ export default function CreateJobPage() {
                     max="100"
                     value={formData.overallFitWeight}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-white"
                   />
                 </div>
               </div>
             </div>
 
             {/* Application Deadline */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <div className="border-t border-white/10 pt-6">
+              <h3 className="text-sm font-semibold text-white mb-1">
                 Application Deadline
-                <span className="ml-2 text-xs font-normal text-gray-400">(optional)</span>
+                <span className="ml-2 text-xs font-normal text-white/40">(optional)</span>
               </h3>
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-white/50 mb-3">
                 Set a date and time after which the job posting will automatically close and stop accepting applications.
               </p>
               <input
@@ -421,7 +416,7 @@ export default function CreateJobPage() {
                 value={formData.applicationDeadline}
                 onChange={handleChange}
                 min={nowLocalInputValue()}
-                className="w-full sm:w-72 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full sm:w-72 px-4 py-2.5 border border-gray-300 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               {formData.applicationDeadline && (
                 <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
@@ -432,11 +427,11 @@ export default function CreateJobPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-6 border-t border-white/10">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-sm text-white/60 hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -444,7 +439,7 @@ export default function CreateJobPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  className="px-6 py-2.5 bg-white/10 text-white/70 font-medium rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
                 >
                   Save as Draft
                 </button>

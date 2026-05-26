@@ -14,9 +14,9 @@ const statusConfig: Record<string, { bg: string; text: string; dot: string }> = 
   ACTIVE: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
 
   // Neutral / Pending
-  DRAFT: { bg: "bg-white/5", text: "text-white/60", dot: "bg-white/40" },
-  PENDING: { bg: "bg-white/5", text: "text-white/60", dot: "bg-white/40" },
-  WITHDRAWN: { bg: "bg-white/5", text: "text-white/60", dot: "bg-white/40" },
+  DRAFT: { bg: "bg-white/5", text: "text-white/60", dot: "bg-white/10" },
+  PENDING: { bg: "bg-white/5", text: "text-white/60", dot: "bg-white/10" },
+  WITHDRAWN: { bg: "bg-white/5", text: "text-white/60", dot: "bg-white/10" },
 
   // Warning / Processing
   IN_PROGRESS: { bg: "bg-amber-500/10", text: "text-amber-400", dot: "bg-amber-400" },
@@ -49,7 +49,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
   const config = statusConfig[status] || { 
     bg: "bg-white/5", 
     text: "text-white/60", 
-    dot: "bg-white/40" 
+    dot: "bg-white/10" 
   };
   
   const displayStatus = statusLabels[status] || status.replace(/_/g, " ");

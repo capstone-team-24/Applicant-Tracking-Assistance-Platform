@@ -46,6 +46,13 @@ public class OrganizationService {
     }
 
     @Transactional(readOnly = true)
+    public String getNameById(UUID orgId) {
+        return organizationRepository.findById(orgId)
+                .map(Organization::getName)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public String getPolicies(UUID orgId) {
         Organization org = organizationRepository.findById(orgId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization", "id", orgId));
