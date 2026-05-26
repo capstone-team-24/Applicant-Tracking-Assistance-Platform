@@ -84,6 +84,15 @@ export default function TakeAssessmentPage() {
   const [timeRemaining, setTimeRemaining] =
     useState<number | null>(null);
 
+  const [attemptLoaded, setAttemptLoaded] =
+    useState(false);
+
+  const [hasPersistedStart, setHasPersistedStart] =
+    useState(false);
+
+  const [submissionId, setSubmissionId] =
+    useState<string | null>(null);
+
   const timerRef =
     useRef<ReturnType<
       typeof setInterval
@@ -146,6 +155,103 @@ export default function TakeAssessmentPage() {
   const missingFaceStart =
     useRef<number | null>(null);
 
+  const strikeInFlightRef =
+    useRef(false);
+
+  const getAnswerList = useCallback(
+    () =>
+      Object.entries(answers).map(
+        ([questionId, answer]) => ({
+          questionId,
+          answer,
+        })
+      ),
+    [answers]
+  );
+
+  const applySubmissionState = useCallback(
+    (
+      submission: AssessmentSubmission,
+      assessmentData: Assessment
+    ) => {
+      setSubmissionId(submission.id);
+
+      const restoredAnswers =
+        submission.answers?.reduce<
+          Record<string, string>
+        >((acc, answer) => {
+          acc[answer.questionId] =
+            answer.answer;
+          return acc;
+        }, {}) ?? {};
+
+      setAnswers(restoredAnswers);
+
+      const strikeCount =
+        submission.strikeCount ?? 0;
+      setStrikes(strikeCount);
+
+      const alreadyAccepted =
+        Boolean(
+          submission.warningAcceptedAt ||
+            submission.examStartedAt
+        );
+      setWarningAccepted(alreadyAccepted);
+
+      const startedAt =
+        submission.examStartedAt;
+      const started = Boolean(startedAt);
+      setHasPersistedStart(started);
+
+      const isDisqualified =
+        submission.status ===
+          "DISQUALIFIED" ||
+        Boolean(
+          submission.disqualifiedAt
+        );
+      setDisqualified(isDisqualified);
+
+      const isCompleted =
+        submission.status ===
+          "SUBMITTED" ||
+        submission.status === "SCORED";
+      setSubmitted(isCompleted);
+      setSubmissionResult(
+        isCompleted || isDisqualified
+          ? submission
+          : null
+      );
+
+      if (startedAt) {
+        const startedMs = new Date(
+          startedAt
+        ).getTime();
+        const expiresMs =
+          startedMs +
+          assessmentData.timeLimitMinutes *
+            60 *
+            1000;
+        const remainingSeconds =
+          Math.max(
+            0,
+            Math.floor(
+              (expiresMs - Date.now()) /
+                1000
+            )
+          );
+        setTimeRemaining(remainingSeconds);
+      } else if (
+        assessmentData.timeLimitMinutes
+      ) {
+        setTimeRemaining(
+          assessmentData.timeLimitMinutes *
+            60
+        );
+      }
+    },
+    []
+  );
+
   // --------------------------------------------------
   // FETCH ASSESSMENT
   // --------------------------------------------------
@@ -161,7 +267,19 @@ export default function TakeAssessmentPage() {
 
         setAssessment(data);
 
-        if (data.timeLimitMinutes) {
+        if (user?.id) {
+          const submission =
+            await assessmentsApi.getMySubmission(
+              data.id,
+              user.id
+            );
+          applySubmissionState(
+            submission,
+            data
+          );
+        } else if (
+          data.timeLimitMinutes
+        ) {
           setTimeRemaining(
             data.timeLimitMinutes * 60
           );
@@ -171,6 +289,7 @@ export default function TakeAssessmentPage() {
           "Failed to load assessment."
         );
       } finally {
+        setAttemptLoaded(true);
         setIsLoading(false);
       }
     };
@@ -210,7 +329,9 @@ export default function TakeAssessmentPage() {
   useEffect(() => {
     if (
       timeRemaining === null ||
-      submitted
+      submitted ||
+      disqualified ||
+      !hasPersistedStart
     )
       return;
 
@@ -228,7 +349,7 @@ export default function TakeAssessmentPage() {
                 timerRef.current
               );
 
-            handleSubmit();
+            handleSubmit(true);
 
             return 0;
           }
@@ -242,7 +363,12 @@ export default function TakeAssessmentPage() {
       if (timerRef.current)
         clearInterval(timerRef.current);
     };
-  }, [timeRemaining, submitted]);
+  }, [
+    timeRemaining,
+    submitted,
+    disqualified,
+    hasPersistedStart,
+  ]);
 
   // --------------------------------------------------
   // AUTOSAVE
@@ -253,17 +379,14 @@ export default function TakeAssessmentPage() {
       if (
         !assessment ||
         !user?.id ||
-        submitted
+        submitted ||
+        disqualified ||
+        !hasPersistedStart
       )
         return;
 
       const answerList: AssessmentAnswer[] =
-        Object.entries(answers).map(
-          ([questionId, answer]) => ({
-            questionId,
-            answer,
-          })
-        );
+        getAnswerList();
 
       if (answerList.length === 0)
         return;
@@ -279,8 +402,10 @@ export default function TakeAssessmentPage() {
     [
       assessment,
       user?.id,
-      answers,
+      getAnswerList,
       submitted,
+      disqualified,
+      hasPersistedStart,
     ]
   );
 
@@ -303,24 +428,59 @@ export default function TakeAssessmentPage() {
   // --------------------------------------------------
 
   const addStrike = useCallback(
-    (reason: string) => {
-      setStrikes((prev) => {
-        const next = prev + 1;
+    async (reason: string) => {
+      if (
+        !assessment ||
+        !user?.id ||
+        strikeInFlightRef.current ||
+        submitted ||
+        disqualified
+      )
+        return;
 
-        toast.error(reason);
+      strikeInFlightRef.current = true;
+      toast.error(reason);
 
-        if (next >= 3) {
+      try {
+        const updated =
+          await assessmentsApi.updateAttemptState(
+            assessment.id,
+            user.id,
+            {
+              strikeReason: reason,
+              lastActivityAt:
+                new Date().toISOString(),
+            }
+          );
+
+        setSubmissionId(updated.id);
+        setStrikes(
+          updated.strikeCount ?? 0
+        );
+
+        if (
+          updated.status ===
+            "DISQUALIFIED" ||
+          updated.disqualifiedAt
+        ) {
           setDisqualified(true);
-
+          setSubmissionResult(updated);
           toast.error(
             "Assessment disqualified."
           );
         }
-
-        return next;
-      });
+      } catch {
+        // Keep UX responsive even if persistence fails briefly.
+      } finally {
+        strikeInFlightRef.current = false;
+      }
     },
-    []
+    [
+      assessment,
+      disqualified,
+      submitted,
+      user?.id,
+    ]
   );
 
   // --------------------------------------------------
@@ -409,6 +569,56 @@ export default function TakeAssessmentPage() {
       await document.documentElement.requestFullscreen();
 
       checkFullscreen();
+
+      if (assessment && user?.id) {
+        const updated =
+          hasPersistedStart
+            ? await assessmentsApi.updateAttemptState(
+                assessment.id,
+                user.id,
+                {
+                  lastActivityAt:
+                    new Date().toISOString(),
+                }
+              )
+            : await assessmentsApi.updateAttemptState(
+                assessment.id,
+                user.id,
+                {
+                  examStarted: true,
+                  lastActivityAt:
+                    new Date().toISOString(),
+                }
+              );
+
+        setSubmissionId(updated.id);
+        setHasPersistedStart(true);
+        setWarningAccepted(true);
+
+        if (
+          !hasPersistedStart &&
+          updated.examStartedAt &&
+          assessment.timeLimitMinutes
+        ) {
+          const startedMs = new Date(
+            updated.examStartedAt
+          ).getTime();
+          const expiresMs =
+            startedMs +
+            assessment.timeLimitMinutes *
+              60 *
+              1000;
+          setTimeRemaining(
+            Math.max(
+              0,
+              Math.floor(
+                (expiresMs - Date.now()) /
+                  1000
+              )
+            )
+          );
+        }
+      }
 
       setExamStarted(true);
     } catch (err) {
@@ -615,7 +825,9 @@ export default function TakeAssessmentPage() {
   // --------------------------------------------------
 
   const handleSubmit =
-    async () => {
+    async (
+      forceSubmit = false
+    ) => {
       if (
         !assessment ||
         !user?.id
@@ -634,6 +846,7 @@ export default function TakeAssessmentPage() {
 
       if (
         unanswered.length > 0
+        && !forceSubmit
       ) {
         const proceed =
           confirm(
@@ -647,17 +860,7 @@ export default function TakeAssessmentPage() {
 
       try {
         const answerList: AssessmentAnswer[] =
-          Object.entries(
-            answers
-          ).map(
-            ([
-              questionId,
-              answer,
-            ]) => ({
-              questionId,
-              answer,
-            })
-          );
+          getAnswerList();
 
         const result =
           await assessmentsApi.submitAssessment(
@@ -669,6 +872,8 @@ export default function TakeAssessmentPage() {
         setSubmissionResult(
           result
         );
+
+        setSubmissionId(result.id);
 
         setSubmitted(true);
 
@@ -696,6 +901,29 @@ export default function TakeAssessmentPage() {
         setIsSubmitting(false);
       }
     };
+
+  useEffect(() => {
+    if (
+      !attemptLoaded ||
+      !assessment ||
+      !hasPersistedStart ||
+      submitted ||
+      disqualified ||
+      isSubmitting ||
+      timeRemaining !== 0
+    )
+      return;
+
+    handleSubmit(true);
+  }, [
+    assessment,
+    attemptLoaded,
+    disqualified,
+    hasPersistedStart,
+    isSubmitting,
+    submitted,
+    timeRemaining,
+  ]);
 
   // --------------------------------------------------
   // TIME FORMAT
@@ -872,11 +1100,37 @@ export default function TakeAssessmentPage() {
               </div>
 
               <button
-                onClick={() =>
+                onClick={async () => {
+                  if (
+                    assessment &&
+                    user?.id
+                  ) {
+                    try {
+                      const updated =
+                        await assessmentsApi.updateAttemptState(
+                          assessment.id,
+                          user.id,
+                          {
+                            warningAccepted:
+                              true,
+                            lastActivityAt:
+                              new Date().toISOString(),
+                          }
+                        );
+                      setSubmissionId(
+                        updated.id
+                      );
+                    } catch {
+                      toast.error(
+                        "Failed to save assessment state."
+                      );
+                      return;
+                    }
+                  }
                   setWarningAccepted(
                     true
-                  )
-                }
+                  );
+                }}
                 className="mt-10 w-full bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest"
               >
                 I Understand
@@ -899,14 +1153,15 @@ export default function TakeAssessmentPage() {
           <div className="max-w-xl mx-auto px-4 py-20">
             <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[40px] p-10 text-center">
               <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">
-                Start
-                Assessment
+                {hasPersistedStart
+                  ? "Resume Assessment"
+                  : "Start Assessment"}
               </h1>
 
               <p className="text-white/60 uppercase tracking-widest text-sm mb-8">
-                Webcam and
-                fullscreen
-                are required
+                {hasPersistedStart
+                  ? "Your timer and answers are already running. Re-enable webcam and fullscreen to continue."
+                  : "Webcam and fullscreen are required"}
               </p>
 
               {!modelsLoaded && (
@@ -925,9 +1180,9 @@ export default function TakeAssessmentPage() {
                 }
                 className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-40"
               >
-                Enable
-                Camera &
-                Start
+                {hasPersistedStart
+                  ? "Resume with Camera"
+                  : "Enable Camera & Start"}
               </button>
             </div>
           </div>
@@ -1237,8 +1492,8 @@ export default function TakeAssessmentPage() {
               </div>
 
               <button
-                onClick={
-                  handleSubmit
+                onClick={() =>
+                  handleSubmit()
                 }
                 disabled={
                   isSubmitting ||

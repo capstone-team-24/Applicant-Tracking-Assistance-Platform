@@ -16,6 +16,7 @@ import type {
   AssessmentSubmission,
   CreateAssessmentData,
   AssessmentAnswer,
+  AssessmentAttemptStateUpdate,
   RankingStatus,
   SendAssessmentRequest,
   SendAssessmentResponse,
@@ -37,6 +38,7 @@ import type {
   RejectResponse,
   OrgAdminUser,
   OrgMember,
+  ChangePasswordData,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -187,6 +189,11 @@ export const authApi = {
       Cookies.remove("ats_refresh_token");
       Cookies.remove("ats_user");
     }
+  },
+
+  changePassword: async (data: ChangePasswordData): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>("/api/v1/auth/change-password", data);
+    return response.data;
   },
 };
 
@@ -511,7 +518,31 @@ export const assessmentsApi = {
   ): Promise<AssessmentSubmission> => {
     const response = await api.post<AssessmentSubmission>(
       `/api/v1/assessments/${assessmentId}/save`,
-      { answers },
+      { answers, lastActivityAt: new Date().toISOString() },
+      { params: { candidateId } },
+    );
+    return response.data;
+  },
+
+  getMySubmission: async (
+    assessmentId: string,
+    candidateId: string,
+  ): Promise<AssessmentSubmission> => {
+    const response = await api.get<AssessmentSubmission>(
+      `/api/v1/assessments/${assessmentId}/submission`,
+      { params: { candidateId } },
+    );
+    return response.data;
+  },
+
+  updateAttemptState: async (
+    assessmentId: string,
+    candidateId: string,
+    data: AssessmentAttemptStateUpdate,
+  ): Promise<AssessmentSubmission> => {
+    const response = await api.patch<AssessmentSubmission>(
+      `/api/v1/assessments/${assessmentId}/attempt-state`,
+      data,
       { params: { candidateId } },
     );
     return response.data;

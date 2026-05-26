@@ -93,6 +93,8 @@ export default function ApplyPage() {
       setFormData((prev) => ({
         ...prev,
         phone: profile.phone || prev.phone,
+        portfolioUrl: profile.portfolioUrl || prev.portfolioUrl,
+        linkedinUrl: profile.linkedinUrl || prev.linkedinUrl,
       }));
     }
   }, [useProfileData, profile]);

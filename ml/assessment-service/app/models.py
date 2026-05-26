@@ -58,6 +58,11 @@ class AssessmentSubmission(Base):
     started_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+    warning_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    exam_started_at = Column(DateTime(timezone=True), nullable=True)
+    strike_count = Column(Integer, nullable=False, default=0)
+    disqualified_at = Column(DateTime(timezone=True), nullable=True)
+    last_activity_at = Column(DateTime(timezone=True), nullable=True)
     submitted_at = Column(DateTime(timezone=True), nullable=True)
     scored_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
@@ -154,6 +159,14 @@ class SubmitRequest(BaseModel):
 
 class AutosaveRequest(BaseModel):
     answers: List[AnswerSubmission]
+    lastActivityAt: Optional[str] = None
+
+
+class AttemptStateRequest(BaseModel):
+    warningAccepted: Optional[bool] = None
+    examStarted: Optional[bool] = None
+    strikeReason: Optional[str] = None
+    lastActivityAt: Optional[str] = None
 
 
 class ScoreDetail(BaseModel):
@@ -173,6 +186,11 @@ class SubmissionResponse(BaseModel):
     scoringDetails: Optional[List[ScoreDetail]] = None
     answers: Optional[List[AnswerSubmission]] = None
     startedAt: Optional[str] = None
+    warningAcceptedAt: Optional[str] = None
+    examStartedAt: Optional[str] = None
+    strikeCount: int = 0
+    disqualifiedAt: Optional[str] = None
+    lastActivityAt: Optional[str] = None
     submittedAt: Optional[str] = None
     scoredAt: Optional[str] = None
 

@@ -17,6 +17,7 @@ from app.models import (
     Assessment,
     AssessmentResponse,
     AssessmentSubmission,
+    AttemptStateRequest,
     AutosaveRequest,
     CreateAssessmentRequest,
     GenerateAssessmentRequest,
@@ -33,6 +34,38 @@ from app.scoring_service import score_submission
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _parse_client_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _get_or_create_submission(db: Session, assessment_id: uuid.UUID, candidate_id: uuid.UUID) -> AssessmentSubmission:
+    submission = (
+        db.query(AssessmentSubmission)
+        .filter(
+            AssessmentSubmission.assessment_id == assessment_id,
+            AssessmentSubmission.candidate_id == candidate_id,
+        )
+        .first()
+    )
+    if submission:
+        return submission
+
+    submission = AssessmentSubmission(
+        id=uuid.uuid4(),
+        assessment_id=assessment_id,
+        candidate_id=candidate_id,
+        status="IN_PROGRESS",
+    )
+    db.add(submission)
+    db.flush()
+    return submission
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +120,12 @@ def _submission_to_response(s: AssessmentSubmission) -> SubmissionResponse:
         status=s.status,
         scoringDetails=scoring_details,
         answers=answers,
-        startedAt=s.started_at.isoformat() if s.started_at else None,
+        startedAt=(s.exam_started_at or s.started_at).isoformat() if (s.exam_started_at or s.started_at) else None,
+        warningAcceptedAt=s.warning_accepted_at.isoformat() if s.warning_accepted_at else None,
+        examStartedAt=s.exam_started_at.isoformat() if s.exam_started_at else None,
+        strikeCount=s.strike_count or 0,
+        disqualifiedAt=s.disqualified_at.isoformat() if s.disqualified_at else None,
+        lastActivityAt=s.last_activity_at.isoformat() if s.last_activity_at else None,
         submittedAt=s.submitted_at.isoformat() if s.submitted_at else None,
         scoredAt=s.scored_at.isoformat() if s.scored_at else None,
     )
@@ -172,28 +210,71 @@ def get_assessment_by_token(
     # Auto-create a submission for the candidate
     if candidate_id:
         cid = uuid.UUID(candidate_id)
-        existing = (
-            db.query(AssessmentSubmission)
-            .filter(
-                AssessmentSubmission.assessment_id == assessment.id,
-                AssessmentSubmission.candidate_id == cid,
-            )
-            .first()
-        )
-        if not existing:
-            submission = AssessmentSubmission(
-                id=uuid.uuid4(),
-                assessment_id=assessment.id,
-                candidate_id=cid,
-                status="IN_PROGRESS",
-            )
-            db.add(submission)
+        existing = _get_or_create_submission(db, assessment.id, cid)
+        if existing.id:
             db.commit()
-            logger.info(
-                f"Created IN_PROGRESS submission {submission.id} for candidate {cid}"
-            )
+            logger.info(f"Ensured submission {existing.id} exists for candidate {cid}")
 
     return _assessment_to_response(assessment)
+
+
+@router.get("/assessments/{assessment_id}/submission", response_model=SubmissionResponse)
+def get_submission_for_candidate(
+    assessment_id: str,
+    candidate_id: str = Query(..., alias="candidateId"),
+    db: Session = Depends(get_db),
+):
+    aid = uuid.UUID(assessment_id)
+    cid = uuid.UUID(candidate_id)
+
+    submission = _get_or_create_submission(db, aid, cid)
+    db.commit()
+    db.refresh(submission)
+    return _submission_to_response(submission)
+
+
+@router.patch("/assessments/{assessment_id}/attempt-state", response_model=SubmissionResponse)
+def update_attempt_state(
+    assessment_id: str,
+    req: AttemptStateRequest,
+    candidate_id: str = Query(..., alias="candidateId"),
+    db: Session = Depends(get_db),
+):
+    aid = uuid.UUID(assessment_id)
+    cid = uuid.UUID(candidate_id)
+
+    submission = _get_or_create_submission(db, aid, cid)
+
+    if req.warningAccepted and submission.warning_accepted_at is None:
+        submission.warning_accepted_at = datetime.now(timezone.utc)
+
+    if req.examStarted and submission.exam_started_at is None:
+        now = datetime.now(timezone.utc)
+        submission.exam_started_at = now
+        if submission.warning_accepted_at is None:
+            submission.warning_accepted_at = now
+
+    if req.lastActivityAt:
+        submission.last_activity_at = _parse_client_datetime(req.lastActivityAt)
+
+    if req.strikeReason and submission.status == "IN_PROGRESS":
+        submission.strike_count = (submission.strike_count or 0) + 1
+        submission.last_activity_at = datetime.now(timezone.utc)
+        event = ProctoringEvent(
+            id=uuid.uuid4(),
+            submission_id=submission.id,
+            event_type="ATTEMPT_STRIKE",
+            event_data={"reason": req.strikeReason, "strikeCount": submission.strike_count},
+            timestamp=datetime.now(timezone.utc),
+        )
+        db.add(event)
+        if submission.strike_count >= 3 and submission.disqualified_at is None:
+            submission.disqualified_at = datetime.now(timezone.utc)
+            submission.status = "DISQUALIFIED"
+
+    db.commit()
+    db.refresh(submission)
+    return _submission_to_response(submission)
 
 
 # ---------------------------------------------------------------------------
@@ -223,6 +304,9 @@ def autosave_answers(
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found.")
 
+    if submission.status == "DISQUALIFIED":
+        raise HTTPException(status_code=403, detail="This assessment attempt has been disqualified.")
+
     if submission.status != "IN_PROGRESS":
         raise HTTPException(
             status_code=400,
@@ -230,6 +314,7 @@ def autosave_answers(
         )
 
     submission.answers = [a.model_dump() for a in req.answers]
+    submission.last_activity_at = _parse_client_datetime(req.lastActivityAt) or datetime.now(timezone.utc)
     db.commit()
     db.refresh(submission)
 
@@ -256,33 +341,26 @@ def submit_assessment(
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found.")
 
-    submission = (
-        db.query(AssessmentSubmission)
-        .filter(
-            AssessmentSubmission.assessment_id == aid,
-            AssessmentSubmission.candidate_id == cid,
-        )
-        .first()
-    )
-    if not submission:
-        # Create submission on the fly if candidate hasn't started yet
-        submission = AssessmentSubmission(
-            id=uuid.uuid4(),
-            assessment_id=aid,
-            candidate_id=cid,
-            status="IN_PROGRESS",
-        )
-        db.add(submission)
-        db.flush()
+    submission = _get_or_create_submission(db, aid, cid)
 
     if submission.status == "SCORED":
         raise HTTPException(
             status_code=400, detail="This submission has already been scored."
         )
 
+    if submission.status == "DISQUALIFIED":
+        raise HTTPException(
+            status_code=403, detail="This assessment attempt has been disqualified."
+        )
+
     # Store final answers and mark as submitted
     submission.answers = [a.model_dump() for a in req.answers]
     submission.status = "SUBMITTED"
+    submission.last_activity_at = datetime.now(timezone.utc)
+    if submission.exam_started_at is None:
+        submission.exam_started_at = datetime.now(timezone.utc)
+    if submission.warning_accepted_at is None:
+        submission.warning_accepted_at = submission.exam_started_at
     submission.submitted_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(submission)

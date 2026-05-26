@@ -1,5 +1,5 @@
 import GoogleCalendarCallback from "@/components/GoogleCalendarCallback";
 
-export default function GoogleCallbackPage() {
+export default function CandidateGoogleCallbackPage() {
   return <GoogleCalendarCallback />;
 }

@@ -35,6 +35,10 @@ public class GoogleIntegrationController {
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
+    private String getRedirectUri() {
+        return frontendUrl + "/integrations/google/callback";
+    }
+
     @GetMapping("/auth-url")
     public ResponseEntity<Map<String, String>> getAuthUrl(HttpServletRequest request) {
         UUID authUserId = HeaderContext.getAuthUserId(request);
@@ -53,7 +57,7 @@ public class GoogleIntegrationController {
                     .setApprovalPrompt("force")
                     .build();
 
-            String redirectUri = frontendUrl + "/recruiter/integrations/callback";
+            String redirectUri = getRedirectUri();
             String url = flow.newAuthorizationUrl().setRedirectUri(redirectUri).build();
 
             return ResponseEntity.ok(Collections.singletonMap("url", url));
@@ -96,7 +100,7 @@ public class GoogleIntegrationController {
                     Collections.singleton("https://www.googleapis.com/auth/calendar.events"))
                     .build();
 
-            String redirectUri = frontendUrl + "/recruiter/integrations/callback";
+            String redirectUri = getRedirectUri();
             GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute();
 
             String refreshToken = response.getRefreshToken();

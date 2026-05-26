@@ -4,23 +4,14 @@ import bg from '../../assets/signup-bg.jpg';
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, Users, FileCheck, BarChart3, ShieldCheck, FileSearch, ChevronRight, ChevronLeft } from "lucide-react";
+import { useCallback } from 'react';
 
 export default function HomePage() {
 
-const [index, setIndex] = useState(0);
 
-  // Auto-rotate every 5 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % features.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+  const [index, setIndex] = useState(0);
 
-  const nextStep = () => setIndex((prev) => (prev + 1) % features.length);
-  const prevStep = () => setIndex((prev) => (prev - 1 + features.length) % features.length);
-  
-  const features = [
+const features = [
   {
     title: "Job Management",
     desc: "Create, publish, and manage job postings with ease. Set requirements, skills, and scoring criteria.",
@@ -58,6 +49,22 @@ const [index, setIndex] = useState(0);
     image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=1200",
   }
 ];
+
+const nextStep = useCallback(() => {
+  setIndex((prev) => (prev + 1) % features.length);
+}, [features.length]);
+
+const prevStep = useCallback(() => {
+  setIndex((prev) => (prev - 1 + features.length) % features.length);
+}, [features.length]);
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    nextStep();
+  }, 5000);
+
+  return () => clearInterval(timer);
+}, [nextStep]);
 
   return (
     <div 
@@ -161,17 +168,26 @@ const [index, setIndex] = useState(0);
         </AnimatePresence>
 
         {/* Navigation Arrows */}
-        <button onClick={prevStep} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all">
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </button>
-        <button onClick={nextStep} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all">
-          <ChevronRight className="w-6 h-6 text-white" />
-        </button>
+       <button
+  type="button"
+  onClick={prevStep}
+  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all z-20"
+>
+  <ChevronLeft className="w-6 h-6 text-white" />
+</button>
+
+<button
+  type="button"
+  onClick={nextStep}
+  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 opacity-0 group-hover:opacity-100 transition-all z-20"
+>
+  <ChevronRight className="w-6 h-6 text-white" />
+</button>
       </div>
       
       {/* Background Liquid Accents */}
       <div className="absolute -top-20 -left-20 w-72 h-72 bg-blue-500/30 rounded-full blur-[100px] -z-1 animate-pulse" />
-      <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-[120px] -z-1" />
+
     </div>
   </div>
 </section>

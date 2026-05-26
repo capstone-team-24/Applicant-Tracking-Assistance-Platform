@@ -453,6 +453,27 @@ public class AuthService {
     }
 
     @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        AuthUser user = authUserRepository.findById(userId)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("New password must be different from the current password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
+        authUserRepository.save(user);
+        refreshTokenRepository.revokeAllByUserId(userId);
+
+        log.info("Password changed for userId={}", userId);
+    }
+
+    @Transactional
     public void logout(String rawRefreshToken) {
         String tokenHash = sha256(rawRefreshToken);
         refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash)

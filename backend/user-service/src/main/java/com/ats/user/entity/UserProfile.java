@@ -37,8 +37,23 @@ public class UserProfile {
     @Column(length = 50)
     private String phone;
 
+    @Column(length = 160)
+    private String headline;
+
+    @Column(length = 160)
+    private String location;
+
     @Column(columnDefinition = "TEXT")
     private String bio;
+
+    @Column(name = "linkedin_url", length = 500)
+    private String linkedinUrl;
+
+    @Column(name = "portfolio_url", length = 500)
+    private String portfolioUrl;
+
+    @Column(name = "website_url", length = 500)
+    private String websiteUrl;
 
     @Column(name = "cv_url", length = 500)
     private String cvUrl;

@@ -53,6 +53,10 @@ public class AuthUser {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "updated_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
     @Column(name = "is_suspended", nullable = false)
     @Builder.Default
     private Boolean isSuspended = false;

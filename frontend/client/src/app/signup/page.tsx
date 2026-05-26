@@ -89,7 +89,7 @@ export default function SignupPage() {
       storeAuthData(loginResponse.accessToken, loginResponse.refreshToken, user);
 
       toast.success("Account created successfully!");
-      router.push("/dashboard");
+      router.push("/account/setup");
       router.refresh();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };

@@ -37,13 +37,23 @@ export interface Profile {
   lastName?: string;
   email?: string;
   phone?: string;
+  headline?: string;
+  location?: string;
   bio?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
+  websiteUrl?: string;
   cvUrl?: string;
   role?: string;
   orgId?: string;
   yearsOfExperience?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface Experience {
@@ -238,12 +248,24 @@ export interface AssessmentSubmission {
   assessmentId: string;
   candidateId?: string;
   score?: number;
-  status: "IN_PROGRESS" | "SUBMITTED" | "SCORED";
+  status: "IN_PROGRESS" | "SUBMITTED" | "SCORED" | "DISQUALIFIED";
   scoringDetails?: ScoreDetail[];
   answers?: AssessmentAnswer[];
   startedAt?: string;
+  warningAcceptedAt?: string;
+  examStartedAt?: string;
+  strikeCount?: number;
+  disqualifiedAt?: string;
+  lastActivityAt?: string;
   submittedAt?: string;
   scoredAt?: string;
+}
+
+export interface AssessmentAttemptStateUpdate {
+  warningAccepted?: boolean;
+  examStarted?: boolean;
+  strikeReason?: string;
+  lastActivityAt?: string;
 }
 
 export interface ScoreDetail {
@@ -536,4 +558,3 @@ export interface OrgMember {
   isSuspended: boolean;
   createdAt: string;
 }
-
