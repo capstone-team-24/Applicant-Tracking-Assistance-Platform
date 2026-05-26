@@ -71,6 +71,9 @@ public class ContactMessage {
     @Column(name = "approved_organization_id", columnDefinition = "uuid")
     private UUID approvedOrganizationId;
 
+    @Column(name = "revision_token", length = 255, unique = true)
+    private String revisionToken;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -13,6 +13,7 @@ import java.util.UUID;
 public class OfferResponse {
     private UUID id;
     private UUID applicationId;
+    private String token;
     private String jobTitle;
     private String companyName;
     private String candidateName;

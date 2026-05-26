@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
-import { jobsApi, profilesApi, applicationsApi, assessmentsApi, interviewsApi, integrationsApi } from "@/lib/api";
-import type { Job, Application, Profile, ReceivedAssessmentInvite, InterviewInvite, CandidateBookingResponse } from "@/lib/types";
+import { jobsApi, profilesApi, applicationsApi, assessmentsApi, interviewsApi, integrationsApi, offersApi } from "@/lib/api";
+import type { Job, Application, Profile, ReceivedAssessmentInvite, InterviewInvite, CandidateBookingResponse, OfferResponse } from "@/lib/types";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import JobCard from "@/components/JobCard";
 import StatusBadge from "@/components/StatusBadge";
@@ -20,11 +20,13 @@ function CandidateDashboard() {
   const [invites, setInvites] = useState<ReceivedAssessmentInvite[]>([]);
   const [interviewInvites, setInterviewInvites] = useState<InterviewInvite[]>([]);
   const [myBookings, setMyBookings] = useState<CandidateBookingResponse[]>([]);
+  const [myOffers, setMyOffers] = useState<OfferResponse[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingApps, setIsLoadingApps] = useState(true);
   const [isLoadingInvites, setIsLoadingInvites] = useState(true);
   const [isLoadingInterviews, setIsLoadingInterviews] = useState(true);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [isGoogleConnected, setIsGoogleConnected] = useState<boolean | null>(null);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -90,6 +92,18 @@ function CandidateDashboard() {
       }
     };
     fetchBookings();
+
+    const fetchOffers = async () => {
+      try {
+        const data = await offersApi.getMyOffers();
+        setMyOffers(data || []);
+      } catch (error) {
+        console.error("Failed to load offers:", error);
+      } finally {
+        setIsLoadingOffers(false);
+      }
+    };
+    fetchOffers();
 
     const fetchIntegrationStatus = async () => {
       try {
@@ -371,6 +385,80 @@ function CandidateDashboard() {
           </div>
         )}
 
+        {/* Offers */}
+        {(myOffers.length > 0 || isLoadingOffers) && (
+          <div className="lg:col-span-3 mt-4">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Job Offers
+              </h2>
+              {isLoadingOffers ? (
+                <div className="space-y-3">
+                  {[1].map((i) => (
+                    <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                      <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                      <div className="h-3 bg-white/10 rounded w-1/2" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {myOffers.map((offer) => (
+                    <div
+                      key={offer.id}
+                      className={`backdrop-blur-sm border rounded-xl p-4 shadow-sm transition-all duration-200 ${
+                        offer.status === 'PENDING'
+                          ? 'border-yellow-200/50 bg-yellow-50/20'
+                          : offer.status === 'ACCEPTED'
+                          ? 'border-emerald-200/50 bg-emerald-50/20'
+                          : 'border-red-200/50 bg-red-50/20'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h4 className={`font-medium ${
+                            offer.status === 'PENDING' ? 'text-yellow-300' : offer.status === 'ACCEPTED' ? 'text-emerald-300' : 'text-red-300'
+                          }`}>
+                            Offer: {offer.jobTitle}
+                          </h4>
+                          {offer.companyName && (
+                            <p className={`text-xs font-semibold mt-0.5 ${
+                                offer.status === 'PENDING' ? 'text-yellow-500' : offer.status === 'ACCEPTED' ? 'text-emerald-500' : 'text-red-500'
+                            }`}>
+                              {offer.companyName}
+                            </p>
+                          )}
+                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/70">
+                            {offer.sentAt && (
+                              <span>Sent {formatDate(offer.sentAt)}</span>
+                            )}
+                            <span className="font-semibold uppercase text-xs px-2 py-0.5 rounded-full bg-black/20">
+                              {offer.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Link
+                          href={`/offers/${offer.token || offer.id}`}
+                          className={`inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-xl shadow-sm hover:shadow transition-all duration-200 whitespace-nowrap ${
+                            offer.status === 'PENDING'
+                              ? 'bg-yellow-600 hover:bg-yellow-700'
+                              : offer.status === 'ACCEPTED'
+                              ? 'bg-emerald-600 hover:bg-emerald-700'
+                              : 'bg-red-600 hover:bg-red-700'
+                          }`}
+                        >
+                          Review Offer
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Interview Invites */}
         {applications.length > 0 && (() => {
           const isInterviewBooked = (jobId: string) => {
@@ -473,13 +561,10 @@ function CandidateDashboard() {
 
         {/* Pending Assessments */}
         {applications.length > 0 && (() => {
-          const isOATaken = (jobId: string) => {
-            const app = applications.find(a => a.jobId === jobId);
-            if (!app) return false;
-            const pastStatuses = ["OA_COMPLETED", "INTERVIEW_INVITED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED", "OFFERED", "REJECTED", "WITHDRAWN"];
-            return pastStatuses.includes(app.status);
-          };
-          const pendingOAs = invites.filter(invite => !isOATaken(invite.jobId));
+          const pendingOAs = invites.filter(invite => {
+            const app = applications.find(a => a.jobId === invite.jobId);
+            return app && app.status === "OA_INVITED";
+          });
 
           if (pendingOAs.length === 0 && !isLoadingInvites) return null;
 

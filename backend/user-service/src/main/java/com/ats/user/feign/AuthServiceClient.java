@@ -21,8 +21,11 @@ import java.util.UUID;
 )
 public interface AuthServiceClient {
 
-    @PostMapping("/api/v1/auth/invite/org-admin")
+    @PostMapping("/auth/invite/org-admin")
     void inviteOrgAdmin(@RequestBody InviteOrgAdminRequest request);
+
+    @PostMapping("/auth/internal/invite-org-admin-token")
+    TokenResponse generateOrgAdminInviteToken(@RequestBody InviteOrgAdminRequest request);
 
     @Data
     @Builder
@@ -31,5 +34,13 @@ public interface AuthServiceClient {
     class InviteOrgAdminRequest {
         private String email;
         private UUID orgId;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    class TokenResponse {
+        private String token;
     }
 }

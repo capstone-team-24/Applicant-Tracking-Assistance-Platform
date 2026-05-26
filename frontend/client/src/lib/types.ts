@@ -502,6 +502,7 @@ export interface RejectResponse {
 export interface OfferResponse {
   id: string;
   applicationId: string;
+  token?: string;
   jobTitle: string;
   companyName: string;
   candidateName: string;

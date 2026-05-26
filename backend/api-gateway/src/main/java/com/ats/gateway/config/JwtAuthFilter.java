@@ -52,7 +52,8 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             "/**/v3/api-docs/**",
             "/**/v3/api-docs",
             "/webjars/**",
-            "/api/v1/contact-messages"       // public: anyone can submit a contact form
+            "/api/v1/contact-messages",       // public: anyone can submit a contact form
+            "/api/v1/contact-messages/token/**" // public: token-based access for org revision
     );
 
     // Paths that are accessible without auth but will still process tokens if present

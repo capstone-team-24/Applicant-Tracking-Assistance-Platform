@@ -18,7 +18,7 @@ function formatSize(bytes: number) {
 
 export default function OrgInquiryPage() {
   const params = useParams();
-  const id = params.id as string;
+  const token = params.id as string;
 
   const [submission, setSubmission] = useState<ContactMessage | null>(null);
   const [existingDocs, setExistingDocs] = useState<VerificationDocument[]>([]);
@@ -39,7 +39,7 @@ export default function OrgInquiryPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await orgInquiryApi.getSubmission(id);
+        const data = await orgInquiryApi.getSubmission(token);
         if (data.status === "APPROVED") {
           setError("This registration has already been approved. No further changes are needed.");
           setLoading(false); return;
@@ -50,7 +50,7 @@ export default function OrgInquiryPage() {
         }
         setSubmission(data);
         setForm({ message: data.message || "", hrAdminName: data.hrAdminName || "", companyDetails: data.companyDetails || "" });
-        const docs = await orgInquiryApi.listDocuments(id).catch(() => [] as VerificationDocument[]);
+        const docs = await orgInquiryApi.listDocuments(token).catch(() => [] as VerificationDocument[]);
         setExistingDocs(docs);
       } catch {
         setError("This link is invalid or has expired. Please contact our support team.");
@@ -59,7 +59,7 @@ export default function OrgInquiryPage() {
       }
     };
     load();
-  }, [id]);
+  }, [token]);
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return;
@@ -75,9 +75,9 @@ export default function OrgInquiryPage() {
     if (!form.message.trim()) return;
     setSubmitting(true);
     try {
-      await orgInquiryApi.updateSubmission(id, form);
+      await orgInquiryApi.updateSubmission(token, form);
       for (const file of newFiles) {
-        try { await orgInquiryApi.uploadDocument(id, file); }
+        try { await orgInquiryApi.uploadDocument(token, file); }
         catch (err) { console.error("Failed to upload:", file.name, err); }
       }
       setSubmitted(true);

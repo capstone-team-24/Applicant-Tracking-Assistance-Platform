@@ -83,6 +83,7 @@ function ActionDropdown({
             className="w-full text-left px-4 py-2.5 text-xs font-semibold text-blue-400 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
             Send Inquiry
           </button>
+          <div className="h-px bg-white/5" />
           <button onClick={() => { setOpen(false); onReject(); }}
             disabled={blocked}
             className="w-full text-left px-4 py-2.5 text-xs font-semibold text-rose-400 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">

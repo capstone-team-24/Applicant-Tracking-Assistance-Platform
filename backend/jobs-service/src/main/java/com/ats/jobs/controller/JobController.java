@@ -72,8 +72,9 @@ public class JobController {
         if ("RECRUITER".equalsIgnoreCase(role)) {
             // Force orgId from the auth headers – recruiter cannot see other companies
             UUID recruiterOrgId = HeaderContext.getOrgId(httpRequest);
+            UUID recruiterId = HeaderContext.getUserId(httpRequest);
             response = jobService.listJobsByOrg(
-                    recruiterOrgId, status, search, location, employmentType, experienceLevel, pageable);
+                    recruiterOrgId, recruiterId, status, search, location, employmentType, experienceLevel, pageable);
         } else {
             response = jobService.listJobs(
                     orgId, status, search, location, employmentType, experienceLevel, pageable);

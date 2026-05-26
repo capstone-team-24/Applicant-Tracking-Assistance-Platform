@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.config import settings
-from app.database import create_tables
+from app.database import apply_migrations, create_tables
 from app.eureka_registration import register_with_eureka
 from app.kafka_consumer import start_consumer_thread
 from app.routes import router
@@ -35,9 +35,10 @@ async def lifespan(app: FastAPI):
     """Perform startup tasks, then yield control to the application."""
     logger.info("Starting ATS AI Orchestrator (DEMO_MODE=%s)...", settings.DEMO_MODE)
 
-    # 1. Database
+    # 1. Database — create tables, then apply any schema migrations
     try:
         create_tables()
+        apply_migrations()
     except Exception:
         logger.exception("Database initialisation failed.")
         if not settings.is_demo:

@@ -112,7 +112,7 @@ public class JobService {
             Pageable pageable) {
 
         Specification<Job> spec = JobSpec.withFilters(
-                orgId, status, search, location, employmentType, experienceLevel);
+                orgId, null, status, search, location, employmentType, experienceLevel);
         Page<Job> page = jobRepository.findAll(spec, pageable);
         return buildListResponse(page);
     }
@@ -126,6 +126,7 @@ public class JobService {
     @Transactional(readOnly = true)
     public JobListResponse listJobsByOrg(
             UUID orgId,
+            UUID assignedTo,
             JobStatus status,
             String search,
             String location,
@@ -135,7 +136,7 @@ public class JobService {
 
         // orgId is always forced by the caller for recruiters — never null here
         Specification<Job> spec = JobSpec.withFilters(
-                orgId, status, search, location, employmentType, experienceLevel);
+                orgId, assignedTo, status, search, location, employmentType, experienceLevel);
         Page<Job> page = jobRepository.findAll(spec, pageable);
         return buildListResponse(page);
     }
