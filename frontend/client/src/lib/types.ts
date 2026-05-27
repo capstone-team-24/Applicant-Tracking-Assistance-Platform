@@ -232,7 +232,7 @@ export interface Assessment {
 export interface AssessmentQuestion {
   id: string;
   text: string;
-  type: "MCQ" | "SHORT_ANSWER" | "CODE";
+  type: "MCQ" | "SHORT_ANSWER";
   options?: string[];
   correct_answer?: string;
   max_score: number;
@@ -261,10 +261,40 @@ export interface AssessmentSubmission {
   scoredAt?: string;
 }
 
+export interface ProctorEvidenceImage {
+  source: "webcam" | "screen";
+  dataUrl: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  capturedAt: string;
+}
+
+export interface ProctorEvidence {
+  webcamPhoto?: ProctorEvidenceImage;
+  screenCapture?: ProctorEvidenceImage;
+  webcamUnavailableReason?: string;
+  screenCaptureUnavailableReason?: string;
+}
+
+export interface ProctoringEvent {
+  id: string;
+  submissionId: string;
+  eventType: string;
+  eventData?: Record<string, unknown>;
+  reason?: string;
+  strikeType?: string;
+  strikeCount?: number;
+  evidence?: ProctorEvidence;
+  timestamp: string;
+}
+
 export interface AssessmentAttemptStateUpdate {
   warningAccepted?: boolean;
   examStarted?: boolean;
   strikeReason?: string;
+  strikeType?: string;
+  evidence?: ProctorEvidence;
   lastActivityAt?: string;
 }
 
@@ -282,6 +312,11 @@ export interface CreateAssessmentData {
   description?: string;
   timeLimitMinutes?: number;
   questions: Omit<AssessmentQuestion, "id">[];
+}
+
+export interface GenerateAssessmentData {
+  jobId: string;
+  questionCount: number;
 }
 
 export interface RankingStatus {
@@ -458,14 +493,12 @@ export interface VerificationDocument {
 export interface Organization {
   id: string;
   name: string;
-  organizationPolicies?: string;
   createdAt: string;
   isSuspended: boolean;
 }
 
 export interface CreateOrganizationRequest {
   name: string;
-  organizationPolicies?: string;
 }
 
 export interface CreateOrgAdminRequest {

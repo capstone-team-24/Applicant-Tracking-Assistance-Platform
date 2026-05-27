@@ -10,6 +10,8 @@ const statusConfig: Record<string, { bg: string; text: string; dot: string }> = 
   // Positive / Active
   PUBLISHED: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
   OFFERED: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
+  OFFER_SENT: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
+  OFFER_ACCEPTED: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
   COMPLETED: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
   ACTIVE: { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
 
@@ -32,6 +34,7 @@ const statusConfig: Record<string, { bg: string; text: string; dot: string }> = 
   // Negative / Danger
   CLOSED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
   REJECTED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
+  OFFER_DECLINED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
   EXPIRED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
   FAILED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
 };
@@ -42,6 +45,9 @@ const statusLabels: Record<string, string> = {
   INTERVIEW_INVITED: "Interview Invited",
   INTERVIEW_SCHEDULED: "Interview Scheduled",
   INTERVIEW_COMPLETED: "Interview Completed",
+  OFFER_SENT: "Offer Sent",
+  OFFER_ACCEPTED: "Hired",
+  OFFER_DECLINED: "Offer Declined",
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {

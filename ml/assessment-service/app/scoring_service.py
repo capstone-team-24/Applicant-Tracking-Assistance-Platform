@@ -3,8 +3,7 @@ Scoring service -- orchestrates grading of an entire submission.
 
 For each question/answer pair the service:
   1. MCQ -> deterministic exact-match (no LLM call)
-  2. SHORT_ANSWER -> LLM adapter scoring with audit logging
-  3. CODE -> LLM adapter or heuristic scoring with audit logging
+  2. SHORT_ANSWER -> Groq/LLM scoring when configured, keyword fallback otherwise
 """
 
 import hashlib
@@ -76,7 +75,17 @@ def score_submission(
     Returns a summary dict with total_score, max_score, percentage,
     and per-question details.
     """
-    adapter = get_llm_adapter(settings.LLM_PROVIDER)
+    try:
+        adapter = get_llm_adapter(settings.LLM_PROVIDER)
+    except Exception as e:
+        logger.warning(f"Configured LLM provider unavailable, using keyword fallback: {e}")
+        adapter = MockLLMAdapter()
+    short_answer_adapter = adapter
+    if getattr(settings, "GROQ_API_KEY", None):
+        try:
+            short_answer_adapter = get_llm_adapter("groq")
+        except Exception as e:
+            logger.warning(f"Groq short-answer scoring unavailable, using fallback: {e}")
     question_map = _build_question_map(assessment.questions or [])
 
     answers: list = submission.answers or []
@@ -104,8 +113,8 @@ def score_submission(
             rationale_parts.append(f"Q {q_id}: No answer provided (0/{max_score}).")
             continue
 
-        # --- MCQ / SHORT_ANSWER: always deterministic, no LLM call -------------------------
-        if q_type in ("MCQ", "SHORT_ANSWER"):
+        # --- MCQ: deterministic exact-match -------------------------
+        if q_type == "MCQ":
             correct = (question.get("correct_answer") or "").strip().lower()
             given = candidate_answer.strip().lower()
             if given == correct:
@@ -126,7 +135,47 @@ def score_submission(
             rationale_parts.append(f"Q {q_id} ({q_type}): {q_rationale} ({q_score}/{max_score})")
             continue
 
-        # --- CODE: use LLM adapter ---------------------------
+        # --- SHORT_ANSWER: Groq/LLM scoring with keyword fallback ---------------------------
+        if q_type == "SHORT_ANSWER":
+            try:
+                result = short_answer_adapter.score_answer(
+                    question=question,
+                    answer=candidate_answer,
+                    context={"submission_id": str(submission.id)},
+                )
+            except Exception as e:
+                logger.error(f"Short-answer scoring error for question {q_id}: {e}")
+                fallback = MockLLMAdapter()
+                result = fallback.score_answer(question, candidate_answer, {"submission_id": str(submission.id)})
+                result["rationale"] = f"[Keyword fallback after AI scoring error: {e}] {result['rationale']}"
+
+            q_score = min(float(result.get("score", 0.0)), max_score)
+            q_rationale = result.get("rationale", "")
+
+            try:
+                _create_audit_log(
+                    db=db,
+                    submission_id=submission.id,
+                    adapter=short_answer_adapter,
+                    question=question,
+                    answer=candidate_answer,
+                    result=result,
+                )
+            except Exception as e:
+                logger.error(f"Failed to create audit log for question {q_id}: {e}")
+
+            details.append({
+                "questionId": q_id,
+                "questionType": q_type,
+                "score": q_score,
+                "maxScore": max_score,
+                "rationale": q_rationale,
+            })
+            total_score += q_score
+            rationale_parts.append(f"Q {q_id} ({q_type}): {q_rationale} ({q_score}/{max_score})")
+            continue
+
+        # --- Unsupported question types are not generated anymore ---------------------------
         try:
             result = adapter.score_answer(
                 question=question,

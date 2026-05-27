@@ -14,9 +14,11 @@ import type {
   ApplicationListParams,
   Assessment,
   AssessmentSubmission,
+  ProctoringEvent,
   CreateAssessmentData,
   AssessmentAnswer,
   AssessmentAttemptStateUpdate,
+  GenerateAssessmentData,
   RankingStatus,
   SendAssessmentRequest,
   SendAssessmentResponse,
@@ -483,10 +485,12 @@ export const assessmentsApi = {
     await api.delete(`/api/v1/assessments/${id}`);
   },
 
-  generateAssessment: async (jobId: string): Promise<{ questions: any[] }> => {
+  generateAssessment: async (
+    data: GenerateAssessmentData,
+  ): Promise<{ questions: any[] }> => {
     const response = await api.post<{ questions: any[] }>(
       "/api/v1/assessments/generate",
-      { jobId },
+      data,
     );
     return response.data;
   },
@@ -566,6 +570,15 @@ export const assessmentsApi = {
   ): Promise<AssessmentSubmission[]> => {
     const response = await api.get<AssessmentSubmission[]>(
       `/api/v1/assessments/${assessmentId}/submissions`,
+    );
+    return response.data;
+  },
+
+  getProctoringEvents: async (
+    submissionId: string,
+  ): Promise<ProctoringEvent[]> => {
+    const response = await api.get<ProctoringEvent[]>(
+      `/api/v1/assessments/submissions/${submissionId}/proctoring-events`,
     );
     return response.data;
   },

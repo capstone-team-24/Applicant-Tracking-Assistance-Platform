@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { applicationsApi, assessmentsApi } from "@/lib/api";
+import { applicationsApi, assessmentsApi, jobsApi, offersApi } from "@/lib/api";
 import type {
   Application,
   Assessment,
   AssessmentSubmission,
+  ProctoringEvent,
+  Job,
 } from "@/lib/types";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import StatusBadge from "@/components/StatusBadge";
@@ -40,19 +42,37 @@ export default function ApplicationDetailPage() {
   const jobId = params.id as string;
 
   const [application, setApplication] = useState<Application | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [jobAssessment, setJobAssessment] = useState<Assessment | null>(null);
   const [candidateSubmission, setCandidateSubmission] =
     useState<AssessmentSubmission | null>(null);
+  const [proctoringEvents, setProctoringEvents] = useState<ProctoringEvent[]>([]);
+  const [isProofOpen, setIsProofOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [isSendingOA, setIsSendingOA] = useState(false);
   const [isSendingInterview, setIsSendingInterview] = useState(false);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [offerMessage, setOfferMessage] = useState("");
+  const [offerSalary, setOfferSalary] = useState("");
+  const [offerStartDate, setOfferStartDate] = useState("");
+  const [isSendingOffer, setIsSendingOffer] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setProctoringEvents([]);
+        setCandidateSubmission(null);
+        setIsProofOpen(false);
         const app = await applicationsApi.getApplication(appId);
         setApplication(app);
+
+        try {
+          const jobData = await jobsApi.getJob(jobId);
+          setJob(jobData);
+        } catch {
+          // Job details are only needed to prefill offer copy.
+        }
 
         // Load the job's assessment and find this candidate's submission
         try {
@@ -67,7 +87,15 @@ export default function ApplicationDetailPage() {
             const mine = submissions.find(
               (s) => s.candidateId === app.candidateAuthUserId,
             );
-            if (mine) setCandidateSubmission(mine);
+            if (mine) {
+              setCandidateSubmission(mine);
+              try {
+                const events = await assessmentsApi.getProctoringEvents(mine.id);
+                setProctoringEvents(events);
+              } catch {
+                // Proctoring evidence is optional for older submissions.
+              }
+            }
           }
         } catch {
           // assessment data is optional — don't fail the page
@@ -97,6 +125,41 @@ export default function ApplicationDetailPage() {
       toast.error("Failed to update status");
     } finally {
       setUpdatingStatus(null);
+    }
+  };
+
+  const handleOpenOfferModal = () => {
+    if (!application) return;
+    const title = job?.title ? ` of ${job.title}` : "";
+    setOfferMessage(
+      `We are excited to offer you the position${title}. We were impressed by your application and would like to move forward with you.`,
+    );
+    setOfferSalary("");
+    setOfferStartDate("");
+    setIsOfferModalOpen(true);
+  };
+
+  const handleSendOffer = async () => {
+    if (!application || !offerMessage.trim()) return;
+
+    setIsSendingOffer(true);
+    try {
+      await offersApi.sendOffer(jobId, application.id, {
+        offerMessage: offerMessage.trim(),
+        salary: offerSalary || undefined,
+        startDate: offerStartDate || undefined,
+      });
+
+      setApplication((prev) =>
+        prev ? { ...prev, status: "OFFER_SENT" } : prev,
+      );
+      setIsOfferModalOpen(false);
+      toast.success(`Offer sent to ${application.candidateName}!`);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string; detail?: string } } };
+      toast.error(err.response?.data?.message || err.response?.data?.detail || "Failed to send offer");
+    } finally {
+      setIsSendingOffer(false);
     }
   };
 
@@ -158,6 +221,10 @@ export default function ApplicationDetailPage() {
       toast.error("Failed to download file");
     }
   };
+
+  const isAssessmentDisqualified =
+    candidateSubmission?.status === "DISQUALIFIED" ||
+    Boolean(candidateSubmission?.disqualifiedAt);
 
   // ── Loading skeleton ───────────────────────────────────────────────────────
   if (isLoading) {
@@ -448,6 +515,104 @@ export default function ApplicationDetailPage() {
                             ))}
                           </div>
                         )}
+
+                      {isAssessmentDisqualified && (
+                        <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-5">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm font-black uppercase tracking-tight text-red-200">
+                                Candidate disqualified
+                              </p>
+                              <p className="mt-1 text-xs font-medium text-white/55">
+                                Review the proctoring offenses and captured evidence used for this decision.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsProofOpen((open) => !open)}
+                              className="rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-950 transition hover:bg-white/90 active:scale-95"
+                            >
+                              {isProofOpen ? "Hide Proof" : "View Proof"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {isAssessmentDisqualified && isProofOpen && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest ml-1">
+                            Proctoring Offense Log
+                          </p>
+                          {proctoringEvents.length > 0 ? (
+                            proctoringEvents.map((event) => (
+                              <div
+                                key={event.id}
+                                className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                  <div>
+                                    <p className="text-sm font-black text-red-200 uppercase tracking-tight">
+                                      {event.reason || event.eventType}
+                                    </p>
+                                    <p className="text-[10px] text-white/45 font-bold uppercase tracking-widest mt-1">
+                                      {event.strikeType || event.eventType}
+                                      {event.strikeCount ? ` · Strike ${event.strikeCount}` : ""}
+                                    </p>
+                                  </div>
+                                  <p className="text-[10px] text-white/45 font-bold uppercase tracking-widest">
+                                    {formatDateTime(event.timestamp)}
+                                  </p>
+                                </div>
+
+                                {(event.evidence?.webcamPhoto || event.evidence?.screenCapture) && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                    {event.evidence.webcamPhoto && (
+                                      <div>
+                                        <p className="text-[9px] text-white/40 font-black uppercase tracking-widest mb-2">
+                                          Webcam
+                                        </p>
+                                        <img
+                                          src={event.evidence.webcamPhoto.dataUrl}
+                                          alt="Candidate webcam evidence"
+                                          className="w-full rounded-xl border border-white/10 bg-black/30"
+                                        />
+                                      </div>
+                                    )}
+                                    {event.evidence.screenCapture && (
+                                      <div>
+                                        <p className="text-[9px] text-white/40 font-black uppercase tracking-widest mb-2">
+                                          Screen
+                                        </p>
+                                        <img
+                                          src={event.evidence.screenCapture.dataUrl}
+                                          alt="Candidate screen evidence"
+                                          className="w-full rounded-xl border border-white/10 bg-black/30"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {(event.evidence?.webcamUnavailableReason ||
+                                  event.evidence?.screenCaptureUnavailableReason) && (
+                                  <div className="mt-3 space-y-1 text-[10px] text-white/45 font-medium">
+                                    {event.evidence.webcamUnavailableReason && (
+                                      <p>{event.evidence.webcamUnavailableReason}</p>
+                                    )}
+                                    {event.evidence.screenCaptureUnavailableReason && (
+                                      <p>{event.evidence.screenCaptureUnavailableReason}</p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/50">
+                              No proctoring proof was recorded for this attempt.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-4 text-sm text-white/40 bg-white/5 p-6 rounded-2xl border border-white/5 border-dashed">
@@ -546,18 +711,24 @@ export default function ApplicationDetailPage() {
                 <div className="space-y-3">
                   {STATUS_ACTIONS.map(
                     ({ label, status, colorClass, description }) => {
-                      const isCurrent = application.status === status;
+                      const isOfferAction = status === "OFFERED";
+                      const isCurrent = isOfferAction
+                        ? application.status === "OFFER_SENT" || application.status === "OFFER_ACCEPTED"
+                        : application.status === status;
                       const isUpdating = updatingStatus === status;
-                      const isDisabled = isCurrent || updatingStatus !== null;
+                      const isDisabled = isCurrent || updatingStatus !== null || isSendingOffer;
 
                       return (
                         <button
                           key={status}
-                          onClick={() =>
-                            !isCurrent &&
-                            !updatingStatus &&
-                            handleStatusUpdate(status)
-                          }
+                          onClick={() => {
+                            if (isCurrent || updatingStatus) return;
+                            if (isOfferAction) {
+                              handleOpenOfferModal();
+                              return;
+                            }
+                            handleStatusUpdate(status);
+                          }}
                           disabled={isDisabled}
                           title={description}
                           className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-sm font-bold transition-all border
@@ -751,6 +922,82 @@ export default function ApplicationDetailPage() {
           </div>
         </div>
       </div>
+
+      {isOfferModalOpen && application && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-slate-950/95 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  Make Offer to {application.candidateName}
+                </h2>
+                <p className="text-sm text-white/50 mt-1">
+                  This sends an offer email and moves the candidate to Offer Sent.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsOfferModalOpen(false)}
+                className="text-white/40 hover:text-white/60 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Offer Message *</label>
+                <textarea
+                  value={offerMessage}
+                  onChange={(event) => setOfferMessage(event.target.value)}
+                  rows={5}
+                  className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-white"
+                  placeholder="We are thrilled to offer you..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Salary</label>
+                  <input
+                    type="text"
+                    value={offerSalary}
+                    onChange={(event) => setOfferSalary(event.target.value)}
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-white"
+                    placeholder="$100,000 / year"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={offerStartDate}
+                    onChange={(event) => setOfferStartDate(event.target.value)}
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-white/5 border-t border-white/10 flex justify-end gap-3">
+              <button
+                onClick={() => setIsOfferModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendOffer}
+                disabled={isSendingOffer || !offerMessage.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSendingOffer ? "Sending..." : "Send Offer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }

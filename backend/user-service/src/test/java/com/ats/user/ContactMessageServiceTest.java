@@ -90,7 +90,6 @@ class ContactMessageServiceTest {
         OrganizationResponse organization = OrganizationResponse.builder()
                 .id(organizationId)
                 .name("Acme Ltd")
-                .organizationPolicies("{}")
                 .createdAt(LocalDateTime.now())
                 .isSuspended(false)
                 .build();
@@ -107,7 +106,6 @@ class ContactMessageServiceTest {
         ArgumentCaptor<CreateOrganizationRequest> orgCaptor = ArgumentCaptor.forClass(CreateOrganizationRequest.class);
         verify(organizationService).create(orgCaptor.capture());
         assertThat(orgCaptor.getValue().getName()).isEqualTo("Acme Ltd");
-        assertThat(orgCaptor.getValue().getOrganizationPolicies()).contains("sourceContactEmail");
 
         ArgumentCaptor<ContactMessage> messageCaptor = ArgumentCaptor.forClass(ContactMessage.class);
         verify(contactMessageRepository).save(messageCaptor.capture());
@@ -117,9 +115,9 @@ class ContactMessageServiceTest {
         ArgumentCaptor<SendNotificationRequest> notificationCaptor = ArgumentCaptor.forClass(SendNotificationRequest.class);
         verify(notificationServiceClient).sendNotification(notificationCaptor.capture());
         assertThat(notificationCaptor.getValue().getRecipientEmail()).isEqualTo("hr@acme.com");
-        assertThat(notificationCaptor.getValue().getSubject()).contains("approved and created");
-                assertThat(notificationCaptor.getValue().getBody()).contains("Your HR admin notification has been sent");
-                assertThat(notificationCaptor.getValue().getBody()).contains("Submitted contact email");
+        assertThat(notificationCaptor.getValue().getSubject()).contains("approved");
+        assertThat(notificationCaptor.getValue().getBody()).contains("data-email-template=\"ats-blue\"");
+        assertThat(notificationCaptor.getValue().getBody()).contains("Registration Approved");
     }
 
         @Test

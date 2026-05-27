@@ -8,6 +8,7 @@ import com.ats.jobs.enums.ApplicationStatus;
 import com.ats.jobs.feign.NotificationServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.JobRepository;
+import com.ats.jobs.util.EmailTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -117,13 +118,11 @@ public class AssessmentCompletedListener {
     }
 
     private String buildOaCompletionEmail(String candidateName, String jobTitle) {
-        return "<!DOCTYPE html>" +
-               "<html lang=\"en\"><body style=\"font-family: Arial, sans-serif; color: #333;\">" +
-               "<p>Dear " + candidateName + ",</p>" +
-               "<p>Thank you for completing the online assessment for the <strong>" + jobTitle + "</strong> position.</p>" +
-               "<p>Your submission has been successfully received. Our team will review your results and will be in touch with you regarding the next steps.</p>" +
-               "<p>We appreciate your time and effort, and we look forward to considering your application.</p>" +
-               "<p>Best regards,<br/>The Recruitment Team</p>" +
-               "</body></html>";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(candidateName) + "</strong>,")
+                + EmailTemplate.paragraph("Thank you for completing the online assessment for the <strong>" + EmailTemplate.escape(jobTitle) + "</strong> position.")
+                + EmailTemplate.paragraph("Your submission has been successfully received. Our team will review your results and will be in touch with you regarding the next steps.")
+                + EmailTemplate.paragraph("We appreciate your time and effort, and we look forward to considering your application.")
+                + EmailTemplate.paragraph("Best regards,<br/><strong>The Recruitment Team</strong>");
+        return EmailTemplate.render("Online Assessment Received", content);
     }
 }

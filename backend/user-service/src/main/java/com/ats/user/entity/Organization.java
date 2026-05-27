@@ -25,10 +25,6 @@ public class Organization {
     @Column(nullable = false, length = 255)
     private String name;
 
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
-    @Column(name = "organization_policies", columnDefinition = "jsonb")
-    private String organizationPolicies;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

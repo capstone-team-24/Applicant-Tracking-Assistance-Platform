@@ -153,9 +153,8 @@ function RejectModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (re
   );
 }
 
-function EditOrgModal({ org, onClose, onSave }: { org: Organization; onClose: () => void; onSave: (name: string, policies: string) => Promise<void> }) {
+function EditOrgModal({ org, onClose, onSave }: { org: Organization; onClose: () => void; onSave: (name: string) => Promise<void> }) {
   const [name, setName] = useState(org.name);
-  const [policies, setPolicies] = useState(org.organizationPolicies || "");
   const [loading, setLoading] = useState(false);
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -166,14 +165,10 @@ function EditOrgModal({ org, onClose, onSave }: { org: Organization; onClose: ()
             <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Name</label>
             <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 text-sm" value={name} onChange={e => setName(e.target.value)} />
           </div>
-          <div>
-            <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Policies (JSON)</label>
-            <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 text-sm h-24 resize-none" value={policies} onChange={e => setPolicies(e.target.value)} />
-          </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 text-xs font-black uppercase tracking-widest transition-all">Cancel</button>
-          <button disabled={!name.trim() || loading} onClick={async () => { setLoading(true); await onSave(name, policies); setLoading(false); }} className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40">{loading ? "Saving..." : "Save Changes"}</button>
+          <button disabled={!name.trim() || loading} onClick={async () => { setLoading(true); await onSave(name); setLoading(false); }} className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40">{loading ? "Saving..." : "Save Changes"}</button>
         </div>
       </div>
     </div>
@@ -187,7 +182,6 @@ export default function PlatformAdminDashboard() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [orgAdmins, setOrgAdmins] = useState<OrgAdminUser[]>([]);
   const [newOrgName, setNewOrgName] = useState("");
-  const [newOrgPolicies, setNewOrgPolicies] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState("");
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [processingMessageId, setProcessingMessageId] = useState<string | null>(null);
@@ -210,8 +204,12 @@ export default function PlatformAdminDashboard() {
         const res = await platformAdminApi.getContactMessages();
         setMessages(res.content);
       } else if (activeTab === "org_admins") {
-        const data = await platformAdminApi.getOrgAdmins();
-        setOrgAdmins(data);
+        const [adminsData, orgsData] = await Promise.all([
+          platformAdminApi.getOrgAdmins(),
+          platformAdminApi.getOrganizations({ size: 1000 }),
+        ]);
+        setOrgAdmins(adminsData);
+        setOrganizations(orgsData.content);
       } else {
         const res = await platformAdminApi.getOrganizations();
         setOrganizations(res.content);
@@ -265,9 +263,9 @@ export default function PlatformAdminDashboard() {
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await platformAdminApi.createOrganization({ name: newOrgName, organizationPolicies: newOrgPolicies });
+      await platformAdminApi.createOrganization({ name: newOrgName });
       flash("success", "Organization created successfully.");
-      setNewOrgName(""); setNewOrgPolicies(""); loadData();
+      setNewOrgName(""); loadData();
     } catch { flash("error", "Failed to create organization."); }
   };
 
@@ -305,9 +303,9 @@ export default function PlatformAdminDashboard() {
         <EditOrgModal
           org={editOrgTarget}
           onClose={() => setEditOrgTarget(null)}
-          onSave={async (name, policies) => {
+          onSave={async (name) => {
             try {
-              await platformAdminApi.updateOrganization(editOrgTarget.id, { name, organizationPolicies: policies });
+              await platformAdminApi.updateOrganization(editOrgTarget.id, { name });
               flash("success", "Organization updated.");
               setEditOrgTarget(null);
               loadData();
@@ -447,10 +445,6 @@ export default function PlatformAdminDashboard() {
                         <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Name</label>
                         <input type="text" required className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all text-sm italic" value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} />
                       </div>
-                      <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Policies (JSON optional)</label>
-                        <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all text-sm italic h-24 resize-none" value={newOrgPolicies} onChange={(e) => setNewOrgPolicies(e.target.value)} />
-                      </div>
                       <button type="submit" className="w-full py-4 bg-white text-slate-950 text-[11px] font-black rounded-2xl hover:scale-105 active:scale-95 shadow-2xl transition-all uppercase tracking-[0.2em]">Create Organization</button>
                     </form>
                   </div>
@@ -474,21 +468,24 @@ export default function PlatformAdminDashboard() {
                     <tbody className="divide-y divide-white/5">
                       {orgAdmins.length === 0 ? (
                         <tr><td colSpan={5} className="px-8 py-12 text-center text-white/40 italic text-sm">No org admins found.</td></tr>
-                      ) : orgAdmins.map((admin) => (
-                        <tr key={admin.id} className="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
-                          <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-white italic">{admin.firstName} {admin.lastName}</td>
-                          <td className="px-6 py-5 whitespace-nowrap text-sm text-white/60">{admin.email}</td>
-                          <td className="px-6 py-5 whitespace-nowrap text-sm text-white/60">
-                            <button onClick={() => router.push(`/platform-admin/organizations/${admin.orgId}`)} className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-all">{admin.orgId}</button>
-                          </td>
-                          <td className="px-6 py-5">
-                            <span className={`px-3 py-1 inline-flex text-[9px] font-black rounded-full border uppercase tracking-widest ${admin.isSuspended ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>{admin.isSuspended ? "Suspended" : "Active"}</span>
-                          </td>
-                          <td className="px-6 py-5 text-right">
-                            <button onClick={() => platformAdminApi.suspendOrgAdmin(admin.id, !admin.isSuspended).then(() => loadData())} className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all ${admin.isSuspended ? "text-emerald-400 hover:text-emerald-300" : "text-rose-400 hover:text-rose-300"}`}>{admin.isSuspended ? "Unsuspend" : "Suspend"}</button>
-                          </td>
-                        </tr>
-                      ))}
+                      ) : orgAdmins.map((admin) => {
+                        const organization = organizations.find((org) => org.id === admin.orgId);
+                        return (
+                          <tr key={admin.id} className="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                            <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-white italic">{admin.firstName} {admin.lastName}</td>
+                            <td className="px-6 py-5 whitespace-nowrap text-sm text-white/60">{admin.email}</td>
+                            <td className="px-6 py-5 whitespace-nowrap text-sm text-white/60">
+                              <button onClick={() => router.push(`/platform-admin/organizations/${admin.orgId}`)} className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-all">{organization?.name || admin.orgId}</button>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className={`px-3 py-1 inline-flex text-[9px] font-black rounded-full border uppercase tracking-widest ${admin.isSuspended ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>{admin.isSuspended ? "Suspended" : "Active"}</span>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <button onClick={() => platformAdminApi.suspendOrgAdmin(admin.id, !admin.isSuspended).then(() => loadData())} className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all ${admin.isSuspended ? "text-emerald-400 hover:text-emerald-300" : "text-rose-400 hover:text-rose-300"}`}>{admin.isSuspended ? "Unsuspend" : "Suspend"}</button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type DragEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -28,7 +28,7 @@ import { formatDateTime, parseDate, toLocalInputValue, nowLocalInputValue, toBac
 import toast from "react-hot-toast";
 
 type QuestionDraft = {
-  type: "MCQ" | "SHORT_ANSWER" | "CODE";
+  type: "MCQ" | "SHORT_ANSWER";
   text: string;
   options: string[];
   correct_answer: string;
@@ -42,6 +42,96 @@ const emptyQuestion = (): QuestionDraft => ({
   correct_answer: "",
   max_score: 1,
 });
+
+type ApplicationStatus = Application["status"];
+
+type KanbanColumn = {
+  id: string;
+  title: string;
+  description: string;
+  statuses: ApplicationStatus[];
+  dropStatus: ApplicationStatus;
+  accentClass: string;
+};
+
+const APPLICATION_STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] = [
+  { value: "APPLIED", label: "Applied" },
+  { value: "SCREENED", label: "Screened" },
+  { value: "OA_INVITED", label: "OA Invited" },
+  { value: "OA_COMPLETED", label: "OA Completed" },
+  { value: "INTERVIEW_INVITED", label: "Interview Invited" },
+  { value: "INTERVIEW_SCHEDULED", label: "Interview Scheduled" },
+  { value: "INTERVIEW_COMPLETED", label: "Interview Completed" },
+  { value: "OFFERED", label: "Offered" },
+  { value: "OFFER_SENT", label: "Offer Sent" },
+  { value: "OFFER_ACCEPTED", label: "Hired" },
+  { value: "OFFER_DECLINED", label: "Offer Declined" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "WITHDRAWN", label: "Withdrawn" },
+];
+
+const KANBAN_COLUMNS: KanbanColumn[] = [
+  {
+    id: "applied",
+    title: "Applied",
+    description: "New applicants",
+    statuses: ["APPLIED"],
+    dropStatus: "APPLIED",
+    accentClass: "from-slate-400 to-slate-600 border-slate-400/30",
+  },
+  {
+    id: "screening",
+    title: "Screening",
+    description: "CV review and ranking",
+    statuses: ["SCREENED"],
+    dropStatus: "SCREENED",
+    accentClass: "from-sky-400 to-blue-600 border-sky-400/30",
+  },
+  {
+    id: "assessment",
+    title: "Assessment",
+    description: "OA invited or completed",
+    statuses: ["OA_INVITED", "OA_COMPLETED"],
+    dropStatus: "OA_INVITED",
+    accentClass: "from-indigo-400 to-violet-600 border-indigo-400/30",
+  },
+  {
+    id: "interview",
+    title: "Interview",
+    description: "Interview invite to review",
+    statuses: ["INTERVIEW_INVITED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED"],
+    dropStatus: "INTERVIEW_INVITED",
+    accentClass: "from-emerald-400 to-teal-600 border-emerald-400/30",
+  },
+  {
+    id: "offer",
+    title: "Offer",
+    description: "Offer in progress",
+    statuses: ["OFFERED", "OFFER_SENT"],
+    dropStatus: "OFFERED",
+    accentClass: "from-purple-400 to-fuchsia-600 border-purple-400/30",
+  },
+  {
+    id: "hired",
+    title: "Hired",
+    description: "Accepted offers",
+    statuses: ["OFFER_ACCEPTED"],
+    dropStatus: "OFFER_ACCEPTED",
+    accentClass: "from-lime-400 to-green-600 border-lime-400/30",
+  },
+  {
+    id: "closed",
+    title: "Closed",
+    description: "Rejected or withdrawn",
+    statuses: ["REJECTED", "OFFER_DECLINED", "WITHDRAWN"],
+    dropStatus: "REJECTED",
+    accentClass: "from-rose-400 to-red-600 border-rose-400/30",
+  },
+];
+
+const formatApplicationStatus = (status: ApplicationStatus) =>
+  APPLICATION_STATUS_OPTIONS.find((option) => option.value === status)?.label ||
+  status.replace(/_/g, " ").toLowerCase();
 
 export default function RecruiterJobDetailPage() {
   const params = useParams();
@@ -124,6 +214,9 @@ export default function RecruiterJobDetailPage() {
   const [selectedAppIds, setSelectedAppIds] = useState<Set<string>>(new Set());
   const [isWaitlisting, setIsWaitlisting] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [draggingAppId, setDraggingAppId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [updatingKanbanAppId, setUpdatingKanbanAppId] = useState<string | null>(null);
 
   // ── offer state ──────────────────────────────────────────────────────────
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
@@ -146,6 +239,7 @@ export default function RecruiterJobDetailPage() {
   );
   const [assessmentDescription, setAssessmentDescription] = useState("");
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(60);
+  const [aiQuestionCount, setAiQuestionCount] = useState(8);
   const [questions, setQuestions] = useState<QuestionDraft[]>([
     emptyQuestion(),
   ]);
@@ -306,6 +400,7 @@ export default function RecruiterJobDetailPage() {
     setAssessmentTitle(jobAssessment.title);
     setAssessmentDescription(jobAssessment.description || "");
     setTimeLimitMinutes(jobAssessment.timeLimitMinutes);
+    setAiQuestionCount(Math.min(Math.max(jobAssessment.questions.length, 1), 30));
     setQuestions(
       jobAssessment.questions.map((q) => ({
         ...q,
@@ -330,9 +425,11 @@ export default function RecruiterJobDetailPage() {
 
   const handleGenerateAI = async () => {
     if (!jobId) return;
+    const questionCount = Math.min(Math.max(aiQuestionCount, 1), 30);
+    setAiQuestionCount(questionCount);
     setIsGenerating(true);
     try {
-      const res = await assessmentsApi.generateAssessment(jobId);
+      const res = await assessmentsApi.generateAssessment({ jobId, questionCount });
       if (res.questions && res.questions.length > 0) {
         setQuestions(
           res.questions.map((q: any) => ({
@@ -354,6 +451,10 @@ export default function RecruiterJobDetailPage() {
     const validQuestions = questions.filter((q) => q.text.trim());
     if (validQuestions.length === 0) {
       toast.error("Add at least one question before creating the assessment.");
+      return;
+    }
+    if (validQuestions.length > 30) {
+      toast.error("Assessments can have at most 30 questions.");
       return;
     }
 
@@ -649,19 +750,25 @@ export default function RecruiterJobDetailPage() {
   };
 
   const handleSendOfferSubmit = async () => {
-    if (!offerApp || !jobId || !offerMessage) return;
+    if (!offerApp || !jobId || !offerMessage.trim()) return;
     setIsSendingOffer(true);
     try {
       await offersApi.sendOffer(jobId, offerApp.id, {
-        offerMessage,
+        offerMessage: offerMessage.trim(),
         salary: offerSalary || undefined,
         startDate: offerStartDate || undefined,
       });
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === offerApp.id ? { ...app, status: "OFFER_SENT" } : app,
+        ),
+      );
       toast.success(`Offer sent to ${offerApp.candidateName}!`);
       setIsOfferModalOpen(false);
       fetchApplications();
-    } catch {
-      toast.error("Failed to send offer");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string; detail?: string } } };
+      toast.error(err.response?.data?.message || err.response?.data?.detail || "Failed to send offer");
     } finally {
       setIsSendingOffer(false);
     }
@@ -749,7 +856,14 @@ export default function RecruiterJobDetailPage() {
     );
   };
 
-  const addQuestion = () => setQuestions((prev) => [...prev, emptyQuestion()]);
+  const addQuestion = () =>
+    setQuestions((prev) => {
+      if (prev.length >= 30) {
+        toast.error("Assessments can have at most 30 questions.");
+        return prev;
+      }
+      return [...prev, emptyQuestion()];
+    });
 
   const removeQuestion = (idx: number) =>
     setQuestions((prev) => prev.filter((_, i) => i !== idx));
@@ -783,6 +897,60 @@ export default function RecruiterJobDetailPage() {
     }
   };
 
+  const updateApplicationPipelineStatus = useCallback(
+    async (app: Application, newStatus: ApplicationStatus) => {
+      if (app.status === newStatus) return;
+
+      const previousStatus = app.status;
+      setUpdatingKanbanAppId(app.id);
+      setApplications((prev) =>
+        prev.map((item) =>
+          item.id === app.id
+            ? { ...item, status: newStatus, updatedAt: new Date().toISOString() }
+            : item,
+        ),
+      );
+
+      try {
+        const updated = await applicationsApi.updateStatus(app.id, newStatus);
+        setApplications((prev) =>
+          prev.map((item) => (item.id === app.id ? { ...item, ...updated } : item)),
+        );
+        toast.success(`${app.candidateName} moved to ${formatApplicationStatus(newStatus)}`);
+      } catch {
+        setApplications((prev) =>
+          prev.map((item) =>
+            item.id === app.id ? { ...item, status: previousStatus } : item,
+          ),
+        );
+        toast.error("Failed to update candidate status");
+      } finally {
+        setUpdatingKanbanAppId((current) => (current === app.id ? null : current));
+      }
+    },
+    [],
+  );
+
+  const handleKanbanDrop = (
+    event: DragEvent<HTMLDivElement>,
+    column: KanbanColumn,
+  ) => {
+    event.preventDefault();
+    const appId = event.dataTransfer.getData("application/id") || draggingAppId;
+    setDragOverColumn(null);
+    setDraggingAppId(null);
+
+    const app = applications.find((item) => item.id === appId);
+    if (!app) return;
+
+    if (column.dropStatus === "OFFERED" && app.status !== "OFFER_SENT" && app.status !== "OFFER_ACCEPTED") {
+      handleOpenOfferModal(app);
+      return;
+    }
+
+    void updateApplicationPipelineStatus(app, column.dropStatus);
+  };
+
   const toggleSelectApp = (id: string) => {
     const next = new Set(selectedAppIds);
     if (next.has(id)) next.delete(id);
@@ -792,11 +960,17 @@ export default function RecruiterJobDetailPage() {
 
   const toggleSelectAll = () => {
     const filterStatusApps = applications.filter((app) => statusFilter === "ALL" || app.status === statusFilter);
-    if (selectedAppIds.size === filterStatusApps.length && filterStatusApps.length > 0) {
-      setSelectedAppIds(new Set());
-    } else {
-      setSelectedAppIds(new Set(filterStatusApps.map(a => a.id)));
-    }
+    const allFilteredSelected =
+      filterStatusApps.length > 0 && filterStatusApps.every((app) => selectedAppIds.has(app.id));
+
+    setSelectedAppIds((prev) => {
+      const next = new Set(prev);
+      filterStatusApps.forEach((app) => {
+        if (allFilteredSelected) next.delete(app.id);
+        else next.add(app.id);
+      });
+      return next;
+    });
   };
 
   // ── stats ─────────────────────────────────────────────────────────────────
@@ -806,6 +980,21 @@ export default function RecruiterJobDetailPage() {
       return acc;
     },
     {} as Record<string, number>,
+  );
+
+  const kanbanColumns = KANBAN_COLUMNS.map((column) => ({
+    ...column,
+    applications: applications
+      .filter((app) => column.statuses.includes(app.status))
+      .sort((a, b) => {
+        const rankDiff = (a.finalRank ?? 999999) - (b.finalRank ?? 999999);
+        if (rankDiff !== 0) return rankDiff;
+        return (b.compositeScore ?? 0) - (a.compositeScore ?? 0);
+      }),
+  }));
+
+  const filteredApplications = applications.filter(
+    (app) => statusFilter === "ALL" || app.status === statusFilter,
   );
 
   // ── loading skeleton ──────────────────────────────────────────────────────
@@ -1039,10 +1228,7 @@ export default function RecruiterJobDetailPage() {
             </div>
             {!jobAssessment && !showCreateAssessment && (
               <button
-                onClick={async () => {
-                  if (questions.length === 1 && questions[0].text === "") {
-                    await handleGenerateAI();
-                  }
+                onClick={() => {
                   setShowCreateAssessment(true);
                 }}
                 disabled={isGenerating}
@@ -1199,7 +1385,7 @@ export default function RecruiterJobDetailPage() {
                       <button onClick={handleEditAssessment} className="text-xs bg-indigo-600/20 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30 hover:bg-indigo-500/20 flex items-center gap-1">✏️ Edit</button>
                       <button onClick={handleDeleteAssessment} className="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded border border-red-500/20 hover:bg-red-500/20 flex items-center gap-1">🗑️ Delete</button>
                     </div> */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-1">
                     Assessment Title <span className="text-red-500">*</span>
@@ -1226,6 +1412,24 @@ export default function RecruiterJobDetailPage() {
                     className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-1">
+                    AI Question Count
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={aiQuestionCount}
+                    onChange={(e) =>
+                      setAiQuestionCount(
+                        Math.min(Math.max(Number(e.target.value) || 1, 1), 30),
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                  <p className="mt-1 text-xs text-white/40">1 to 30 questions.</p>
+                </div>
               </div>
 
               {/* Description */}
@@ -1243,9 +1447,20 @@ export default function RecruiterJobDetailPage() {
 
               {/* Questions */}
               <div>
-                <p className="text-sm font-medium text-white/70 mb-3">
-                  Questions
-                </p>
+                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-medium text-white/70">
+                    Questions
+                  </p>
+                  <button
+                    onClick={handleGenerateAI}
+                    disabled={isGenerating}
+                    className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {isGenerating
+                      ? "Generating..."
+                      : `Generate ${aiQuestionCount} with AI`}
+                  </button>
+                </div>
                 <div className="space-y-4">
                   {questions.map((q, qi) => (
                     <div
@@ -1270,7 +1485,6 @@ export default function RecruiterJobDetailPage() {
                         >
                           <option value="MCQ">Multiple Choice</option>
                           <option value="SHORT_ANSWER">Short Answer</option>
-                          <option value="CODE">Code</option>
                         </select>
                         <div className="flex items-center gap-1">
                           <label className="text-xs text-white/50">
@@ -1395,7 +1609,7 @@ export default function RecruiterJobDetailPage() {
           {!jobAssessment && !showCreateAssessment && (
             <p className="text-sm text-white/40">
               No assessment created yet. Create one to screen candidates with
-              multiple-choice, short-answer, or coding questions.
+              multiple-choice or short-answer questions.
             </p>
           )}
         </div>
@@ -1705,6 +1919,218 @@ export default function RecruiterJobDetailPage() {
           </div>
         </div>
 
+        {/* ── Pipeline Kanban ──────────────────────────────────────────────── */}
+        <div className="mb-8 bg-white/5 backdrop-blur-xl rounded-[2rem] shadow-sm border border-white/10 overflow-hidden">
+          <div className="p-6 border-b border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-white">Pipeline Kanban</h2>
+                <span className="px-2.5 py-1 rounded-full bg-white/10 text-xs font-bold text-white/60 uppercase tracking-widest">
+                  {applications.length} candidates
+                </span>
+              </div>
+              <p className="text-sm text-white/50 mt-1">
+                Drag cards between stages to update pipeline status. Moving into Offer opens the offer sender.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-white/50">
+              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                Applied <span className="text-white font-bold">{statusCounts.APPLIED || 0}</span>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                Assessment <span className="text-white font-bold">{(statusCounts.OA_INVITED || 0) + (statusCounts.OA_COMPLETED || 0)}</span>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                Interview <span className="text-white font-bold">{(statusCounts.INTERVIEW_INVITED || 0) + (statusCounts.INTERVIEW_SCHEDULED || 0) + (statusCounts.INTERVIEW_COMPLETED || 0)}</span>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                Hired <span className="text-white font-bold">{statusCounts.OFFER_ACCEPTED || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          {isLoadingApps ? (
+            <div className="p-6 flex gap-4 overflow-hidden">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="w-80 shrink-0 animate-pulse rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <div className="h-5 bg-white/10 rounded w-1/2 mb-4" />
+                  <div className="space-y-3">
+                    <div className="h-28 bg-white/10 rounded-2xl" />
+                    <div className="h-28 bg-white/10 rounded-2xl" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : applications.length > 0 ? (
+            <div className="overflow-x-auto p-4">
+              <div className="flex min-w-max gap-4 pb-2">
+                {kanbanColumns.map((column) => (
+                  <div
+                    key={column.id}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                      if (dragOverColumn !== column.id) setDragOverColumn(column.id);
+                    }}
+                    onDrop={(event) => handleKanbanDrop(event, column)}
+                    className={`flex max-h-[70vh] w-80 shrink-0 flex-col rounded-[1.5rem] border bg-black/20 p-4 transition-all ${column.accentClass} ${
+                      dragOverColumn === column.id ? "ring-2 ring-white/50 bg-white/10" : ""
+                    }`}
+                  >
+                    <div className={`mb-4 h-1.5 rounded-full bg-gradient-to-r ${column.accentClass}`} />
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                          {column.title}
+                        </h3>
+                        <p className="text-xs text-white/45 mt-1">{column.description}</p>
+                      </div>
+                      <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-black text-white/70">
+                        {column.applications.length}
+                      </span>
+                    </div>
+
+                    <div className="min-h-[180px] space-y-3 overflow-y-auto pr-1">
+                      {column.applications.length === 0 ? (
+                        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] text-center text-xs text-white/35">
+                          Drop candidates here
+                        </div>
+                      ) : (
+                        column.applications.map((app) => {
+                          const initials = (app.candidateName || "?")
+                            .split(" ")
+                            .map((part) => part[0])
+                            .slice(0, 2)
+                            .join("")
+                            .toUpperCase();
+                          const isUpdating = updatingKanbanAppId === app.id;
+
+                          return (
+                            <div
+                              key={app.id}
+                              draggable={!isUpdating}
+                              onDragStart={(event) => {
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData("application/id", app.id);
+                                setDraggingAppId(app.id);
+                              }}
+                              onDragEnd={() => {
+                                setDraggingAppId(null);
+                                setDragOverColumn(null);
+                              }}
+                              className={`group rounded-2xl border border-white/10 bg-slate-950/70 p-4 shadow-lg transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-slate-900/90 ${
+                                draggingAppId === app.id ? "opacity-50 scale-[0.98]" : ""
+                              } ${isUpdating ? "opacity-60" : "cursor-grab active:cursor-grabbing"}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xs font-black text-white">
+                                  {initials}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <Link
+                                    href={`/recruiter/jobs/${jobId}/applications/${app.id}`}
+                                    className="block truncate text-sm font-bold text-white hover:text-indigo-300"
+                                  >
+                                    {app.candidateName || "Unknown Candidate"}
+                                  </Link>
+                                  <p className="truncate text-xs text-white/45">{app.candidateEmail}</p>
+                                </div>
+                                {app.finalRank && (
+                                  <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-black text-white/60">
+                                    #{app.finalRank}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] uppercase tracking-widest text-white/40">
+                                <div className="rounded-xl bg-white/5 px-2 py-2">
+                                  CV
+                                  <div className="mt-1 text-sm font-black text-white">
+                                    {app.compositeScore != null ? Math.round(app.compositeScore) : "-"}
+                                  </div>
+                                </div>
+                                <div className="rounded-xl bg-white/5 px-2 py-2">
+                                  OA
+                                  <div className="mt-1 text-sm font-black text-white">
+                                    {app.oaScore != null ? Math.round(app.oaScore) : "-"}
+                                  </div>
+                                </div>
+                                <div className="rounded-xl bg-white/5 px-2 py-2">
+                                  INT
+                                  <div className="mt-1 text-sm font-black text-white">
+                                    {app.interviewScore != null ? app.interviewScore : "-"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center justify-between gap-3">
+                                <StatusBadge status={app.status} type="application" />
+                                {app.isWaitlisted && (
+                                  <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                                    Waitlisted
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="mt-3 flex items-center gap-2">
+                                <select
+                                  value={app.status}
+                                  disabled={isUpdating}
+                                  onMouseDown={(event) => event.stopPropagation()}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) => {
+                                    const nextStatus = event.target.value as ApplicationStatus;
+                                    if (nextStatus === "OFFERED" || nextStatus === "OFFER_SENT") {
+                                      handleOpenOfferModal(app);
+                                      return;
+                                    }
+                                    void updateApplicationPipelineStatus(app, nextStatus);
+                                  }}
+                                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none transition-colors focus:border-indigo-400 disabled:opacity-50"
+                                >
+                                  {APPLICATION_STATUS_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenOfferModal(app)}
+                                  disabled={isUpdating || app.status === "OFFER_SENT" || app.status === "OFFER_ACCEPTED"}
+                                  className="rounded-xl border border-purple-400/30 bg-purple-500/10 px-3 py-2 text-xs font-black uppercase tracking-widest text-purple-200 transition-colors hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  Offer
+                                </button>
+                                <Link
+                                  href={`/recruiter/jobs/${jobId}/applications/${app.id}`}
+                                  className="rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-950 transition-colors hover:bg-indigo-100"
+                                >
+                                  View
+                                </Link>
+                              </div>
+
+                              {isUpdating && (
+                                <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-indigo-300">
+                                  Saving status...
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="p-10 text-center text-sm text-white/50">
+              Applications will appear in the pipeline once candidates apply.
+            </div>
+          )}
+        </div>
+
         {/* ── Applications Table ───────────────────────────────────────────── */}
         <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 overflow-hidden">
           <div className="p-6 border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
@@ -1744,15 +2170,11 @@ export default function RecruiterJobDetailPage() {
                   className="px-3 py-1.5 border border-white/20 bg-white/5 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
                 >
                 <option value="ALL">All</option>
-                <option value="APPLIED">Applied</option>
-                <option value="SCREENED">Screened</option>
-                <option value="OA_INVITED">OA Invited</option>
-                <option value="OA_COMPLETED">OA Completed</option>
-                <option value="INTERVIEW_INVITED">Interview Invited</option>
-                <option value="INTERVIEW_SCHEDULED">Interview Scheduled</option>
-                <option value="INTERVIEW_COMPLETED">Interview Completed</option>
-                <option value="OFFERED">Offered</option>
-                <option value="REJECTED">Rejected</option>
+                {APPLICATION_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -1770,7 +2192,7 @@ export default function RecruiterJobDetailPage() {
                 <thead className="bg-white/5">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left">
-                      <input type="checkbox" checked={applications.length > 0 && selectedAppIds.size === applications.filter((app) => statusFilter === "ALL" || app.status === statusFilter).length} onChange={toggleSelectAll} className="w-4 h-4 text-primary-600 rounded" />
+                      <input type="checkbox" checked={filteredApplications.length > 0 && filteredApplications.every((app) => selectedAppIds.has(app.id))} onChange={toggleSelectAll} className="w-4 h-4 text-primary-600 rounded" />
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("rank"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
                       Final Rank {sortField === "rank" && (sortDir === "asc" ? "↑" : "↓")}
@@ -1796,8 +2218,7 @@ export default function RecruiterJobDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-transparent divide-y divide-white/10">
-                  {applications
-                    .filter((app) => statusFilter === "ALL" || app.status === statusFilter)
+                  {filteredApplications
                     .sort((a, b) => {
                       const aRank = a.finalRank ?? 999999;
                       const bRank = b.finalRank ?? 999999;
@@ -1879,6 +2300,7 @@ export default function RecruiterJobDetailPage() {
                               {openDropdownId === app.id && (
                                 <div
                                   className="absolute right-0 mt-1 w-52 bg-slate-900 border border-white/10 backdrop-blur-xl rounded-lg shadow-lg z-30 py-1 animate-in fade-in zoom-in-95 duration-100"
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {/* View Details */}
@@ -1922,14 +2344,23 @@ export default function RecruiterJobDetailPage() {
 
                                   {/* Send Offer */}
                                   <button
-                                    onClick={() => handleOpenOfferModal(app)}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleOpenOfferModal(app);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    disabled={app.status === "OFFER_SENT" || app.status === "OFFER_ACCEPTED"}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-purple-300 hover:bg-purple-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     title={`Send offer to ${app.candidateName}`}
                                   >
                                     <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
                                     </svg>
-                                    Send Offer
+                                    {app.status === "OFFER_SENT" || app.status === "OFFER_ACCEPTED"
+                                      ? "Offer Sent"
+                                      : "Send Offer"}
                                   </button>
 
                                   {/* Reject */}
@@ -2224,7 +2655,7 @@ export default function RecruiterJobDetailPage() {
               </button>
               <button
                 onClick={handleSendOfferSubmit}
-                disabled={isSendingOffer || !offerMessage}
+                disabled={isSendingOffer || !offerMessage.trim()}
                 className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
               >
                 {isSendingOffer ? "Sending..." : "Send Offer"}

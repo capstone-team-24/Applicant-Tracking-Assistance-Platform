@@ -21,6 +21,7 @@ import com.ats.jobs.repository.InterviewInviteRepository;
 import com.ats.jobs.repository.InterviewSlotRepository;
 import com.ats.jobs.repository.JobRepository;
 import com.ats.jobs.repository.UserIntegrationRepository;
+import com.ats.jobs.util.EmailTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -231,14 +232,18 @@ public class InterviewSchedulingService {
     }
     
     private String buildConfirmationEmail(String candidateName, String jobTitle, LocalDateTime startTime, LocalDateTime endTime, String meetingLink) {
-        return "<!DOCTYPE html>" +
-               "<html lang=\"en\"><body>" +
-               "<p>Dear " + (candidateName != null ? candidateName : "Candidate") + ",</p>" +
-               "<p>Your interview for the <strong>" + jobTitle + "</strong> position has been successfully scheduled.</p>" +
-               "<p><strong>Time:</strong> " + startTime.toString() + " to " + endTime.toString() + "</p>" +
-               "<p><strong>Meeting Link:</strong> <a href=\"" + meetingLink + "\">" + meetingLink + "</a></p>" +
-               "<p>We look forward to speaking with you!</p>" +
-               "</body></html>";
+        String name = candidateName != null ? candidateName : "Candidate";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(name) + "</strong>,")
+                + EmailTemplate.paragraph("Your interview for the <strong>" + EmailTemplate.escape(jobTitle) + "</strong> position has been successfully scheduled.")
+                + EmailTemplate.detailBox("Interview Details", new String[][]{
+                        {"Start Time", EmailTemplate.escape(startTime.toString())},
+                        {"End Time", EmailTemplate.escape(endTime.toString())},
+                        {"Meeting Link", "<a href=\"" + EmailTemplate.escape(meetingLink) + "\" style=\"color:#2563eb;text-decoration:underline;\">" + EmailTemplate.escape(meetingLink) + "</a>"}
+                })
+                + EmailTemplate.button(meetingLink, "Join Interview")
+                + EmailTemplate.fallbackLink(meetingLink)
+                + EmailTemplate.paragraph("We look forward to speaking with you.");
+        return EmailTemplate.render("Interview Scheduled", content);
     }
 
     @Transactional
@@ -347,16 +352,12 @@ public class InterviewSchedulingService {
     }
 
     private String buildInterviewCompletionEmail(String candidateName, String jobTitle) {
-        return "<!DOCTYPE html>" +
-               "<html lang=\"en\"><body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">" +
-               "<p>Dear " + candidateName + ",</p>" +
-               "<p>Thank you for taking the time to interview for the <strong>" + jobTitle + "</strong> position. " +
-               "It was a pleasure speaking with you and learning more about your background and experience.</p>" +
-               "<p>Our team is currently reviewing all candidate interviews and will be in touch with you regarding the outcome as soon as possible. " +
-               "We appreciate your patience during this process.</p>" +
-               "<p>Thank you again for your interest in joining our team.</p>" +
-               "<p>Best regards,<br/>The Recruitment Team</p>" +
-               "</body></html>";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(candidateName) + "</strong>,")
+                + EmailTemplate.paragraph("Thank you for taking the time to interview for the <strong>" + EmailTemplate.escape(jobTitle) + "</strong> position. It was a pleasure speaking with you and learning more about your background and experience.")
+                + EmailTemplate.paragraph("Our team is currently reviewing all candidate interviews and will be in touch with you regarding the outcome as soon as possible. We appreciate your patience during this process.")
+                + EmailTemplate.paragraph("Thank you again for your interest in joining our team.")
+                + EmailTemplate.paragraph("Best regards,<br/><strong>The Recruitment Team</strong>");
+        return EmailTemplate.render("Thank You for Interviewing", content);
     }
 
     @Transactional(readOnly = true)

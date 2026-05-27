@@ -6,6 +6,8 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
+import json
+import re
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -128,6 +130,21 @@ def _submission_to_response(s: AssessmentSubmission) -> SubmissionResponse:
         lastActivityAt=s.last_activity_at.isoformat() if s.last_activity_at else None,
         submittedAt=s.submitted_at.isoformat() if s.submitted_at else None,
         scoredAt=s.scored_at.isoformat() if s.scored_at else None,
+    )
+
+
+def _proctoring_event_to_response(event: ProctoringEvent) -> ProctoringEventResponse:
+    event_data = event.event_data or {}
+    return ProctoringEventResponse(
+        id=str(event.id),
+        submissionId=str(event.submission_id),
+        eventType=event.event_type,
+        eventData=event_data,
+        reason=event_data.get("reason"),
+        strikeType=event_data.get("strikeType"),
+        strikeCount=event_data.get("strikeCount"),
+        evidence=event_data.get("evidence"),
+        timestamp=event.timestamp.isoformat(),
     )
 
 
@@ -260,11 +277,17 @@ def update_attempt_state(
     if req.strikeReason and submission.status == "IN_PROGRESS":
         submission.strike_count = (submission.strike_count or 0) + 1
         submission.last_activity_at = datetime.now(timezone.utc)
+        event_data = {
+            "reason": req.strikeReason,
+            "strikeType": req.strikeType or "unknown",
+            "strikeCount": submission.strike_count,
+            "evidence": req.evidence,
+        }
         event = ProctoringEvent(
             id=uuid.uuid4(),
             submission_id=submission.id,
             event_type="ATTEMPT_STRIKE",
-            event_data={"reason": req.strikeReason, "strikeCount": submission.strike_count},
+            event_data=event_data,
             timestamp=datetime.now(timezone.utc),
         )
         db.add(event)
@@ -421,13 +444,32 @@ def create_proctoring_event(
 
     logger.info(f"Proctoring event {event.event_type} recorded for submission {sub_id}")
 
-    return ProctoringEventResponse(
-        id=str(event.id),
-        submissionId=str(event.submission_id),
-        eventType=event.event_type,
-        eventData=event.event_data,
-        timestamp=event.timestamp.isoformat(),
+    return _proctoring_event_to_response(event)
+
+
+@router.get(
+    "/assessments/submissions/{submission_id}/proctoring-events",
+    response_model=list[ProctoringEventResponse],
+)
+def list_submission_proctoring_events(
+    submission_id: str,
+    db: Session = Depends(get_db),
+):
+    """Return the exact proctoring offense log for a submission."""
+    sub_id = uuid.UUID(submission_id)
+    submission = (
+        db.query(AssessmentSubmission).filter(AssessmentSubmission.id == sub_id).first()
     )
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found.")
+
+    events = (
+        db.query(ProctoringEvent)
+        .filter(ProctoringEvent.submission_id == sub_id)
+        .order_by(ProctoringEvent.timestamp.asc())
+        .all()
+    )
+    return [_proctoring_event_to_response(event) for event in events]
 
 
 # ---------------------------------------------------------------------------
@@ -589,11 +631,24 @@ def generate_assessment(
     job_data = job_resp.json()
     job_description = job_data.get("description", "")
     requirements = job_data.get("requirements", "")
+    skills = job_data.get("skills") or []
+    question_count = max(1, min(payload.questionCount, 30))
+    mcq_count = max(1, round(question_count * 0.65))
+    short_count = question_count - mcq_count
+    if question_count > 1 and short_count == 0:
+        mcq_count -= 1
+        short_count = 1
 
-    text_content = f"Job Description:\n{job_description}\nRequirements:\n{requirements}"
+    text_content = f"Job Description:\n{job_description}\nRequirements:\n{requirements}\nSkills:\n{', '.join(skills)}"
 
     prompt = f"""
-You are an expert technical interviewer. Based on the following job description and requirements, generate an assessment test with 5 multiple-choice questions (MCQ) and 3 short-answer questions (SHORT_ANSWER).
+You are an expert technical interviewer. Based on the following job description and requirements, generate exactly {question_count} assessment questions.
+
+Question mix:
+- {mcq_count} multiple-choice questions with type "MCQ".
+- {short_count} short-answer questions with type "SHORT_ANSWER".
+- Do NOT generate coding questions, code-writing tasks, or any question with type "CODE".
+
 Return your response STRICTLY as a JSON object with a single key "questions" containing an array matching exactly this schema:
 {{
   "questions": [
@@ -609,11 +664,18 @@ Return your response STRICTLY as a JSON object with a single key "questions" con
       "id": "q6",
       "type": "SHORT_ANSWER",
       "text": "Explain this concept...",
-      "correct_answer": "The desired keyword or exact string expected for deterministic matching (keep it brief like 'Microservices' or 'SOLID')",
+      "correct_answer": "A concise reference answer with expected keywords and concepts for AI grading.",
       "max_score": 2.0
     }}
   ]
 }}
+
+Rules:
+- Only use "MCQ" or "SHORT_ANSWER" as the type.
+- MCQ questions must have exactly 4 options and correct_answer must exactly match one option.
+- SHORT_ANSWER questions should have a reference answer that describes the expected concepts, not just a single exact-match string.
+- Keep each question directly relevant to the role.
+- Return exactly {question_count} questions.
 
 No markdown formatting like ```json, just the raw JSON object.
 
@@ -625,6 +687,7 @@ Context:
         "model": settings.GROQ_MODEL or "llama-3.3-70b-versatile",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.2,
+        "max_tokens": min(6000, max(2000, question_count * 220)),
         "response_format": {"type": "json_object"},
     }
 
@@ -634,7 +697,7 @@ Context:
     }
     gen_url = "https://api.groq.com/openai/v1/chat/completions"
 
-    gen_resp = httpx.post(gen_url, json=groq_payload, headers=headers, timeout=30.0)
+    gen_resp = httpx.post(gen_url, json=groq_payload, headers=headers, timeout=60.0)
 
     if gen_resp.status_code != 200:
         logger.error(f"Groq API error: {gen_resp.text}")
@@ -645,12 +708,8 @@ Context:
         raw_text = gen_data["choices"][0]["message"]["content"].strip()
 
         # Clean up markdown code blocks if present
-        import re
-
         raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text, flags=re.IGNORECASE)
         raw_text = re.sub(r"\s*```$", "", raw_text)
-
-        import json
 
         data = json.loads(raw_text.strip())
         questions = data.get("questions", data) if isinstance(data, dict) else data
@@ -660,4 +719,41 @@ Context:
         )
         raise HTTPException(status_code=500, detail="Error parsing AI response")
 
-    return {"questions": questions}
+    normalized_questions = []
+    for raw_question in questions if isinstance(questions, list) else []:
+        if not isinstance(raw_question, dict):
+            continue
+
+        q_type = str(raw_question.get("type", "")).upper()
+        if q_type not in {"MCQ", "SHORT_ANSWER"}:
+            continue
+
+        text = str(raw_question.get("text", "")).strip()
+        if not text:
+            continue
+
+        question = {
+            "id": f"q{len(normalized_questions) + 1}",
+            "type": q_type,
+            "text": text,
+            "correct_answer": str(raw_question.get("correct_answer", "")).strip(),
+            "max_score": 1.0 if q_type == "MCQ" else 2.0,
+        }
+
+        if q_type == "MCQ":
+            options = raw_question.get("options") or []
+            options = [str(option).strip() for option in options if str(option).strip()]
+            if len(options) < 4:
+                continue
+            question["options"] = options[:4]
+            if question["correct_answer"] not in question["options"]:
+                question["correct_answer"] = question["options"][0]
+
+        normalized_questions.append(question)
+        if len(normalized_questions) >= question_count:
+            break
+
+    if not normalized_questions:
+        raise HTTPException(status_code=500, detail="AI did not generate usable questions")
+
+    return {"questions": normalized_questions}

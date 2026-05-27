@@ -16,7 +16,6 @@ public class OrganizationResponse {
 
     private UUID id;
     private String name;
-    private String organizationPolicies;
     private LocalDateTime createdAt;
     private Boolean isSuspended;
 }

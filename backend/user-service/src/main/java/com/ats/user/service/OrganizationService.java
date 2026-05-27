@@ -23,14 +23,8 @@ public class OrganizationService {
 
     @Transactional
     public OrganizationResponse create(CreateOrganizationRequest request) {
-        String policies = request.getOrganizationPolicies();
-        if (policies == null || policies.trim().isEmpty()) {
-            policies = "{}";
-        }
-
         Organization organization = Organization.builder()
                 .name(request.getName())
-                .organizationPolicies(policies)
                 .build();
 
         Organization saved = organizationRepository.save(organization);
@@ -53,13 +47,6 @@ public class OrganizationService {
     }
 
     @Transactional(readOnly = true)
-    public String getPolicies(UUID orgId) {
-        Organization org = organizationRepository.findById(orgId)
-                .orElseThrow(() -> new ResourceNotFoundException("Organization", "id", orgId));
-        return org.getOrganizationPolicies();
-    }
-
-    @Transactional(readOnly = true)
     public Page<OrganizationResponse> getAllOrganizations(Pageable pageable) {
         return organizationRepository.findAll(pageable).map(this::toResponse);
     }
@@ -69,7 +56,6 @@ public class OrganizationService {
         Organization org = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization", "id", id));
         org.setName(request.getName());
-        org.setOrganizationPolicies(request.getOrganizationPolicies());
         Organization updated = organizationRepository.save(org);
         log.info("Updated organization id={}", updated.getId());
         return toResponse(updated);
@@ -89,7 +75,6 @@ public class OrganizationService {
         return OrganizationResponse.builder()
                 .id(org.getId())
                 .name(org.getName())
-                .organizationPolicies(org.getOrganizationPolicies())
                 .createdAt(org.getCreatedAt())
                 .isSuspended(org.getIsSuspended())
                 .build();

@@ -42,13 +42,6 @@ public class OrganizationController {
         return ResponseEntity.ok(name);
     }
 
-    @GetMapping("/internal/organizations/{orgId}/policies")
-    @Operation(summary = "Get organization policies by ID (internal)")
-    public ResponseEntity<String> getOrganizationPolicies(@PathVariable UUID orgId) {
-        String policies = organizationService.getPolicies(orgId);
-        return ResponseEntity.ok(policies);
-    }
-
     @GetMapping("/organizations")
     @Operation(summary = "Get all organizations (Platform Admin)")
     public ResponseEntity<org.springframework.data.domain.Page<OrganizationResponse>> getAllOrganizations(
