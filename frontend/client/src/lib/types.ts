@@ -554,6 +554,31 @@ export interface RejectResponse {
   sentTo: string[];
 }
 
+export type NotificationChannel = "EMAIL" | "IN_APP" | "WEBHOOK";
+export type NotificationStatus = "PENDING" | "SENT" | "FAILED";
+
+export interface AppNotification {
+  id: string;
+  recipientUserId?: string;
+  recipientEmail?: string;
+  type: string;
+  channel: NotificationChannel;
+  subject?: string;
+  body?: string;
+  eventType?: string;
+  eventPayload?: string;
+  status: NotificationStatus;
+  sentAt?: string;
+  errorMessage?: string;
+  createdAt: string;
+}
+
+export interface NotificationListResponse {
+  content: AppNotification[];
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface OfferResponse {
   id: string;
   applicationId: string;

@@ -7,6 +7,13 @@ import type { User } from "./types";
 const ACCESS_TOKEN_KEY = "ats_access_token";
 const REFRESH_TOKEN_KEY = "ats_refresh_token";
 const USER_KEY = "ats_user";
+const AUTH_CHANGED_EVENT = "ats-auth-changed";
+
+function notifyAuthChanged(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+  }
+}
 
 // ---- Cookie helpers ----
 export function getAccessToken(): string | undefined {
@@ -43,12 +50,14 @@ export function removeTokens(): void {
   Cookies.remove(ACCESS_TOKEN_KEY);
   Cookies.remove(REFRESH_TOKEN_KEY);
   Cookies.remove(USER_KEY);
+  notifyAuthChanged();
 }
 
 export function storeAuthData(accessToken: string, refreshToken: string, user: User): void {
   setAccessToken(accessToken);
   setRefreshToken(refreshToken);
   setStoredUser(user);
+  notifyAuthChanged();
 }
 
 // ---- useAuth hook ----
@@ -58,16 +67,28 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = getAccessToken();
-    const storedUser = getStoredUser();
-    if (token && storedUser) {
-      setUser(storedUser);
-      setIsLoggedIn(true);
-    } else {
-      setUser(null);
-      setIsLoggedIn(false);
-    }
-    setIsLoading(false);
+    const syncAuthState = () => {
+      const token = getAccessToken();
+      const storedUser = getStoredUser();
+      if (token && storedUser) {
+        setUser(storedUser);
+        setIsLoggedIn(true);
+      } else {
+        setUser(null);
+        setIsLoggedIn(false);
+      }
+      setIsLoading(false);
+    };
+
+    syncAuthState();
+
+    window.addEventListener(AUTH_CHANGED_EVENT, syncAuthState);
+    window.addEventListener("storage", syncAuthState);
+
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, syncAuthState);
+      window.removeEventListener("storage", syncAuthState);
+    };
   }, []);
 
   const logout = useCallback(() => {
@@ -80,6 +101,7 @@ export function useAuth() {
     setStoredUser(userData);
     setUser(userData);
     setIsLoggedIn(true);
+    notifyAuthChanged();
   }, []);
 
   return {

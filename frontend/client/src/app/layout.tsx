@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
+import NotificationSocket from "@/components/NotificationSocket";
 import "./globals.css";
 
 export default function RootLayout({
@@ -43,6 +44,7 @@ export default function RootLayout({
         <QueryClientProvider client={queryClient}>
           <div className="flex flex-col min-h-screen backdrop-blur-xl bg-black/20">
             <Navbar />
+            <NotificationSocket />
             <main className="flex-1">{children}</main>
             <footer className="bg-black/20 backdrop-blur-xl border-t border-white/10 shadow-lg text-white/70 py-8 mt-auto">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">

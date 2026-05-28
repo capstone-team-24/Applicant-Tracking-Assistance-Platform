@@ -98,6 +98,7 @@ public class AssessmentCompletedListener {
                         String body = buildOaCompletionEmail(candidateName, jobTitle);
                         notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                                 .recipientEmail(email)
+                                .recipientUserId(candidateId)
                                 .subject(subject)
                                 .body(body)
                                 .type("OA_COMPLETED")

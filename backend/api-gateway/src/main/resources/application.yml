@@ -37,6 +37,10 @@ spring:
           uri: lb://jobs-service
           predicates:
             - Path=/api/v1/jobs/**,/api/v1/applications/**,/api/v1/interviews/**,/api/v1/integrations/**,/api/v1/offers/**
+        - id: notification-service-ws
+          uri: lb:ws://notification-service
+          predicates:
+            - Path=/api/v1/notifications/ws
         - id: notification-service
           uri: lb://notification-service
           predicates:

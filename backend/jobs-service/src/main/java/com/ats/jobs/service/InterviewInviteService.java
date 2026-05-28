@@ -152,6 +152,7 @@ public class InterviewInviteService {
                 String body = buildEmailHtml(candidateName, job.getTitle(), score, schedulingUrl);
                 notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                         .recipientEmail(email)
+                        .recipientUserId(candidateId)
                         .subject(subject)
                         .body(body)
                         .type("INTERVIEW_INVITE")
@@ -256,6 +257,7 @@ public class InterviewInviteService {
             String body = buildEmailHtml(candidateName, job.getTitle(), oaScore, schedulingUrl);
             notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(email)
+                    .recipientUserId(app.getCandidateAuthUserId())
                     .subject(subject)
                     .body(body)
                     .type("INTERVIEW_INVITE")
@@ -353,6 +355,7 @@ public class InterviewInviteService {
                 try {
                     notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                             .recipientEmail(email)
+                            .recipientUserId(app.getCandidateAuthUserId())
                             .subject(subject)
                             .body(body)
                             .type("REJECTION")
