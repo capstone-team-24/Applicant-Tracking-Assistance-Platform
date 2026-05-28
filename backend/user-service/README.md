@@ -70,7 +70,6 @@ docker run -p 8082:8082 \
 |--------|-----------------------------------------------|------------------------------|
 | POST   | /internal/profiles/bootstrap                  | Bootstrap new user profile   |
 | GET    | /internal/profiles/{authUserId}/application-data | Get application data      |
-| GET    | /internal/organizations/{orgId}/policies      | Get organization policies    |
 
 ### Organization Endpoints
 
@@ -133,8 +132,7 @@ curl -X POST http://localhost:8082/profiles/{profile-id}/upload-cv \
 curl -X POST http://localhost:8082/organizations \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Acme Corp",
-    "organizationPolicies": "{\"maxApplications\": 100}"
+    "name": "Acme Corp"
   }'
 ```
 

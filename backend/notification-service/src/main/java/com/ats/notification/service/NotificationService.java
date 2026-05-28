@@ -7,6 +7,7 @@ import com.ats.notification.entity.Notification;
 import com.ats.notification.enums.NotificationChannel;
 import com.ats.notification.enums.NotificationStatus;
 import com.ats.notification.repository.NotificationRepository;
+import com.ats.notification.util.EmailTemplate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.MessagingException;
@@ -40,13 +41,14 @@ public class NotificationService {
     @Transactional
     public Notification sendEmail(String recipientEmail, String subject, String body) {
         log.info("Sending email to {} with subject: {}", recipientEmail, subject);
+        String emailBody = normalizeEmailBody(subject, body);
 
         Notification notification = Notification.builder()
                 .recipientEmail(recipientEmail)
                 .type("EMAIL")
                 .channel(NotificationChannel.EMAIL)
                 .subject(subject)
-                .body(body)
+                .body(emailBody)
                 .status(NotificationStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -56,7 +58,7 @@ public class NotificationService {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setTo(recipientEmail);
             helper.setSubject(subject);
-            helper.setText(body, true);
+            helper.setText(emailBody, true);
             helper.setFrom("noreply@ats-system.com");
 
             mailSender.send(mimeMessage);
@@ -262,59 +264,50 @@ public class NotificationService {
     }
 
     private String buildApplicationReceivedEmail(String candidateName, String jobTitle, String applicationId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body>");
-        sb.append("<h2>Application Received</h2>");
-        sb.append("<p>Dear ").append(candidateName != null ? candidateName : "Applicant").append(",</p>");
-        sb.append("<p>Thank you for submitting your application");
-        if (jobTitle != null) {
-            sb.append(" for the position of <strong>").append(jobTitle).append("</strong>");
-        }
-        sb.append(".</p>");
-        if (applicationId != null) {
-            sb.append("<p>Your application reference number is: <strong>").append(applicationId).append("</strong></p>");
-        }
-        sb.append("<p>We have received your application and our team will review it shortly. ");
-        sb.append("You will be notified of any updates regarding your application status.</p>");
-        sb.append("<p>Best regards,<br/>ATS Recruitment Team</p>");
-        sb.append("</body></html>");
-        return sb.toString();
+        String name = candidateName != null ? candidateName : "Applicant";
+        String position = jobTitle != null ? " for the position of <strong>" + EmailTemplate.escape(jobTitle) + "</strong>" : "";
+        String reference = applicationId != null
+                ? EmailTemplate.detailBox("Application Details", new String[][]{{"Reference", EmailTemplate.escape(applicationId)}})
+                : "";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(name) + "</strong>,")
+                + EmailTemplate.paragraph("Thank you for submitting your application" + position + ".")
+                + reference
+                + EmailTemplate.paragraph("We have received your application and our team will review it shortly. You will be notified of any updates regarding your application status.")
+                + EmailTemplate.paragraph("Best regards,<br/><strong>ATS Recruitment Team</strong>");
+        return EmailTemplate.render("Application Received", content);
     }
 
     private String buildParseCompletedEmail(String candidateName, String resumeId, String status) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body>");
-        sb.append("<h2>Resume Parse Completed</h2>");
-        sb.append("<p>The resume for candidate <strong>")
-                .append(candidateName != null ? candidateName : "Unknown")
-                .append("</strong> has been successfully parsed.</p>");
-        if (resumeId != null) {
-            sb.append("<p>Resume ID: <strong>").append(resumeId).append("</strong></p>");
-        }
-        sb.append("<p>Parse Status: <strong>").append(status != null ? status : "COMPLETED").append("</strong></p>");
-        sb.append("<p>You can now review the extracted information in the ATS dashboard.</p>");
-        sb.append("<p>Best regards,<br/>ATS System</p>");
-        sb.append("</body></html>");
-        return sb.toString();
+        String name = candidateName != null ? candidateName : "Unknown";
+        String parseStatus = status != null ? status : "COMPLETED";
+        String content = EmailTemplate.paragraph("The resume for candidate <strong>" + EmailTemplate.escape(name) + "</strong> has been successfully parsed.")
+                + EmailTemplate.detailBox("Parse Details", new String[][]{
+                        {"Resume ID", resumeId != null ? EmailTemplate.escape(resumeId) : null},
+                        {"Status", EmailTemplate.escape(parseStatus)}
+                })
+                + EmailTemplate.paragraph("You can now review the extracted information in the ATS dashboard.")
+                + EmailTemplate.paragraph("Best regards,<br/><strong>ATS System</strong>");
+        return EmailTemplate.render("Resume Parse Completed", content);
     }
 
     private String buildRankResultEmail(String jobTitle, String jobId, String totalCandidates) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body>");
-        sb.append("<h2>Candidate Ranking Complete</h2>");
-        sb.append("<p>The candidate ranking process has been completed for ");
-        if (jobTitle != null) {
-            sb.append("the position of <strong>").append(jobTitle).append("</strong>");
-        } else {
-            sb.append("Job ID: <strong>").append(jobId != null ? jobId : "N/A").append("</strong>");
+        String target = jobTitle != null
+                ? "the position of <strong>" + EmailTemplate.escape(jobTitle) + "</strong>"
+                : "Job ID <strong>" + EmailTemplate.escape(jobId != null ? jobId : "N/A") + "</strong>";
+        String content = EmailTemplate.paragraph("The candidate ranking process has been completed for " + target + ".")
+                + EmailTemplate.detailBox("Ranking Details", new String[][]{{"Candidates Ranked", totalCandidates != null ? EmailTemplate.escape(totalCandidates) : null}})
+                + EmailTemplate.paragraph("Please log in to the ATS dashboard to review the ranked candidates and proceed with the next steps.")
+                + EmailTemplate.paragraph("Best regards,<br/><strong>ATS System</strong>");
+        return EmailTemplate.render("Candidate Ranking Complete", content);
+    }
+
+    private String normalizeEmailBody(String subject, String body) {
+        if (body != null && body.contains("data-email-template=\"ats-blue\"")) {
+            return body;
         }
-        sb.append(".</p>");
-        if (totalCandidates != null) {
-            sb.append("<p>Total candidates ranked: <strong>").append(totalCandidates).append("</strong></p>");
-        }
-        sb.append("<p>Please log in to the ATS dashboard to review the ranked candidates and proceed with the next steps.</p>");
-        sb.append("<p>Best regards,<br/>ATS System</p>");
-        sb.append("</body></html>");
-        return sb.toString();
+        String content = body == null || body.isBlank()
+                ? EmailTemplate.paragraph("No message body was provided.")
+                : body;
+        return EmailTemplate.render(subject != null && !subject.isBlank() ? subject : "Notification", content);
     }
 }

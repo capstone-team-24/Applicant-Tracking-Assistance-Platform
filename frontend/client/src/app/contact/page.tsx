@@ -174,12 +174,12 @@ export default function ContactUsPage() {
                 value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} />
             </div>
 
-            {/* Verification Documents */}
+            {/* Supporting Documents */}
             <div>
               <label className="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">
-                Verification Documents
+                Supporting Documents
               </label>
-              <p className="text-white/30 text-xs mb-3">Upload business registration certificates, licenses, or other verification documents (PDF, DOC, DOCX, PNG, JPG — max {MAX_SIZE_MB} MB each, up to {MAX_FILES} files)</p>
+              <p className="text-white/30 text-xs mb-3">Upload business registration certificates, licenses, or other supporting documents (PDF, DOC, DOCX, PNG, JPG — max {MAX_SIZE_MB} MB each, up to {MAX_FILES} files)</p>
 
               {/* Drop zone */}
               <div

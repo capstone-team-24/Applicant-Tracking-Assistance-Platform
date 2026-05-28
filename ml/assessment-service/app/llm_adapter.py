@@ -1,5 +1,5 @@
 """
-LLM Adapter layer for scoring short-answer and code questions.
+LLM Adapter layer for scoring short-answer questions.
 
 Provides a pluggable interface with implementations for:
   - MockLLMAdapter   (deterministic, no external calls)
@@ -61,7 +61,6 @@ class MockLLMAdapter(LLMAdapter):
 
     - MCQ:          exact match -> full score, else 0
     - SHORT_ANSWER: keyword overlap gives partial credit
-    - CODE:         length + keyword heuristic
     """
 
     @property
@@ -81,13 +80,10 @@ class MockLLMAdapter(LLMAdapter):
             return self._score_mcq(question, answer, max_score)
         elif q_type == "SHORT_ANSWER":
             return self._score_short_answer(question, answer, max_score)
-        elif q_type == "CODE":
-            return self._score_code(question, answer, max_score)
-        else:
-            return {
-                "score": 0.0,
-                "rationale": f"Unknown question type: {q_type}",
-            }
+        return {
+            "score": 0.0,
+            "rationale": f"Unknown question type: {q_type}",
+        }
 
     # -- MCQ -----------------------------------------------------------------
     @staticmethod
@@ -169,56 +165,6 @@ class MockLLMAdapter(LLMAdapter):
             )
 
         return {"score": score, "rationale": rationale}
-
-    # -- CODE ----------------------------------------------------------------
-    @staticmethod
-    def _score_code(question: dict, answer: str, max_score: float) -> dict:
-        score = 0.0
-        reasons = []
-
-        # Length heuristic
-        line_count = len(answer.strip().splitlines())
-        if line_count >= 10:
-            score += max_score * 0.3
-            reasons.append(f"Code has {line_count} lines, showing reasonable implementation effort.")
-        elif line_count >= 3:
-            score += max_score * 0.15
-            reasons.append(f"Code has {line_count} lines, a minimal implementation.")
-        else:
-            reasons.append("Code is very short, possibly incomplete.")
-
-        # Structural keyword heuristic
-        code_keywords = ["def ", "class ", "return", "for ", "while ", "if ", "import "]
-        matched_kw = [kw for kw in code_keywords if kw in answer]
-        kw_ratio = len(matched_kw) / len(code_keywords)
-        score += max_score * 0.3 * min(kw_ratio * 1.5, 1.0)
-        if matched_kw:
-            reasons.append(
-                f"Code contains structural keywords: {', '.join(k.strip() for k in matched_kw)}."
-            )
-
-        # Reference-answer keyword overlap (if available)
-        correct = question.get("correct_answer", "")
-        if correct:
-            ref_tokens = set(re.findall(r"\w+", correct.lower()))
-            ans_tokens = set(re.findall(r"\w+", answer.lower()))
-            if ref_tokens:
-                overlap = ref_tokens & ans_tokens
-                ratio = len(overlap) / len(ref_tokens)
-                score += max_score * 0.4 * min(ratio * 1.2, 1.0)
-                reasons.append(
-                    f"Token overlap with reference solution: "
-                    f"{len(overlap)}/{len(ref_tokens)}."
-                )
-        else:
-            # No reference -- give some credit for effort
-            score += max_score * 0.2
-            reasons.append("No reference solution available; effort credit applied.")
-
-        score = round(min(score, max_score), 2)
-        rationale = " ".join(reasons)
-        return {"score": score, "rationale": rationale}
-
 
 # ---------------------------------------------------------------------------
 # OpenAI adapter

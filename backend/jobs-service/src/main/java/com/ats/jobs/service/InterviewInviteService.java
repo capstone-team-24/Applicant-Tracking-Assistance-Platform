@@ -15,6 +15,7 @@ import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.InterviewInviteRepository;
 import com.ats.jobs.repository.JobRepository;
+import com.ats.jobs.util.EmailTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -386,43 +387,15 @@ public class InterviewInviteService {
 
     private String buildEmailHtml(String candidateName, String jobTitle,
                                    double oaScore, String schedulingUrl) {
-        return "<!DOCTYPE html>" +
-               "<html lang=\"en\"><head><meta charset=\"UTF-8\">" +
-               "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
-               "<body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;\">" +
-               "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">" +
-               "<tr><td align=\"center\" style=\"padding:40px 16px;\">" +
-               "<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" " +
-               "style=\"background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);\">" +
-               // Header
-               "<tr><td style=\"background:#059669;padding:28px 36px;\">" +
-               "<p style=\"margin:0;font-size:13px;color:#a7f3d0;letter-spacing:.5px;text-transform:uppercase;\">ATS Recruitment</p>" +
-               "<h1 style=\"margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:700;\">Interview Invitation 🎉</h1>" +
-               "</td></tr>" +
-               // Body
-               "<tr><td style=\"padding:36px 36px 28px;\">" +
-               "<p style=\"margin:0 0 16px;font-size:15px;color:#374151;\">Dear <strong>" + escHtml(candidateName) + "</strong>,</p>" +
-               "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
-               "Congratulations! You performed excellently on the Online Assessment for <strong>" + escHtml(jobTitle) + "</strong> " +
-               "and we would like to invite you to the next stage — a formal interview.</p>" +
-               // Score box
-               "<div style=\"background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 24px;margin-bottom:28px;text-align:center;\">" +
-               "<p style=\"margin:0;font-size:13px;color:#065f46;font-weight:700;text-transform:uppercase;letter-spacing:.4px;\">Your OA Score</p>" +
-               "<p style=\"margin:4px 0 0;font-size:36px;font-weight:800;color:#059669;\">" + Math.round(oaScore) + "<span style=\"font-size:16px;color:#6b7280;\"> / 100</span></p>" +
-               "</div>" +
-               // CTA
-               "<div style=\"text-align:center;margin-bottom:28px;\">" +
-               "<a href=\"" + schedulingUrl + "\" " +
-               "style=\"display:inline-block;background:#059669;color:#ffffff;font-size:16px;font-weight:700;" +
-               "text-decoration:none;padding:14px 40px;border-radius:8px;\">Book Interview &rarr;</a>" +
-               "</div>" +
-               "<p style=\"font-size:13px;color:#6b7280;margin:0 0 6px;\">If the button doesn't work, copy and paste this link:</p>" +
-               "<p style=\"font-size:13px;color:#059669;word-break:break-all;margin:0 0 28px;\">" + schedulingUrl + "</p>" +
-               "<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:0 0 20px;\">" +
-               "<p style=\"font-size:12px;color:#9ca3af;text-align:center;margin:0;\">" +
-               "This invitation was sent automatically by the ATS Recruitment System.</p>" +
-               "</td></tr></table>" +
-               "</td></tr></table></body></html>";
+        String scoreBlock = oaScore > 0
+                ? EmailTemplate.infoBox("Your OA Score", "<strong style=\"font-size:28px;color:#111827;\">" + Math.round(oaScore) + "</strong><span style=\"color:#6b7280;\"> / 100</span>")
+                : "";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(candidateName) + "</strong>,")
+                + EmailTemplate.paragraph("Congratulations. You performed well on the online assessment for <strong>" + EmailTemplate.escape(jobTitle) + "</strong>, and we would like to invite you to the next stage: a formal interview.")
+                + scoreBlock
+                + EmailTemplate.button(schedulingUrl, "Book Interview")
+                + EmailTemplate.fallbackLink(schedulingUrl);
+        return EmailTemplate.render("Interview Invitation", content, "Please do not reply to this email.");
     }
 
     /**
@@ -437,45 +410,11 @@ public class InterviewInviteService {
         log.info("Updated deadline for {} interview invites for job {}", invites.size(), jobId);
     }
 
-    private static String escHtml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#x27;");
-    }
-
     private String buildRejectionEmailHtml(String candidateName, String jobTitle) {
-        return "<!DOCTYPE html>" +
-                "<html lang=\"en\"><head><meta charset=\"UTF-8\">" +
-                "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
-                "<body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;\">" +
-                "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">" +
-                "<tr><td align=\"center\" style=\"padding:40px 16px;\">" +
-                "<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" " +
-                "style=\"background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);\">" +
-                "<tr><td style=\"background:#1f2937;padding:28px 36px;\">" + // Dark grey header
-                "<p style=\"margin:0;font-size:13px;color:#9ca3af;letter-spacing:.5px;text-transform:uppercase;\">ATS Recruitment</p>" +
-                "<h1 style=\"margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:700;\">Application Update</h1>" +
-                "</td></tr>" +
-                "<tr><td style=\"padding:36px 36px 28px;\">" +
-                "<p style=\"margin:0 0 16px;font-size:15px;color:#374151;\">Dear <strong>" + escHtml(candidateName) + "</strong>,</p>" +
-                "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
-                "Thank you for taking the time to complete the Online Assessment for the <strong>" + escHtml(jobTitle) + "</strong> role. " +
-                "We appreciate the effort you put into the assessment and your continued interest in our team.</p>" +
-                "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
-                "After careful consideration of the assessment results and profiles of all candidates, we regret to inform you that we will not be moving forward with your application to the interview stage at this time. " +
-                "We had many highly qualified applicants and have decided to proceed with candidates whose scores and experiences more closely match the current needs of the role.</p>" +
-                "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
-                "We wish you all the best in your job search and your future professional endeavors.</p>" +
-                "<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:0 0 20px;\">" +
-                "<p style=\"font-size:12px;color:#9ca3af;text-align:center;margin:0;\">" +
-                "This message was sent automatically by the ATS Recruitment System. Please do not reply to this email." +
-                "</p>" +
-                "</td></tr>" +
-                "</table>" +
-                "</td></tr></table>" +
-                "</body></html>";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(candidateName) + "</strong>,")
+                + EmailTemplate.paragraph("Thank you for taking the time to complete the online assessment for the <strong>" + EmailTemplate.escape(jobTitle) + "</strong> role. We appreciate the effort you put into the assessment and your continued interest in our team.")
+                + EmailTemplate.paragraph("After careful consideration of the assessment results and profiles of all candidates, we regret to inform you that we will not be moving forward with your application to the interview stage at this time. We had many highly qualified applicants and have decided to proceed with candidates whose scores and experiences more closely match the current needs of the role.")
+                + EmailTemplate.paragraph("We wish you all the best in your job search and your future professional endeavors.");
+        return EmailTemplate.render("Application Update", content, "Please do not reply to this email.");
     }
 }

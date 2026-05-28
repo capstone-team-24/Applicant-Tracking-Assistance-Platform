@@ -116,7 +116,7 @@ class LLMAuditLog(Base):
 
 class Question(BaseModel):
     id: str
-    type: str = Field(..., pattern="^(MCQ|SHORT_ANSWER|CODE)$")
+    type: str = Field(..., pattern="^(MCQ|SHORT_ANSWER)$")
     text: str
     options: Optional[List[str]] = None
     correct_answer: Optional[str] = None
@@ -166,6 +166,8 @@ class AttemptStateRequest(BaseModel):
     warningAccepted: Optional[bool] = None
     examStarted: Optional[bool] = None
     strikeReason: Optional[str] = None
+    strikeType: Optional[str] = None
+    evidence: Optional[dict] = None
     lastActivityAt: Optional[str] = None
 
 
@@ -200,7 +202,7 @@ class SubmissionResponse(BaseModel):
 
 class ProctoringEventRequest(BaseModel):
     submissionId: str
-    eventType: str = Field(..., pattern="^(TAB_CHANGE|MULTI_FACE|COPY_PASTE|WINDOW_BLUR)$")
+    eventType: str = Field(..., pattern="^(TAB_CHANGE|MULTI_FACE|COPY_PASTE|WINDOW_BLUR|ATTEMPT_STRIKE)$")
     eventData: Optional[dict] = None
     timestamp: str
 
@@ -210,6 +212,10 @@ class ProctoringEventResponse(BaseModel):
     submissionId: str
     eventType: str
     eventData: Optional[dict] = None
+    reason: Optional[str] = None
+    strikeType: Optional[str] = None
+    strikeCount: Optional[int] = None
+    evidence: Optional[dict] = None
     timestamp: str
 
     class Config:
@@ -223,3 +229,4 @@ class UpdateAssessmentRequest(BaseModel):
 
 class GenerateAssessmentRequest(BaseModel):
     jobId: str
+    questionCount: int = Field(default=8, ge=1, le=30)

@@ -30,7 +30,6 @@ export default function OrgDetailPage() {
 
   // Edit form state
   const [editName, setEditName] = useState("");
-  const [editPolicies, setEditPolicies] = useState("");
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
@@ -48,7 +47,6 @@ export default function OrgDetailPage() {
       ]);
       setOrg(orgData);
       setEditName(orgData.name);
-      setEditPolicies(orgData.organizationPolicies || "");
       setMembers(membersData);
     } catch (err) {
       console.error(err);
@@ -68,7 +66,7 @@ export default function OrgDetailPage() {
     if (!org) return;
     setSaving(true);
     try {
-      const updated = await platformAdminApi.updateOrganization(org.id, { name: editName, organizationPolicies: editPolicies });
+      const updated = await platformAdminApi.updateOrganization(org.id, { name: editName });
       setOrg(updated);
       setEditMode(false);
       showFlash("success", "Organization updated successfully.");
@@ -164,10 +162,6 @@ export default function OrgDetailPage() {
                     <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Name</label>
                     <input required className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 text-sm italic" value={editName} onChange={e => setEditName(e.target.value)} />
                   </div>
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-white/40 mb-2">Policies (JSON)</label>
-                    <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 text-sm italic h-28 resize-none" value={editPolicies} onChange={e => setEditPolicies(e.target.value)} />
-                  </div>
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setEditMode(false)} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 text-xs font-black uppercase tracking-widest transition-all">Cancel</button>
                     <button type="submit" disabled={saving} className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40">{saving ? "Saving..." : "Save Changes"}</button>
@@ -190,12 +184,6 @@ export default function OrgDetailPage() {
                     <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Status</p>
                     <SuspendBadge suspended={org.isSuspended} />
                   </div>
-                  {org.organizationPolicies && org.organizationPolicies !== "{}" && (
-                    <div className="bg-white/5 rounded-2xl p-5 col-span-2">
-                      <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-2">Policies</p>
-                      <pre className="text-white/60 text-xs overflow-auto max-h-32">{org.organizationPolicies}</pre>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

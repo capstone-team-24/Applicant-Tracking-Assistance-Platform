@@ -15,6 +15,7 @@ import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.JobRepository;
 import com.ats.jobs.repository.OfferRepository;
+import com.ats.jobs.util.EmailTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -67,16 +68,14 @@ public class OfferService {
 
         String offerLink = "http://localhost:3000/offers/" + token;
         
-        String emailBody = String.format(
-                "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">" +
-                "  <h2>Job Offer: %s at %s</h2>" +
-                "  <p>Dear %s,</p>" +
-                "  <p>We are thrilled to extend you an offer for the position of <strong>%s</strong>!</p>" +
-                "  <p>%s</p>" +
-                "  <p>Please review your offer details and let us know your decision by clicking the button below:</p>" +
-                "  <a href=\"%s\" style=\"display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;\">Review Offer</a>" +
-                "</div>",
-                job.getTitle(), orgName, application.getCandidateName(), job.getTitle(), request.getOfferMessage(), offerLink
+        String emailBody = EmailTemplate.render(
+                "Job Offer",
+                EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(application.getCandidateName()) + "</strong>,")
+                        + EmailTemplate.paragraph("We are thrilled to extend you an offer for the position of <strong>" + EmailTemplate.escape(job.getTitle()) + "</strong> at <strong>" + EmailTemplate.escape(orgName) + "</strong>.")
+                        + EmailTemplate.infoBox("Offer Message", EmailTemplate.escape(request.getOfferMessage()))
+                        + EmailTemplate.paragraph("Please review your offer details and let us know your decision by clicking the button below.")
+                        + EmailTemplate.button(offerLink, "Review Offer")
+                        + EmailTemplate.fallbackLink(offerLink)
         );
 
         NotificationSendRequest notificationReq = NotificationSendRequest.builder()
@@ -140,10 +139,11 @@ public class OfferService {
 
         // Notify Recruiter
         String applicationLink = "http://localhost:3000/recruiter/jobs/" + application.getJobId();
-        String emailBody = String.format(
-                "<p>Great news! %s has <strong>accepted</strong> the offer for %s.</p>" +
-                "<a href=\"%s\">View Application</a>",
-                application.getCandidateName(), jobTitle, applicationLink
+        String emailBody = EmailTemplate.render(
+                "Offer Accepted",
+                EmailTemplate.paragraph("Great news! <strong>" + EmailTemplate.escape(application.getCandidateName()) + "</strong> has accepted the offer for <strong>" + EmailTemplate.escape(jobTitle) + "</strong>.")
+                        + EmailTemplate.button(applicationLink, "View Application")
+                        + EmailTemplate.fallbackLink(applicationLink)
         );
 
         NotificationSendRequest notificationReq = NotificationSendRequest.builder()
@@ -184,11 +184,13 @@ public class OfferService {
 
         // Notify Recruiter
         String applicationLink = "http://localhost:3000/recruiter/jobs/" + application.getJobId();
-        String emailBody = String.format(
-                "<p>Unfortunately, %s has <strong>declined</strong> the offer for %s.</p>" +
-                "<p>Reason: %s</p>" +
-                "<a href=\"%s\">View Application</a>",
-                application.getCandidateName(), jobTitle, request != null && request.getReason() != null ? request.getReason() : "None provided", applicationLink
+        String reason = request != null && request.getReason() != null ? request.getReason() : "None provided";
+        String emailBody = EmailTemplate.render(
+                "Offer Declined",
+                EmailTemplate.paragraph("<strong>" + EmailTemplate.escape(application.getCandidateName()) + "</strong> has declined the offer for <strong>" + EmailTemplate.escape(jobTitle) + "</strong>.")
+                        + EmailTemplate.infoBox("Reason", EmailTemplate.escape(reason))
+                        + EmailTemplate.button(applicationLink, "View Application")
+                        + EmailTemplate.fallbackLink(applicationLink)
         );
 
         NotificationSendRequest notificationReq = NotificationSendRequest.builder()

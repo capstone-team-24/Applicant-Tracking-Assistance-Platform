@@ -74,7 +74,8 @@ class NotificationServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getRecipientEmail()).isEqualTo(recipientEmail);
         assertThat(result.getSubject()).isEqualTo(subject);
-        assertThat(result.getBody()).isEqualTo(body);
+        assertThat(result.getBody()).contains("data-email-template=\"ats-blue\"");
+        assertThat(result.getBody()).contains("Test body");
         assertThat(result.getStatus()).isEqualTo(NotificationStatus.SENT);
         assertThat(result.getChannel()).isEqualTo(NotificationChannel.EMAIL);
         assertThat(result.getSentAt()).isNotNull();

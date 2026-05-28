@@ -15,6 +15,7 @@ import com.ats.jobs.feign.UserServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.JobRepository;
 import com.ats.jobs.util.FileStorageUtil;
+import com.ats.jobs.util.EmailTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -507,75 +508,15 @@ public class ApplicationService {
     private String buildRejectionEmailHtml(String candidateName, String jobTitle, String companyName, String optionalFeedback) {
         String feedbackBlock = "";
         if (optionalFeedback != null && !optionalFeedback.isBlank()) {
-            feedbackBlock =
-                "<div style=\"background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px 24px;margin-bottom:28px;\">" +
-                "<p style=\"margin:0 0 8px;font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;\">Feedback</p>" +
-                "<p style=\"margin:0;font-size:14px;color:#374151;line-height:1.7;\">" + escHtml(optionalFeedback) + "</p>" +
-                "</div>";
+            feedbackBlock = EmailTemplate.infoBox("Feedback", EmailTemplate.escape(optionalFeedback));
         }
 
-        return "<!DOCTYPE html>" +
-            "<html lang=\"en\"><head><meta charset=\"UTF-8\">" +
-            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
-            "<body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;\">" +
-
-            "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">" +
-            "<tr><td align=\"center\" style=\"padding:40px 16px;\">" +
-
-            // Card
-            "<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" " +
-            "style=\"background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);\">" +
-
-            // Header
-            "<tr><td style=\"background:#1f2937;padding:28px 36px;\">" +
-            "<p style=\"margin:0;font-size:13px;color:#9ca3af;letter-spacing:.5px;text-transform:uppercase;\">" + escHtml(companyName) + "</p>" +
-            "<h1 style=\"margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:700;\">Application Update</h1>" +
-            "</td></tr>" +
-
-            // Body
-            "<tr><td style=\"padding:36px 36px 28px;\">" +
-
-            "<p style=\"margin:0 0 16px;font-size:15px;color:#374151;\">Dear <strong>" + escHtml(candidateName) + "</strong>,</p>" +
-
-            "<p style=\"margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;\">" +
-            "Thank you for taking the time to apply for the <strong>" + escHtml(jobTitle) + "</strong> position at " +
-            "<strong>" + escHtml(companyName) + "</strong>. We genuinely appreciate your interest and the effort " +
-            "you invested in your application.</p>" +
-
-            "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
-            "After careful review, we regret to inform you that we will not be moving forward with your candidacy " +
-            "at this time. This was a difficult decision, as we received applications from many highly qualified " +
-            "individuals. We have decided to proceed with candidates whose experience most closely aligns with the " +
-            "current requirements of the role.</p>" +
-
-            feedbackBlock +
-
-            "<p style=\"margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;\">" +
-            "We encourage you to apply for future opportunities that match your skills and experience. " +
-            "We wish you every success in your job search and professional endeavors.</p>" +
-
-            "<p style=\"margin:0 0 8px;font-size:15px;color:#374151;\">Warm regards,</p>" +
-            "<p style=\"margin:0;font-size:15px;font-weight:600;color:#111827;\">" + escHtml(companyName) + " Recruitment Team</p>" +
-
-            "<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:28px 0 20px;\">" +
-            "<p style=\"font-size:12px;color:#9ca3af;text-align:center;margin:0;\">" +
-            "This message was sent automatically. Please do not reply to this email. If you have questions, " +
-            "please contact the hiring team directly." +
-            "</p>" +
-
-            "</td></tr>" +
-            "</table>" +   // end card
-            "</td></tr></table>" + // end outer
-            "</body></html>";
-    }
-
-    /** Minimal HTML escaping to prevent injection in email bodies. */
-    private static String escHtml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#x27;");
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(candidateName) + "</strong>,")
+                + EmailTemplate.paragraph("Thank you for taking the time to apply for the <strong>" + EmailTemplate.escape(jobTitle) + "</strong> position at <strong>" + EmailTemplate.escape(companyName) + "</strong>. We genuinely appreciate your interest and the effort you invested in your application.")
+                + EmailTemplate.paragraph("After careful review, we regret to inform you that we will not be moving forward with your candidacy at this time. This was a difficult decision, as we received applications from many highly qualified individuals. We have decided to proceed with candidates whose experience most closely aligns with the current requirements of the role.")
+                + feedbackBlock
+                + EmailTemplate.paragraph("We encourage you to apply for future opportunities that match your skills and experience. We wish you every success in your job search and professional endeavors.")
+                + EmailTemplate.paragraph("Warm regards,<br/><strong>" + EmailTemplate.escape(companyName) + " Recruitment Team</strong>");
+        return EmailTemplate.render("Application Update", content, "Please do not reply to this email. If you have questions, contact the hiring team directly.");
     }
 }

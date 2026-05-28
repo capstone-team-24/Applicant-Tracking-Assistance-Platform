@@ -18,6 +18,7 @@ import com.ats.user.feign.NotificationServiceClient;
 import com.ats.user.exception.ResourceNotFoundException;
 import com.ats.user.repository.ContactMessageRepository;
 import com.ats.user.repository.DocumentRepository;
+import com.ats.user.util.EmailTemplate;
 import com.ats.user.util.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -125,7 +126,6 @@ public class ContactMessageService {
         // Create the organization
         CreateOrganizationRequest organizationRequest = CreateOrganizationRequest.builder()
                 .name(message.getName())
-                .organizationPolicies(buildOrganizationPolicies(message))
                 .build();
 
         OrganizationResponse organization = organizationService.create(organizationRequest);
@@ -433,16 +433,6 @@ public class ContactMessageService {
                 .build();
     }
 
-    private String buildOrganizationPolicies(ContactMessage message) {
-        return String.format(
-                "{\"sourceContactMessageId\":\"%s\",\"sourceContactName\":\"%s\",\"sourceContactEmail\":\"%s\",\"hrAdminName\":\"%s\"}",
-                message.getId(),
-                message.getName().replace("\"", "\\\""),
-                message.getEmail().replace("\"", "\\\""),
-                message.getHrAdminName() != null ? message.getHrAdminName().replace("\"", "\\\"") : ""
-        );
-    }
-
     // ──────────────────────────────────────────────────────────────
     //  Email builders
     // ──────────────────────────────────────────────────────────────
@@ -450,153 +440,39 @@ public class ContactMessageService {
     private String buildRejectionEmailHtml(ContactMessage message) {
         String reasonBlock = "";
         if (message.getRejectionReason() != null && !message.getRejectionReason().isBlank()) {
-            reasonBlock = "<tr><td style='padding:20px 40px;'>"
-                    + "<p style='margin:0 0 8px 0;font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;'>Reason</p>"
-                    + "<div style='background:#2a1a1a;border-left:4px solid #ef4444;border-radius:4px;padding:16px 20px;'>"
-                    + "<p style='margin:0;font-size:14px;line-height:1.6;color:#fca5a5;'>"
-                    + escapeHtml(message.getRejectionReason())
-                    + "</p></div></td></tr>";
+            reasonBlock = EmailTemplate.infoBox("Reason", EmailTemplate.escape(message.getRejectionReason()));
         }
 
-        return "<!DOCTYPE html>"
-                + "<html lang='en'><head><meta charset='UTF-8'>"
-                + "<meta name='viewport' content='width=device-width,initial-scale=1'></head>"
-                + "<body style='margin:0;padding:0;background:#0f0f1a;font-family:Inter,Segoe UI,Arial,sans-serif;'>"
-                + "<table width='100%' cellpadding='0' cellspacing='0' style='background:#0f0f1a;padding:40px 16px;'>"
-                + "<tr><td align='center'>"
-                + "<table width='560' cellpadding='0' cellspacing='0' style='max-width:560px;width:100%;background:#1e1e30;"
-                + "border-radius:16px;overflow:hidden;border:1px solid #2e2e50;'>"
-                // Header
-                + "<tr><td style='background:linear-gradient(135deg,#7f1d1d,#991b1b);padding:32px 40px;text-align:center;'>"
-                + "<p style='margin:0 0 6px 0;font-size:11px;font-weight:600;letter-spacing:2px;"
-                + "text-transform:uppercase;color:#fca5a5;'>Recruitment Platform</p>"
-                + "<h1 style='margin:0;font-size:22px;font-weight:700;color:#ffffff;'>Registration Decision</h1>"
-                + "</td></tr>"
-                // Body
-                + "<tr><td style='padding:36px 40px 24px;'>"
-                + "<p style='margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
-                + "Dear <strong>" + escapeHtml(message.getName()) + "</strong>,</p>"
-                + "<p style='margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
-                + "After careful review of your organization registration request, we regret to inform you that your application has been <strong style='color:#f87171;'>rejected</strong>.</p>"
-                + "<p style='margin:0;font-size:14px;line-height:1.6;color:#94a3b8;'>"
-                + "If you believe this decision was made in error or would like to reapply with additional information, please contact our support team.</p>"
-                + "</td></tr>"
-                + reasonBlock
-                // Footer
-                + "<tr><td style='padding:20px 40px 28px;border-top:1px solid #2e2e50;text-align:center;'>"
-                + "<p style='margin:0;font-size:11px;color:#334155;'>&#169; ATS Recruitment Platform</p>"
-                + "</td></tr>"
-                + "</table>"
-                + "</td></tr></table>"
-                + "</body></html>";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(message.getName()) + "</strong>,")
+                + EmailTemplate.paragraph("After careful review of your organization registration request, we regret to inform you that your application has been <strong>rejected</strong>.")
+                + EmailTemplate.paragraph("If you believe this decision was made in error or would like to reapply with additional information, please contact our support team.")
+                + reasonBlock;
+        return EmailTemplate.render("Registration Decision", content);
     }
 
     private String buildInquiryEmailHtml(ContactMessage message, String inquiryMessage, String revisionLink) {
-        return "<!DOCTYPE html>"
-                + "<html lang='en'><head><meta charset='UTF-8'>"
-                + "<meta name='viewport' content='width=device-width,initial-scale=1'></head>"
-                + "<body style='margin:0;padding:0;background:#0f0f1a;font-family:Inter,Segoe UI,Arial,sans-serif;'>"
-                + "<table width='100%' cellpadding='0' cellspacing='0' style='background:#0f0f1a;padding:40px 16px;'>"
-                + "<tr><td align='center'>"
-                + "<table width='560' cellpadding='0' cellspacing='0' style='max-width:560px;width:100%;background:#1e1e30;"
-                + "border-radius:16px;overflow:hidden;border:1px solid #2e2e50;'>"
-                // Header
-                + "<tr><td style='background:linear-gradient(135deg,#1e3a5f,#1d4ed8);padding:32px 40px;text-align:center;'>"
-                + "<p style='margin:0 0 6px 0;font-size:11px;font-weight:600;letter-spacing:2px;"
-                + "text-transform:uppercase;color:#93c5fd;'>Recruitment Platform</p>"
-                + "<h1 style='margin:0;font-size:22px;font-weight:700;color:#ffffff;'>Information Required</h1>"
-                + "</td></tr>"
-                // Body
-                + "<tr><td style='padding:36px 40px 24px;'>"
-                + "<p style='margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
-                + "Dear <strong>" + escapeHtml(message.getName()) + "</strong>,</p>"
-                + "<p style='margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
-                + "We are reviewing your organization registration request and require some additional information before we can proceed.</p>"
-                // Inquiry message block
-                + "<p style='margin:0 0 8px 0;font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;'>Question from our team</p>"
-                + "<div style='background:#0f1929;border-left:4px solid #3b82f6;border-radius:4px;padding:16px 20px;margin-bottom:28px;'>"
-                + "<p style='margin:0;font-size:14px;line-height:1.7;color:#93c5fd;'>"
-                + escapeHtml(inquiryMessage)
-                + "</p></div>"
-                + "<p style='margin:0 0 28px 0;font-size:14px;line-height:1.6;color:#94a3b8;'>"
-                + "Please click the button below to update your registration details and resubmit for review.</p>"
-                // CTA
-                + "<table cellpadding='0' cellspacing='0' style='margin:0 auto 32px auto;'>"
-                + "<tr><td align='center' style='background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:10px;'>"
-                + "<a href='" + revisionLink + "' target='_blank' "
-                + "style='display:inline-block;padding:14px 36px;font-size:15px;font-weight:600;"
-                + "color:#ffffff;text-decoration:none;letter-spacing:0.3px;'>Update My Registration</a>"
-                + "</td></tr></table>"
-                // Fallback
-                + "<p style='margin:0 0 8px 0;font-size:12px;color:#64748b;'>If the button does not work, copy and paste this link:</p>"
-                + "<p style='margin:0;word-break:break-all;'>"
-                + "<a href='" + revisionLink + "' style='color:#60a5fa;text-decoration:underline;font-size:12px;'>" + revisionLink + "</a></p>"
-                + "</td></tr>"
-                // Footer
-                + "<tr><td style='padding:20px 40px 28px;border-top:1px solid #2e2e50;text-align:center;'>"
-                + "<p style='margin:0 0 6px 0;font-size:12px;line-height:1.6;color:#475569;'>"
-                + "This message was sent because you submitted an organization registration request.</p>"
-                + "<p style='margin:0;font-size:11px;color:#334155;'>&#169; ATS Recruitment Platform</p>"
-                + "</td></tr>"
-                + "</table>"
-                + "</td></tr></table>"
-                + "</body></html>";
-    }
-
-    private String escapeHtml(String value) {
-        if (value == null) return "";
-        return value
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(message.getName()) + "</strong>,")
+                + EmailTemplate.paragraph("We are reviewing your organization registration request and require some additional information before we can proceed.")
+                + EmailTemplate.infoBox("Question from our team", EmailTemplate.escape(inquiryMessage))
+                + EmailTemplate.paragraph("Please click the button below to update your registration details and resubmit for review.")
+                + EmailTemplate.button(revisionLink, "Update My Registration")
+                + EmailTemplate.fallbackLink(revisionLink);
+        return EmailTemplate.render("Information Required", content, "This message was sent because you submitted an organization registration request.");
     }
 
     private String buildApprovalEmailHtml(ContactMessage message, OrganizationResponse org, String setupLink) {
         String setupBlock = "";
         if (setupLink != null) {
-            setupBlock = "<p style='margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
-                    + "Your Organization Admin account has been created. Click the button below to set up your password and activate your account.</p>"
-                    + "<table cellpadding='0' cellspacing='0' style='margin:0 auto 32px auto;'>"
-                    + "<tr><td align='center' style='background:linear-gradient(135deg,#10b981,#059669);border-radius:10px;'>"
-                    + "<a href='" + setupLink + "' target='_blank' "
-                    + "style='display:inline-block;padding:14px 36px;font-size:15px;font-weight:600;"
-                    + "color:#ffffff;text-decoration:none;letter-spacing:0.3px;'>Set Up My Account</a>"
-                    + "</td></tr></table>"
-                    + "<p style='margin:0 0 8px 0;font-size:12px;color:#64748b;'>If the button does not work, copy and paste this link:</p>"
-                    + "<p style='margin:0 0 24px 0;word-break:break-all;'>"
-                    + "<a href='" + setupLink + "' style='color:#34d399;text-decoration:underline;font-size:12px;'>" + setupLink + "</a></p>";
+            setupBlock = EmailTemplate.paragraph("Your Organization Admin account has been created. Click the button below to set up your password and activate your account.")
+                    + EmailTemplate.button(setupLink, "Set Up My Account")
+                    + EmailTemplate.fallbackLink(setupLink);
+        } else {
+            setupBlock = EmailTemplate.paragraph("Your Organization Admin setup instructions will be sent separately.");
         }
 
-        return "<!DOCTYPE html>"
-                + "<html lang='en'><head><meta charset='UTF-8'>"
-                + "<meta name='viewport' content='width=device-width,initial-scale=1'></head>"
-                + "<body style='margin:0;padding:0;background:#0f0f1a;font-family:Inter,Segoe UI,Arial,sans-serif;'>"
-                + "<table width='100%' cellpadding='0' cellspacing='0' style='background:#0f0f1a;padding:40px 16px;'>"
-                + "<tr><td align='center'>"
-                + "<table width='560' cellpadding='0' cellspacing='0' style='max-width:560px;width:100%;background:#1e1e30;"
-                + "border-radius:16px;overflow:hidden;border:1px solid #2e2e50;'>"
-                // Header
-                + "<tr><td style='background:linear-gradient(135deg,#059669,#10b981);padding:32px 40px;text-align:center;'>"
-                + "<p style='margin:0 0 6px 0;font-size:11px;font-weight:600;letter-spacing:2px;"
-                + "text-transform:uppercase;color:#a7f3d0;'>Recruitment Platform</p>"
-                + "<h1 style='margin:0;font-size:22px;font-weight:700;color:#ffffff;'>Registration Approved</h1>"
-                + "</td></tr>"
-                // Body
-                + "<tr><td style='padding:36px 40px 24px;'>"
-                + "<p style='margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
-                + "Dear <strong>" + escapeHtml(message.getName()) + "</strong>,</p>"
-                + "<p style='margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#cbd5e1;'>"
-                + "Good news! Your organization registration request for <strong>" + escapeHtml(org.getName()) + "</strong> has been <strong style='color:#34d399;'>approved</strong>.</p>"
-                + setupBlock
-                + "</td></tr>"
-                // Footer
-                + "<tr><td style='padding:20px 40px 28px;border-top:1px solid #2e2e50;text-align:center;'>"
-                + "<p style='margin:0;font-size:11px;color:#334155;'>&#169; ATS Recruitment Platform</p>"
-                + "</td></tr>"
-                + "</table>"
-                + "</td></tr></table>"
-                + "</body></html>";
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(message.getName()) + "</strong>,")
+                + EmailTemplate.paragraph("Good news! Your organization registration request for <strong>" + EmailTemplate.escape(org.getName()) + "</strong> has been <strong>approved</strong>.")
+                + setupBlock;
+        return EmailTemplate.render("Registration Approved", content);
     }
 }
