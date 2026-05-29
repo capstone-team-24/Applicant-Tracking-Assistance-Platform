@@ -12,5 +12,6 @@ import java.util.UUID;
 public interface InterviewBookingRepository extends JpaRepository<InterviewBooking, UUID> {
     List<InterviewBooking> findByApplicationId(UUID applicationId);
     List<InterviewBooking> findByCandidateAuthUserId(UUID candidateAuthUserId);
+    List<InterviewBooking> findBySlotIdIn(List<UUID> slotIds);
     Optional<InterviewBooking> findBySlotId(UUID slotId);
 }

@@ -33,4 +33,6 @@ public class UpdateJobRequest {
 
     /** Update or clear the application deadline (null = no change when not sent). */
     private LocalDateTime applicationDeadline;
+
+    private Boolean clearApplicationDeadline;
 }

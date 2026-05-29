@@ -43,6 +43,36 @@ const emptyQuestion = (): QuestionDraft => ({
   max_score: 1,
 });
 
+type JobEditForm = {
+  title: string;
+  description: string;
+  requirements: string;
+  location: string;
+  employmentType: string;
+  experienceLevel: string;
+  skills: string;
+  skillsMatchWeight: string;
+  experienceMatchWeight: string;
+  educationMatchWeight: string;
+  overallFitWeight: string;
+  applicationDeadline: string;
+};
+
+const emptyJobEditForm = (): JobEditForm => ({
+  title: "",
+  description: "",
+  requirements: "",
+  location: "",
+  employmentType: "",
+  experienceLevel: "",
+  skills: "",
+  skillsMatchWeight: "25",
+  experienceMatchWeight: "25",
+  educationMatchWeight: "25",
+  overallFitWeight: "25",
+  applicationDeadline: "",
+});
+
 type ApplicationStatus = Application["status"];
 
 type KanbanColumn = {
@@ -149,6 +179,9 @@ export default function RecruiterJobDetailPage() {
   const [isRanking, setIsRanking] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isEditingJobDetails, setIsEditingJobDetails] = useState(false);
+  const [isSavingJobDetails, setIsSavingJobDetails] = useState(false);
+  const [jobEditForm, setJobEditForm] = useState<JobEditForm>(emptyJobEditForm());
 
   // ── assessment state ──────────────────────────────────────────────────────
   const [jobAssessment, setJobAssessment] = useState<Assessment | null>(null);
@@ -332,6 +365,80 @@ export default function RecruiterJobDetailPage() {
   }, [openDropdownId]);
 
   // ── job actions ───────────────────────────────────────────────────────────
+  const openJobDetailsEditor = () => {
+    if (!job) return;
+    const deadline = parseDate(job.applicationDeadline);
+    setJobEditForm({
+      title: job.title || "",
+      description: job.description || "",
+      requirements: job.requirements || "",
+      location: job.location || "",
+      employmentType: job.employmentType || "",
+      experienceLevel: job.experienceLevel || "",
+      skills: job.skills?.join(", ") || "",
+      skillsMatchWeight: String(job.scoringWeights?.skillsMatch ?? 25),
+      experienceMatchWeight: String(job.scoringWeights?.experienceMatch ?? 25),
+      educationMatchWeight: String(job.scoringWeights?.educationMatch ?? 25),
+      overallFitWeight: String(job.scoringWeights?.overallFit ?? 25),
+      applicationDeadline: deadline ? toLocalInputValue(deadline) : "",
+    });
+    setIsEditingJobDetails(true);
+  };
+
+  const handleJobEditChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setJobEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const parseWeight = (value: string) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const handleSaveJobDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobEditForm.title.trim()) {
+      toast.error("Job title is required");
+      return;
+    }
+
+    setIsSavingJobDetails(true);
+    try {
+      const updatedJob = await jobsApi.updateJob(jobId, {
+        title: jobEditForm.title.trim(),
+        description: jobEditForm.description,
+        requirements: jobEditForm.requirements,
+        location: jobEditForm.location,
+        employmentType: jobEditForm.employmentType,
+        experienceLevel: jobEditForm.experienceLevel,
+        skills: jobEditForm.skills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+        scoringWeights: {
+          skillsMatch: parseWeight(jobEditForm.skillsMatchWeight),
+          experienceMatch: parseWeight(jobEditForm.experienceMatchWeight),
+          educationMatch: parseWeight(jobEditForm.educationMatchWeight),
+          overallFit: parseWeight(jobEditForm.overallFitWeight),
+        },
+        applicationDeadline: jobEditForm.applicationDeadline
+          ? toBackendDatetime(jobEditForm.applicationDeadline)
+          : null,
+        clearApplicationDeadline: !jobEditForm.applicationDeadline,
+      });
+      setJob(updatedJob);
+      setIsEditingJobDetails(false);
+      toast.success("Job details updated!");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to update job details");
+    } finally {
+      setIsSavingJobDetails(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (!job) return;
     setIsPublishing(true);
@@ -557,7 +664,8 @@ export default function RecruiterJobDetailPage() {
     try {
       const updatedJob = await jobsApi.updateJob(jobId, {
         // Send Spring-safe LocalDateTime format (no Z, no milliseconds)
-        applicationDeadline: editJobDeadlineVal ? toBackendDatetime(editJobDeadlineVal) : undefined,
+        applicationDeadline: editJobDeadlineVal ? toBackendDatetime(editJobDeadlineVal) : null,
+        clearApplicationDeadline: !editJobDeadlineVal,
       });
       setJob(updatedJob);
       setIsEditingJobDeadline(false);
@@ -1136,6 +1244,12 @@ export default function RecruiterJobDetailPage() {
               )}
             </div>
             <div className="flex gap-2">
+              <button
+                onClick={openJobDetailsEditor}
+                className="px-4 py-2 bg-white/10 text-white text-sm font-medium rounded-lg hover:bg-white/15 transition-colors border border-white/10"
+              >
+                Edit Details
+              </button>
               {job.status === "DRAFT" && (
                 <button
                   onClick={handlePublish}
@@ -1170,6 +1284,170 @@ export default function RecruiterJobDetailPage() {
             </div>
           )}
         </div>
+
+        {isEditingJobDetails && (
+          <form onSubmit={handleSaveJobDetails} className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6 space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Edit Job Details</h2>
+                <p className="text-sm text-white/50 mt-1">Update the posting content recruiters and candidates see.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingJobDetails(false)}
+                className="text-sm text-white/50 hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/70 mb-1">Job Title</label>
+                <input
+                  name="title"
+                  value={jobEditForm.title}
+                  onChange={handleJobEditChange}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="e.g., Senior Software Engineer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Location</label>
+                <input
+                  name="location"
+                  value={jobEditForm.location}
+                  onChange={handleJobEditChange}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Remote, city, or region"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Employment Type</label>
+                <select
+                  name="employmentType"
+                  value={jobEditForm.employmentType}
+                  onChange={handleJobEditChange}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select type</option>
+                  <option value="FULL_TIME">Full Time</option>
+                  <option value="PART_TIME">Part Time</option>
+                  <option value="CONTRACT">Contract</option>
+                  <option value="INTERNSHIP">Internship</option>
+                  <option value="REMOTE">Remote</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Experience Level</label>
+                <select
+                  name="experienceLevel"
+                  value={jobEditForm.experienceLevel}
+                  onChange={handleJobEditChange}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select level</option>
+                  <option value="ENTRY">Entry Level</option>
+                  <option value="MID">Mid Level</option>
+                  <option value="SENIOR">Senior</option>
+                  <option value="LEAD">Lead</option>
+                  <option value="EXECUTIVE">Executive</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Application Deadline</label>
+                <input
+                  name="applicationDeadline"
+                  type="datetime-local"
+                  value={jobEditForm.applicationDeadline}
+                  onChange={handleJobEditChange}
+                  min={nowLocalInputValue()}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/70 mb-1">Required Skills</label>
+                <input
+                  name="skills"
+                  value={jobEditForm.skills}
+                  onChange={handleJobEditChange}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="React, TypeScript, PostgreSQL"
+                />
+                <p className="mt-1 text-xs text-white/40">Separate skills with commas.</p>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/70 mb-1">Job Description</label>
+                <textarea
+                  name="description"
+                  rows={7}
+                  value={jobEditForm.description}
+                  onChange={handleJobEditChange}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/70 mb-1">Requirements</label>
+                <textarea
+                  name="requirements"
+                  rows={5}
+                  value={jobEditForm.requirements}
+                  onChange={handleJobEditChange}
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-white/10 pt-5">
+              <h3 className="text-sm font-semibold text-white mb-3">Scoring Weights</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  ["skillsMatchWeight", "Skills Match"],
+                  ["experienceMatchWeight", "Experience"],
+                  ["educationMatchWeight", "Education"],
+                  ["overallFitWeight", "Overall Fit"],
+                ].map(([name, label]) => (
+                  <div key={name}>
+                    <label className="block text-xs font-medium text-white/60 mb-1">{label}</label>
+                    <input
+                      name={name}
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={jobEditForm[name as keyof JobEditForm]}
+                      onChange={handleJobEditChange}
+                      className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-white/10 pt-5">
+              <button
+                type="button"
+                onClick={() => setIsEditingJobDetails(false)}
+                className="px-5 py-2.5 text-sm text-white/60 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingJobDetails}
+                className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+              >
+                {isSavingJobDetails ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* ── Status Counts ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
@@ -1823,7 +2101,7 @@ export default function RecruiterJobDetailPage() {
                 </div>
               </div>
 
-              <h3 className="text-sm font-medium text-white/70 mt-6 mb-3">Available Slots</h3>
+              <h3 className="text-sm font-medium text-white/70 mt-6 mb-3">Your Available Slots</h3>
               {slots.filter(s => s.status === "AVAILABLE").length === 0 ? (
                 <p className="text-sm text-white/50">No available slots.</p>
               ) : (
@@ -1838,7 +2116,7 @@ export default function RecruiterJobDetailPage() {
             </div>
 
             <div className="md:col-span-2 mt-4">
-              <h3 className="text-sm font-medium text-white/70 mb-3">Scheduled Interviews</h3>
+              <h3 className="text-sm font-medium text-white/70 mb-3">Your Scheduled Interviews</h3>
               {bookings.length === 0 ? (
                 <p className="text-sm text-white/50">No interviews booked yet.</p>
               ) : (

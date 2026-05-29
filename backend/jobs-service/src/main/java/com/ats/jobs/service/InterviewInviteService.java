@@ -149,7 +149,7 @@ public class InterviewInviteService {
             // Send email
             try {
                 String subject = "Interview Invitation — " + job.getTitle();
-                String body = buildEmailHtml(candidateName, job.getTitle(), score, schedulingUrl);
+            String body = buildEmailHtml(candidateName, job.getTitle(), schedulingUrl);
                 notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                         .recipientEmail(email)
                         .recipientUserId(candidateId)
@@ -199,9 +199,7 @@ public class InterviewInviteService {
      *
      * <p>Unlike {@link #sendInterviewInvites}, this bypasses the OA assessment
      * score filter and topN cap. The recruiter is explicitly choosing this
-     * candidate regardless of AI ranking. If a scored OA submission exists for
-     * this candidate it will be included in the invite email; otherwise score
-     * defaults to 0.0 and the score box is omitted from the email.
+     * candidate regardless of AI ranking.
      *
      * @param applicationId the application to invite
      * @param request       optional deadline; no other fields required
@@ -254,7 +252,7 @@ public class InterviewInviteService {
 
         try {
             String subject = "Interview Invitation — " + job.getTitle();
-            String body = buildEmailHtml(candidateName, job.getTitle(), oaScore, schedulingUrl);
+            String body = buildEmailHtml(candidateName, job.getTitle(), schedulingUrl);
             notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(email)
                     .recipientUserId(app.getCandidateAuthUserId())
@@ -388,14 +386,9 @@ public class InterviewInviteService {
         }
     }
 
-    private String buildEmailHtml(String candidateName, String jobTitle,
-                                   double oaScore, String schedulingUrl) {
-        String scoreBlock = oaScore > 0
-                ? EmailTemplate.infoBox("Your OA Score", "<strong style=\"font-size:28px;color:#111827;\">" + Math.round(oaScore) + "</strong><span style=\"color:#6b7280;\"> / 100</span>")
-                : "";
+    private String buildEmailHtml(String candidateName, String jobTitle, String schedulingUrl) {
         String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(candidateName) + "</strong>,")
                 + EmailTemplate.paragraph("Congratulations. You performed well on the online assessment for <strong>" + EmailTemplate.escape(jobTitle) + "</strong>, and we would like to invite you to the next stage: a formal interview.")
-                + scoreBlock
                 + EmailTemplate.button(schedulingUrl, "Book Interview")
                 + EmailTemplate.fallbackLink(schedulingUrl);
         return EmailTemplate.render("Interview Invitation", content, "Please do not reply to this email.");

@@ -30,6 +30,7 @@ class Settings(BaseSettings):
 
     # Service
     SERVICE_PORT: int = 8091
+    INTERNAL_SERVICE_TOKEN: str = "dev-internal-token"
 
     @property
     def database_url(self) -> str:

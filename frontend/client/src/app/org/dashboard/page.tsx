@@ -23,7 +23,7 @@ export default function OrgDashboardPage() {
   // Job state
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
-  const [reassignMap, setReassignMap] = useState<Record<string, string>>({});
+  const [assignmentMap, setAssignmentMap] = useState<Record<string, string[]>>({});
 
   const [actionMsg, setActionMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -51,9 +51,15 @@ export default function OrgDashboardPage() {
     try {
       const data = await orgAdminApi.getOrgJobs(user.orgId, { size: 100 });
       setJobs(data.content);
-      const initialMap: Record<string, string> = {};
-      data.content.forEach((j) => { initialMap[j.id] = j.assignedTo ?? ""; });
-      setReassignMap(initialMap);
+      const initialMap: Record<string, string[]> = {};
+      data.content.forEach((j) => {
+        initialMap[j.id] = j.assignedRecruiterIds?.length
+          ? j.assignedRecruiterIds
+          : j.assignedTo
+            ? [j.assignedTo]
+            : [];
+      });
+      setAssignmentMap(initialMap);
     } catch (err) {
       console.error("Failed to load jobs", err);
     } finally {
@@ -92,13 +98,13 @@ export default function OrgDashboardPage() {
   };
 
   const handleReassign = async (jobId: string) => {
-    const newAssignee = reassignMap[jobId] || null;
+    const newAssignees = assignmentMap[jobId] ?? [];
     try {
-      await orgAdminApi.reassignJob(jobId, newAssignee || null);
-      setActionMsg({ type: "success", text: "Job reassigned successfully." });
+      await orgAdminApi.reassignJob(jobId, newAssignees);
+      setActionMsg({ type: "success", text: "Job assignments updated successfully." });
       loadJobs();
     } catch {
-      setActionMsg({ type: "error", text: "Failed to reassign job." });
+      setActionMsg({ type: "error", text: "Failed to update job assignments." });
     }
   };
 
@@ -108,6 +114,15 @@ export default function OrgDashboardPage() {
   };
 
   const activeRecruiters = recruiters.filter(r => !r.isSuspended);
+
+  const toggleRecruiterAssignment = (jobId: string, recruiterId: string) => {
+    setAssignmentMap((prev) => {
+      const current = new Set(prev[jobId] ?? []);
+      if (current.has(recruiterId)) current.delete(recruiterId);
+      else current.add(recruiterId);
+      return { ...prev, [jobId]: Array.from(current) };
+    });
+  };
 
   const statusBadge = (status: string) => {
     const colors: Record<string, string> = {
@@ -287,7 +302,7 @@ export default function OrgDashboardPage() {
                       <tr className="border-b border-white/10 bg-white/5">
                         <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Job Title</th>
                         <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Lifecycle</th>
-                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Owner</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Recruiters</th>
                         <th className="px-8 py-6 text-right text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Update</th>
                       </tr>
                     </thead>
@@ -299,24 +314,28 @@ export default function OrgDashboardPage() {
                             <span className={statusBadge(job.status)}>{job.status}</span>
                           </td>
                           <td className="px-8 py-6">
-                            <div className="relative inline-block w-full max-w-[200px]">
-                              <select
-                                className="w-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.1em] text-white rounded-2xl pl-4 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/[0.08] transition-all cursor-pointer appearance-none shadow-sm"
-                                value={reassignMap[job.id] ?? ""}
-                                onChange={(e) => setReassignMap({ ...reassignMap, [job.id]: e.target.value })}
-                              >
-                                <option value="" className="bg-slate-900 text-white">None (Unassigned)</option>
-                                {activeRecruiters.map((r) => (
-                                  <option key={r.id} value={r.id} className="bg-slate-900 text-white">
-                                    {r.firstName} {r.lastName}
-                                  </option>
-                                ))}
-                              </select>
-                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white/40">
-                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                </svg>
-                              </div>
+                            <div className="max-w-[280px] space-y-2">
+                              {activeRecruiters.length === 0 ? (
+                                <p className="text-xs text-white/40 italic">No active recruiters</p>
+                              ) : (
+                                activeRecruiters.map((r) => {
+                                  const checked = assignmentMap[job.id]?.includes(r.id) ?? false;
+                                  return (
+                                    <label key={r.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-white/70 hover:bg-white/10 cursor-pointer transition-colors">
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => toggleRecruiterAssignment(job.id, r.id)}
+                                        className="h-4 w-4 rounded border-white/20 bg-white/10 text-white focus:ring-white/20"
+                                      />
+                                      <span>{r.firstName} {r.lastName}</span>
+                                    </label>
+                                  );
+                                })
+                              )}
+                              {(assignmentMap[job.id]?.length ?? 0) === 0 && (
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300/70">Unassigned</p>
+                              )}
                             </div>
                           </td>
                           <td className="px-8 py-6 text-right">
@@ -334,7 +353,7 @@ export default function OrgDashboardPage() {
                 </div>
               </div>
               <p className="mt-8 text-[10px] font-black text-white/40 uppercase tracking-[0.3em] text-center leading-loose max-w-lg mx-auto">
-                Postings without active owners will be automatically suspended.
+                Postings without active recruiters will be automatically suspended.
               </p>
             </div>
           )}

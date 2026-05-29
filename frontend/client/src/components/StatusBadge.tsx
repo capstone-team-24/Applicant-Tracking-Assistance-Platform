@@ -37,6 +37,7 @@ const statusConfig: Record<string, { bg: string; text: string; dot: string }> = 
   OFFER_DECLINED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
   EXPIRED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
   FAILED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
+  DISQUALIFIED: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
 };
 
 const statusLabels: Record<string, string> = {

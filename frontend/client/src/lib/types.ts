@@ -94,13 +94,14 @@ export interface Job {
   experienceLevel: "ENTRY" | "MID" | "SENIOR" | "LEAD" | "EXECUTIVE";
   skills: string[];
   scoringWeights?: ScoringWeights;
-  status: "DRAFT" | "PUBLISHED" | "CLOSED" | "ARCHIVED";
+  status: "DRAFT" | "PUBLISHED" | "CLOSED" | "ARCHIVED" | "SUSPENDED";
   applicationCount?: number;
   createdAt?: string;
   updatedAt?: string;
   publishedAt?: string;
   closedAt?: string;
   assignedTo?: string;
+  assignedRecruiterIds?: string[];
   applicationDeadline?: string;
 }
 
@@ -121,6 +122,12 @@ export interface CreateJobData {
   skills: string[];
   scoringWeights?: ScoringWeights;
   applicationDeadline?: string;
+}
+
+export interface UpdateJobData extends Partial<Omit<CreateJobData, "applicationDeadline">> {
+  applicationDeadline?: string | null;
+  clearApplicationDeadline?: boolean;
+  customScoringRules?: Record<string, unknown>;
 }
 
 export interface JobListResponse {
@@ -396,11 +403,11 @@ export interface SendInterviewInviteResponse {
 export interface InterviewSlot {
   id: string;
   jobId: string;
-  recruiterAuthUserId: string;
+  recruiterAuthUserId?: string;
   startTime: string;
   endTime: string;
   status: "AVAILABLE" | "BOOKED";
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface InterviewBooking {

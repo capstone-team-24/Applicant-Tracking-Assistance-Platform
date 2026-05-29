@@ -30,6 +30,7 @@ public class JobResponse {
     private JobStatus status;
     private UUID createdBy;
     private UUID assignedTo;
+    private List<UUID> assignedRecruiterIds;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime publishedAt;

@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,10 +42,8 @@ public class JobController {
     /**
      * List jobs.
      * <ul>
-     *   <li>RECRUITER  – always scoped to their own org (orgId from JWT headers).
-     *       Any orgId query-param supplied by the client is ignored; the recruiter
-     *       sees all jobs for their company (read) so they have context, but the
-     *       detail page enforces assignment before showing edit controls.</li>
+     *   <li>RECRUITER – always scoped to their own org and assigned recruiter id.
+     *       Any orgId query-param supplied by the client is ignored.</li>
      *   <li>ORG_ADMIN / PLATFORM_ADMIN – can pass orgId freely.</li>
      * </ul>
      */
@@ -159,17 +159,35 @@ public class JobController {
     @PutMapping("/{id}/reassign")
     public ResponseEntity<JobResponse> reassignJob(
             @PathVariable UUID id,
-            @RequestBody Map<String, String> request,
+            @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest) {
 
         // Note: Org admins perform this action. We verify orgId only.
         UUID orgId = HeaderContext.getOrgId(httpRequest);
-        String assignedToRaw = request.get("assignedTo");
-        UUID newRecruiterId = (assignedToRaw != null && !assignedToRaw.isBlank())
-                ? UUID.fromString(assignedToRaw)
-                : null;
 
-        JobResponse response = jobService.reassignJob(id, newRecruiterId, orgId);
+        JobResponse response = jobService.reassignJob(id, parseRecruiterIds(request), orgId);
         return ResponseEntity.ok(response);
+    }
+
+    private List<UUID> parseRecruiterIds(Map<String, Object> request) {
+        List<UUID> recruiterIds = new ArrayList<>();
+
+        Object assignedRecruiterIds = request.get("assignedRecruiterIds");
+        if (assignedRecruiterIds instanceof List<?> rawList) {
+            for (Object raw : rawList) {
+                if (raw == null) continue;
+                String value = raw.toString();
+                if (!value.isBlank()) {
+                    recruiterIds.add(UUID.fromString(value));
+                }
+            }
+            return recruiterIds;
+        }
+
+        Object assignedTo = request.get("assignedTo");
+        if (assignedTo != null && !assignedTo.toString().isBlank()) {
+            recruiterIds.add(UUID.fromString(assignedTo.toString()));
+        }
+        return recruiterIds;
     }
 }
