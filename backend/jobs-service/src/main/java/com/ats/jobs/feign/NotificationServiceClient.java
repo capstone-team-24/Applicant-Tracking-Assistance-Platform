@@ -1,6 +1,7 @@
 package com.ats.jobs.feign;
 
 import com.ats.jobs.dto.NotificationSendRequest;
+import com.ats.jobs.dto.NotificationResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,5 +14,5 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface NotificationServiceClient {
 
     @PostMapping("/send")
-    void sendNotification(@RequestBody NotificationSendRequest request);
+    NotificationResponse sendNotification(@RequestBody NotificationSendRequest request);
 }

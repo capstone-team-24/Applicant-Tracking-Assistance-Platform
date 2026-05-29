@@ -443,10 +443,12 @@ public class ApplicationService {
         Application saved = applicationRepository.save(app);
         log.info("Rejected application id={} by recruiter={}", applicationId, rejectorId);
 
-        // Send rejection email
-        sendRejectionEmail(app, job.getTitle(), orgName, reason);
+        EmailSendResult emailResult = sendRejectionEmail(saved, job.getTitle(), orgName, reason);
 
-        return mapToDetailResponse(saved);
+        ApplicationDetailResponse response = mapToDetailResponse(saved);
+        response.setRejectionEmailSent(emailResult.sent());
+        response.setRejectionEmailError(emailResult.error());
+        return response;
     }
 
     /**
@@ -466,6 +468,7 @@ public class ApplicationService {
 
         List<Application> apps = applicationRepository.findAllById(applicationIds);
         List<String> sentTo = new ArrayList<>();
+        int rejectedCount = 0;
 
         for (Application app : apps) {
             if (!app.getJobId().equals(jobId)) continue;
@@ -475,42 +478,54 @@ public class ApplicationService {
             app.setRejectionReason(reason);
             app.setRejectedAt(LocalDateTime.now());
             app.setRejectedBy(rejectorId);
-            applicationRepository.save(app);
+            Application saved = applicationRepository.save(app);
+            rejectedCount++;
 
-            sendRejectionEmail(app, job.getTitle(), orgName, reason);
-            if (app.getCandidateEmail() != null && !app.getCandidateEmail().isBlank()) {
-                sentTo.add(app.getCandidateEmail());
+            EmailSendResult emailResult = sendRejectionEmail(saved, job.getTitle(), orgName, reason);
+            if (emailResult.sent() && saved.getCandidateEmail() != null && !saved.getCandidateEmail().isBlank()) {
+                sentTo.add(saved.getCandidateEmail());
             }
         }
 
-        log.info("Bulk-rejected {} applications for job {}", sentTo.size(), jobId);
+        log.info("Bulk-rejected {} applications for job {}; sent {} rejection emails", rejectedCount, jobId, sentTo.size());
         return RejectResponse.builder()
-                .rejectedCount(sentTo.size())
+                .rejectedCount(rejectedCount)
                 .sentTo(sentTo)
                 .build();
     }
 
     // ── Email helpers ─────────────────────────────────────────────────────────
 
-    private void sendRejectionEmail(Application app, String jobTitle, String orgName, String optionalFeedback) {
+    private record EmailSendResult(boolean sent, String error) {}
+
+    private EmailSendResult sendRejectionEmail(Application app, String jobTitle, String orgName, String optionalFeedback) {
         String email = app.getCandidateEmail();
-        if (email == null || email.isBlank()) return;
+        if (email == null || email.isBlank()) {
+            return new EmailSendResult(false, "Candidate email is missing.");
+        }
 
         String candidateName = app.getCandidateName() != null ? app.getCandidateName() : "Candidate";
         String subject = "Update on Your Application — " + jobTitle + " at " + orgName;
         String body = buildRejectionEmailHtml(candidateName, jobTitle, orgName, optionalFeedback);
 
         try {
-            notificationServiceClient.sendNotification(NotificationSendRequest.builder()
+            NotificationResponse response = notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(email)
                     .recipientUserId(app.getCandidateAuthUserId())
                     .subject(subject)
                     .body(body)
                     .type("REJECTION")
                     .build());
+            if (response == null || response.getStatus() == null || !response.getStatus().equalsIgnoreCase("SENT")) {
+                String error = response != null ? response.getErrorMessage() : "Notification service did not return a response.";
+                log.error("Rejection email to {} for application {} was not sent: {}", email, app.getId(), error);
+                return new EmailSendResult(false, error != null ? error : "Notification service did not mark the email as sent.");
+            }
             log.info("Rejection email sent to {} for application {}", email, app.getId());
+            return new EmailSendResult(true, null);
         } catch (Exception e) {
             log.error("Failed to send rejection email to {}: {}", email, e.getMessage());
+            return new EmailSendResult(false, e.getMessage());
         }
     }
 

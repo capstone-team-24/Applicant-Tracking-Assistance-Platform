@@ -2,6 +2,7 @@ package com.ats.jobs.service;
 
 import com.ats.jobs.dto.DeclineOfferRequest;
 import com.ats.jobs.dto.NotificationSendRequest;
+import com.ats.jobs.dto.NotificationResponse;
 import com.ats.jobs.dto.OfferResponse;
 import com.ats.jobs.dto.SendOfferRequest;
 import com.ats.jobs.entity.Application;
@@ -18,6 +19,7 @@ import com.ats.jobs.repository.OfferRepository;
 import com.ats.jobs.util.EmailTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,9 @@ public class OfferService {
     private final JobRepository jobRepository;
     private final NotificationServiceClient notificationServiceClient;
     private final OrgServiceClient orgServiceClient;
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
     @Transactional
     public OfferResponse sendOffer(UUID applicationId, UUID recruiterId, SendOfferRequest request) {
@@ -66,7 +71,7 @@ public class OfferService {
         application.setStatus(ApplicationStatus.OFFER_SENT);
         applicationRepository.save(application);
 
-        String offerLink = "http://localhost:3000/offers/" + token;
+        String offerLink = frontendUrl + "/offers/" + token;
         
         String emailBody = EmailTemplate.render(
                 "Job Offer",
@@ -87,10 +92,15 @@ public class OfferService {
                 .build();
 
         try {
-            notificationServiceClient.sendNotification(notificationReq);
+            NotificationResponse notification = notificationServiceClient.sendNotification(notificationReq);
+            if (notification == null || notification.getStatus() == null || !notification.getStatus().equalsIgnoreCase("SENT")) {
+                String error = notification != null ? notification.getErrorMessage() : "Notification service did not return a response.";
+                throw new BadRequestException(error != null ? error : "Notification service did not mark the email as sent.");
+            }
             log.info("Sent offer email to {}", application.getCandidateEmail());
         } catch (Exception e) {
             log.error("Failed to send offer email to {}", application.getCandidateEmail(), e);
+            throw new BadRequestException("Failed to send offer email. Please try again.");
         }
 
         return mapToResponse(offer, application, job, orgName);

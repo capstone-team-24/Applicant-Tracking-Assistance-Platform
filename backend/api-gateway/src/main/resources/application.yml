@@ -62,6 +62,8 @@ eureka:
     prefer-ip-address: true
 
 gateway:
+  cors:
+    allowed-origin-patterns: "${GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:3000,http://127.0.0.1:3000,http://*:[3000]}"
   auth:
     jwks-uri: ${GATEWAY_JWKS_URI:http://localhost:8081/.well-known/jwks.json}
   rate-limit:

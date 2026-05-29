@@ -36,6 +36,8 @@ public class ApplicationDetailResponse {
     private Integer finalRank;
     private Boolean isWaitlisted;
     private String rejectionReason;
+    private Boolean rejectionEmailSent;
+    private String rejectionEmailError;
     private java.time.LocalDateTime rejectedAt;
     private java.util.UUID rejectedBy;
     private LocalDateTime createdAt;
