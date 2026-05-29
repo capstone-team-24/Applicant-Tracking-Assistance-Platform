@@ -12,5 +12,6 @@ import java.util.UUID;
 public interface InterviewSlotRepository extends JpaRepository<InterviewSlot, UUID> {
     List<InterviewSlot> findByJobIdAndStatusAndStartTimeAfterOrderByStartTimeAsc(UUID jobId, InterviewSlot.SlotStatus status, LocalDateTime startTime);
     List<InterviewSlot> findByJobIdAndStartTimeAfterOrderByStartTimeAsc(UUID jobId, LocalDateTime startTime);
+    List<InterviewSlot> findByJobIdAndRecruiterAuthUserIdAndStartTimeAfterOrderByStartTimeAsc(UUID jobId, UUID recruiterAuthUserId, LocalDateTime startTime);
     List<InterviewSlot> findByRecruiterAuthUserIdAndStartTimeAfterOrderByStartTimeAsc(UUID recruiterAuthUserId, LocalDateTime startTime);
 }

@@ -2,8 +2,8 @@ package com.ats.jobs.controller;
 
 import com.ats.jobs.dto.BookInterviewRequest;
 import com.ats.jobs.dto.CandidateBookingResponse;
+import com.ats.jobs.dto.CandidateInterviewSlotResponse;
 import com.ats.jobs.entity.InterviewBooking;
-import com.ats.jobs.entity.InterviewSlot;
 import com.ats.jobs.service.InterviewSchedulingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +20,7 @@ public class CandidateInterviewController {
     private final InterviewSchedulingService schedulingService;
 
     @GetMapping("/available-slots/{jobId}")
-    public ResponseEntity<List<InterviewSlot>> getAvailableSlots(
+    public ResponseEntity<List<CandidateInterviewSlotResponse>> getAvailableSlots(
             @PathVariable UUID jobId,
             @RequestHeader("X-User-Id") UUID candidateId) {
             

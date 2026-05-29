@@ -176,14 +176,38 @@ export default function ApplicationDetailPage() {
         timeLimitMinutes: jobAssessment.timeLimitMinutes,
       });
       if (res.sent > 0) {
-        toast.success("OA invite sent successfully!");
+        toast.success(
+          isAssessmentDisqualified
+            ? "Disqualification cleared and OA invite sent successfully!"
+            : "OA invite sent successfully!",
+        );
         const updated = await applicationsApi.getApplication(appId);
         setApplication(updated);
+        if (isAssessmentDisqualified) {
+          setCandidateSubmission((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  answers: [],
+                  score: undefined,
+                  scoringDetails: undefined,
+                  status: "IN_PROGRESS",
+                  strikeCount: 0,
+                  disqualifiedAt: undefined,
+                  submittedAt: undefined,
+                  scoredAt: undefined,
+                }
+              : prev,
+          );
+          setProctoringEvents([]);
+          setIsProofOpen(false);
+        }
       } else {
         toast.error(res.skippedReasons?.[0] || "Could not send OA invite.");
       }
-    } catch {
-      toast.error("Failed to send OA invite");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string; message?: string } } };
+      toast.error(err.response?.data?.detail || err.response?.data?.message || "Failed to send OA invite");
     } finally {
       setIsSendingOA(false);
     }
@@ -527,13 +551,23 @@ export default function ApplicationDetailPage() {
                                 Review the proctoring offenses and captured evidence used for this decision.
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setIsProofOpen((open) => !open)}
-                              className="rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-950 transition hover:bg-white/90 active:scale-95"
-                            >
-                              {isProofOpen ? "Hide Proof" : "View Proof"}
-                            </button>
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <button
+                                type="button"
+                                onClick={() => setIsProofOpen((open) => !open)}
+                                className="rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-950 transition hover:bg-white/90 active:scale-95"
+                              >
+                                {isProofOpen ? "Hide Proof" : "View Proof"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSendOA}
+                                disabled={isSendingOA || !jobAssessment}
+                                className="rounded-xl bg-indigo-500 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-indigo-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {isSendingOA ? "Sending..." : "Clear & Resend OA"}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -806,7 +840,9 @@ export default function ApplicationDetailPage() {
                     title={
                       !jobAssessment
                         ? "No assessment configured for this job"
-                        : "Send OA invite to this candidate"
+                        : isAssessmentDisqualified
+                          ? "Clear disqualification and send a fresh OA invite"
+                          : "Send OA invite to this candidate"
                     }
                     className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-sm font-bold bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 hover:bg-indigo-500/25 hover:border-indigo-400/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   >
@@ -824,7 +860,7 @@ export default function ApplicationDetailPage() {
                           d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z"
                         />
                       </svg>
-                      Send OA Invite
+                      {isAssessmentDisqualified ? "Clear & Resend OA" : "Send OA Invite"}
                     </span>
                     {isSendingOA && (
                       <svg

@@ -2,6 +2,8 @@ package com.ats.jobs.repository;
 
 import com.ats.jobs.entity.Job;
 import com.ats.jobs.enums.JobStatus;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -45,7 +47,12 @@ public class JobSpec {
             }
 
             if (assignedTo != null) {
-                predicates.add(cb.equal(root.get("assignedTo"), assignedTo));
+                query.distinct(true);
+                Join<Job, UUID> assignment = root.join("assignedRecruiterIds", JoinType.LEFT);
+                predicates.add(cb.or(
+                        cb.equal(assignment, assignedTo),
+                        cb.equal(root.get("assignedTo"), assignedTo)
+                ));
             }
 
             if (status != null) {

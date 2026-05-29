@@ -5,6 +5,7 @@ import com.ats.jobs.dto.CreateInterviewSlotsRequest;
 import com.ats.jobs.dto.NotificationSendRequest;
 import com.ats.jobs.dto.SubmitInterviewFeedbackRequest;
 import com.ats.jobs.dto.CandidateBookingResponse;
+import com.ats.jobs.dto.CandidateInterviewSlotResponse;
 import com.ats.jobs.entity.Application;
 import com.ats.jobs.entity.InterviewBooking;
 import com.ats.jobs.entity.InterviewSlot;
@@ -50,9 +51,8 @@ public class InterviewSchedulingService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
 
-        if (orgId != null && !job.getOrgId().equals(orgId)) {
-            throw new ForbiddenException("You do not have access to this job.");
-        }
+        validateJobOrgAccess(job, orgId);
+        validateRecruiterAssignment(job, recruiterAuthUserId);
 
         UserIntegration integration = userIntegrationRepository.findByAuthUserId(recruiterAuthUserId).orElse(null);
         if (integration == null || integration.getGoogleRefreshToken() == null || integration.getGoogleRefreshToken().isEmpty()) {
@@ -73,14 +73,17 @@ public class InterviewSchedulingService {
     }
 
     @Transactional(readOnly = true)
-    public List<InterviewSlot> getAvailableSlots(UUID jobId, UUID candidateAuthUserId) {
+    public List<CandidateInterviewSlotResponse> getAvailableSlots(UUID jobId, UUID candidateAuthUserId) {
         // Enforce that candidate has an invite
         if (!interviewInviteRepository.existsByJobIdAndCandidateAuthUserId(jobId, candidateAuthUserId)) {
             throw new ForbiddenException("You do not have an active interview invite for this job.");
         }
 
         return interviewSlotRepository.findByJobIdAndStatusAndStartTimeAfterOrderByStartTimeAsc(
-                jobId, InterviewSlot.SlotStatus.AVAILABLE, LocalDateTime.now());
+                jobId, InterviewSlot.SlotStatus.AVAILABLE, LocalDateTime.now())
+                .stream()
+                .map(this::mapToCandidateSlot)
+                .toList();
     }
     
     @Transactional(readOnly = true)
@@ -88,11 +91,11 @@ public class InterviewSchedulingService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
 
-        if (orgId != null && !job.getOrgId().equals(orgId)) {
-            throw new ForbiddenException("You do not have access to this job.");
-        }
+        validateJobOrgAccess(job, orgId);
+        validateRecruiterAssignment(job, recruiterAuthUserId);
         
-        return interviewSlotRepository.findByJobIdAndStartTimeAfterOrderByStartTimeAsc(jobId, LocalDateTime.now().minusDays(1));
+        return interviewSlotRepository.findByJobIdAndRecruiterAuthUserIdAndStartTimeAfterOrderByStartTimeAsc(
+                jobId, recruiterAuthUserId, LocalDateTime.now().minusDays(1));
     }
     
     @Transactional(readOnly = true)
@@ -100,19 +103,17 @@ public class InterviewSchedulingService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
 
-        if (orgId != null && !job.getOrgId().equals(orgId)) {
-            throw new ForbiddenException("You do not have access to this job.");
-        }
+        validateJobOrgAccess(job, orgId);
+        validateRecruiterAssignment(job, recruiterAuthUserId);
         
-        // Find all bookings for all slots of this job
-        // This could be optimized with a custom query in InterviewBookingRepository, 
-        // but for now we fetch the slots and then bookings.
-        List<InterviewSlot> slots = interviewSlotRepository.findByJobIdAndStartTimeAfterOrderByStartTimeAsc(jobId, LocalDateTime.now().minusDays(1));
+        List<InterviewSlot> slots = interviewSlotRepository.findByJobIdAndRecruiterAuthUserIdAndStartTimeAfterOrderByStartTimeAsc(
+                jobId, recruiterAuthUserId, LocalDateTime.now().minusDays(1));
         List<UUID> slotIds = slots.stream().map(InterviewSlot::getId).toList();
-        
-        return interviewBookingRepository.findAll().stream()
-                .filter(b -> slotIds.contains(b.getSlotId()))
-                .toList();
+        if (slotIds.isEmpty()) {
+            return List.of();
+        }
+
+        return interviewBookingRepository.findBySlotIdIn(slotIds);
     }
 
     @Transactional
@@ -252,9 +253,8 @@ public class InterviewSchedulingService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
 
-        if (orgId != null && !job.getOrgId().equals(orgId)) {
-            throw new ForbiddenException("You do not have access to this job.");
-        }
+        validateJobOrgAccess(job, orgId);
+        validateRecruiterAssignment(job, recruiterAuthUserId);
 
         InterviewBooking booking = interviewBookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
@@ -264,6 +264,10 @@ public class InterviewSchedulingService {
 
         if (!slot.getJobId().equals(jobId)) {
             throw new BadRequestException("Booking does not belong to this job.");
+        }
+
+        if (!recruiterAuthUserId.equals(slot.getRecruiterAuthUserId())) {
+            throw new ForbiddenException("You can only review interviews booked in your own slots.");
         }
 
         booking.setStatus(InterviewBooking.BookingStatus.COMPLETED);
@@ -360,6 +364,28 @@ public class InterviewSchedulingService {
                 + EmailTemplate.paragraph("Thank you again for your interest in joining our team.")
                 + EmailTemplate.paragraph("Best regards,<br/><strong>The Recruitment Team</strong>");
         return EmailTemplate.render("Thank You for Interviewing", content);
+    }
+
+    private void validateJobOrgAccess(Job job, UUID orgId) {
+        if (orgId != null && !job.getOrgId().equals(orgId)) {
+            throw new ForbiddenException("You do not have access to this job.");
+        }
+    }
+
+    private void validateRecruiterAssignment(Job job, UUID recruiterAuthUserId) {
+        if (!job.isAssignedTo(recruiterAuthUserId)) {
+            throw new ForbiddenException("You are not assigned to this job.");
+        }
+    }
+
+    private CandidateInterviewSlotResponse mapToCandidateSlot(InterviewSlot slot) {
+        return CandidateInterviewSlotResponse.builder()
+                .id(slot.getId())
+                .jobId(slot.getJobId())
+                .startTime(slot.getStartTime())
+                .endTime(slot.getEndTime())
+                .status(slot.getStatus())
+                .build();
     }
 
     @Transactional(readOnly = true)

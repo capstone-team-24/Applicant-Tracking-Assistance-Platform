@@ -355,6 +355,8 @@ public class ApplicationService {
                             .employmentType(job.getEmploymentType())
                             .experienceLevel(job.getExperienceLevel())
                             .status(job.getStatus())
+                            .assignedTo(job.getEffectiveAssignedRecruiterIds().stream().findFirst().orElse(null))
+                            .assignedRecruiterIds(new ArrayList<>(job.getEffectiveAssignedRecruiterIds()))
                             .build();
                 }
             } catch (Exception e) {

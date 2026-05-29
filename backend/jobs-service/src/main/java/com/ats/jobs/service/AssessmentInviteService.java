@@ -20,7 +20,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +42,16 @@ public class AssessmentInviteService {
     private final NotificationServiceClient notificationServiceClient;
     private final AssessmentInviteRepository assessmentInviteRepository;
     private final OrgServiceClient orgServiceClient;
+    private final RestTemplate restTemplate;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
+
+    @Value("${ASSESSMENT_SERVICE_URL:http://assessment-service:8091}")
+    private String assessmentServiceUrl;
+
+    @Value("${INTERNAL_SERVICE_TOKEN:dev-internal-token}")
+    private String internalServiceToken;
 
     /**
      * Send assessment invites to the top-N ranked candidates for a given job.
@@ -242,6 +253,8 @@ public class AssessmentInviteService {
                 assessmentLink);
 
         try {
+            resetDisqualifiedAttemptIfPresent(request.getAssessmentToken(), app.getCandidateAuthUserId());
+
             notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(email)
                     .recipientUserId(app.getCandidateAuthUserId())
@@ -371,6 +384,33 @@ public class AssessmentInviteService {
         return candidateAuthUserId != null
                 ? base + "?candidateId=" + candidateAuthUserId
                 : base;
+    }
+
+    private void resetDisqualifiedAttemptIfPresent(String assessmentToken, UUID candidateAuthUserId) {
+        if (assessmentToken == null || assessmentToken.isBlank() || candidateAuthUserId == null) {
+            return;
+        }
+
+        String url = assessmentServiceUrl
+                + "/assessments/"
+                + assessmentToken
+                + "/candidates/"
+                + candidateAuthUserId
+                + "/reset-disqualification";
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-Internal-Service-Token", internalServiceToken);
+            restTemplate.postForEntity(url, new HttpEntity<>(headers), String.class);
+        } catch (HttpClientErrorException.NotFound ignored) {
+            // No existing submission yet. The candidate can start normally from the invite link.
+        } catch (Exception e) {
+            log.warn(
+                    "Could not reset disqualified assessment attempt for candidate {} and token {}: {}",
+                    candidateAuthUserId,
+                    assessmentToken,
+                    e.getMessage());
+        }
     }
 
     /**

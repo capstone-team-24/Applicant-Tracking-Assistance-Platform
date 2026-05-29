@@ -9,6 +9,7 @@ import type {
   JobListResponse,
   JobListParams,
   CreateJobData,
+  UpdateJobData,
   Application,
   ApplicationListResponse,
   ApplicationListParams,
@@ -256,7 +257,7 @@ export const jobsApi = {
     return response.data;
   },
 
-  updateJob: async (id: string, data: Partial<CreateJobData>): Promise<Job> => {
+  updateJob: async (id: string, data: UpdateJobData): Promise<Job> => {
     const response = await api.put<Job>(`/api/v1/jobs/${id}`, data);
     return response.data;
   },
@@ -897,8 +898,8 @@ export const orgAdminApi = {
     return response.data;
   },
 
-  reassignJob: async (jobId: string, assignedTo: string | null): Promise<import("./types").Job> => {
-    const response = await api.put<import("./types").Job>(`/api/v1/jobs/${jobId}/reassign`, { assignedTo: assignedTo ?? "" });
+  reassignJob: async (jobId: string, assignedRecruiterIds: string[]): Promise<import("./types").Job> => {
+    const response = await api.put<import("./types").Job>(`/api/v1/jobs/${jobId}/reassign`, { assignedRecruiterIds });
     return response.data;
   },
 };

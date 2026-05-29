@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -44,6 +47,7 @@ public class JobService {
                 .status(JobStatus.DRAFT)
                 .createdBy(userId)
                 .assignedTo(userId)
+                .assignedRecruiterIds(new LinkedHashSet<>(List.of(userId)))
                 .applicationDeadline(request.getApplicationDeadline())
                 .build();
 
@@ -85,8 +89,9 @@ public class JobService {
         if (request.getCustomScoringRules() != null) {
             job.setCustomScoringRules(request.getCustomScoringRules());
         }
-        // applicationDeadline — allow setting, updating, or clearing (null = no deadline)
-        if (request.getApplicationDeadline() != null) {
+        if (Boolean.TRUE.equals(request.getClearApplicationDeadline())) {
+            job.setApplicationDeadline(null);
+        } else if (request.getApplicationDeadline() != null) {
             job.setApplicationDeadline(request.getApplicationDeadline());
         }
 
@@ -118,10 +123,8 @@ public class JobService {
     }
 
     /**
-     * List jobs scoped to a recruiter's company (orgId mandatory).
-     * All company jobs are returned so the recruiter can see the full picture,
-     * but only jobs where assignedTo == recruiterId may be mutated (enforced
-     * separately by {@link #validateAssignment}).
+     * List jobs scoped to a recruiter. Recruiters only see jobs they are assigned
+     * to within their own organisation.
      */
     @Transactional(readOnly = true)
     public JobListResponse listJobsByOrg(
@@ -212,7 +215,8 @@ public class JobService {
         if (suspend) {
             jobRepository.findByStatus(JobStatus.PUBLISHED, Pageable.unpaged())
                     .stream()
-                    .filter(job -> recruiterId.equals(job.getAssignedTo()))
+                    .filter(job -> job.isAssignedTo(recruiterId))
+                    .filter(job -> job.getEffectiveAssignedRecruiterIds().size() <= 1)
                     .forEach(job -> {
                         job.setStatus(JobStatus.SUSPENDED);
                         jobRepository.save(job);
@@ -221,7 +225,7 @@ public class JobService {
         } else {
             jobRepository.findByStatus(JobStatus.SUSPENDED, Pageable.unpaged())
                     .stream()
-                    .filter(job -> recruiterId.equals(job.getAssignedTo()))
+                    .filter(job -> job.isAssignedTo(recruiterId))
                     .forEach(job -> {
                         job.setStatus(JobStatus.PUBLISHED);
                         jobRepository.save(job);
@@ -231,26 +235,27 @@ public class JobService {
     }
 
     @Transactional
-    public JobResponse reassignJob(UUID jobId, UUID newRecruiterId, UUID orgId) {
+    public JobResponse reassignJob(UUID jobId, List<UUID> recruiterIds, UUID orgId) {
         Job job = findJobOrThrow(jobId);
         validateOwnership(job, orgId);
 
-        job.setAssignedTo(newRecruiterId);
+        List<UUID> normalizedRecruiterIds = recruiterIds == null ? List.of() : recruiterIds;
+        job.replaceAssignedRecruiters(normalizedRecruiterIds);
         
-        if (newRecruiterId == null) {
+        if (job.getEffectiveAssignedRecruiterIds().isEmpty()) {
             // Unassigned -> Suspended
             if (job.getStatus() == JobStatus.PUBLISHED) {
                 job.setStatus(JobStatus.SUSPENDED);
             }
         } else {
-            // Reassigned to active -> Published
+            // Reassigned to at least one active recruiter -> Published
             if (job.getStatus() == JobStatus.SUSPENDED) {
                 job.setStatus(JobStatus.PUBLISHED);
             }
         }
 
         Job saved = jobRepository.save(job);
-        log.info("Reassigned job id={} to newRecruiterId={}", jobId, newRecruiterId);
+        log.info("Reassigned job id={} to recruiterIds={}", jobId, normalizedRecruiterIds);
         return mapToResponse(saved);
     }
 
@@ -266,11 +271,11 @@ public class JobService {
     }
 
     /**
-     * Ensures the calling recruiter is the one assigned to this job before
+     * Ensures the calling recruiter is assigned to this job before
      * allowing any mutation (update, publish, close, archive, delete).
      */
     private void validateAssignment(Job job, UUID callerId) {
-        if (callerId == null || !callerId.equals(job.getAssignedTo())) {
+        if (!job.isAssignedTo(callerId)) {
             throw new ForbiddenException(
                     "You are not assigned to this job and cannot modify it.");
         }
@@ -289,6 +294,7 @@ public class JobService {
 
     private JobResponse mapToResponse(Job job) {
         String orgName = null;
+        List<UUID> assignedRecruiterIds = new ArrayList<>(job.getEffectiveAssignedRecruiterIds());
         if (job.getOrgId() != null) {
             try {
                 orgName = orgServiceClient.getOrganizationName(job.getOrgId());
@@ -311,7 +317,8 @@ public class JobService {
                 .customScoringRules(job.getCustomScoringRules())
                 .status(job.getStatus())
                 .createdBy(job.getCreatedBy())
-                .assignedTo(job.getAssignedTo())
+                .assignedTo(assignedRecruiterIds.isEmpty() ? null : assignedRecruiterIds.get(0))
+                .assignedRecruiterIds(assignedRecruiterIds)
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())
                 .publishedAt(job.getPublishedAt())

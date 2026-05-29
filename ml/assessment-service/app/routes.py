@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.config import settings
 from app.kafka_producer import publish_assessment_completed
 from app.models import (
     AnswerSubmission,
@@ -67,6 +68,27 @@ def _get_or_create_submission(db: Session, assessment_id: uuid.UUID, candidate_i
     )
     db.add(submission)
     db.flush()
+    return submission
+
+
+def _reset_disqualified_submission(db: Session, submission: AssessmentSubmission) -> AssessmentSubmission:
+    submission.answers = []
+    submission.score = None
+    submission.scoring_details = None
+    submission.llm_rationale = None
+    submission.status = "IN_PROGRESS"
+    submission.started_at = datetime.now(timezone.utc)
+    submission.warning_accepted_at = None
+    submission.exam_started_at = None
+    submission.strike_count = 0
+    submission.disqualified_at = None
+    submission.last_activity_at = None
+    submission.submitted_at = None
+    submission.scored_at = None
+
+    db.query(ProctoringEvent).filter(
+        ProctoringEvent.submission_id == submission.id
+    ).delete(synchronize_session=False)
     return submission
 
 
@@ -470,6 +492,52 @@ def list_submission_proctoring_events(
         .all()
     )
     return [_proctoring_event_to_response(event) for event in events]
+
+
+@router.post(
+    "/assessments/{token}/candidates/{candidate_id}/reset-disqualification",
+    response_model=SubmissionResponse,
+)
+def reset_candidate_disqualification(
+    token: str,
+    candidate_id: str,
+    x_internal_service_token: Optional[str] = Header(
+        None, alias="X-Internal-Service-Token"
+    ),
+    db: Session = Depends(get_db),
+):
+    """Clear a disqualified OA attempt so a recruiter can let the candidate retake it."""
+    if x_internal_service_token != settings.INTERNAL_SERVICE_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden.")
+
+    assessment = db.query(Assessment).filter(Assessment.access_token == token).first()
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found.")
+
+    cid = uuid.UUID(candidate_id)
+    submission = (
+        db.query(AssessmentSubmission)
+        .filter(
+            AssessmentSubmission.assessment_id == assessment.id,
+            AssessmentSubmission.candidate_id == cid,
+        )
+        .first()
+    )
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found.")
+
+    if submission.status != "DISQUALIFIED" and submission.disqualified_at is None:
+        return _submission_to_response(submission)
+
+    _reset_disqualified_submission(db, submission)
+    db.commit()
+    db.refresh(submission)
+    logger.info(
+        "Reset disqualified assessment submission %s for candidate %s",
+        submission.id,
+        cid,
+    )
+    return _submission_to_response(submission)
 
 
 # ---------------------------------------------------------------------------
