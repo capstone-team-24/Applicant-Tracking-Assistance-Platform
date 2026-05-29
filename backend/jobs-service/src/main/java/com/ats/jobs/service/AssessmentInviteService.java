@@ -133,6 +133,7 @@ public class AssessmentInviteService {
             try {
                 notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                         .recipientEmail(email)
+                        .recipientUserId(app.getCandidateAuthUserId())
                         .subject(subject)
                         .body(body)
                         .type("OA_INVITE")
@@ -243,6 +244,7 @@ public class AssessmentInviteService {
         try {
             notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(email)
+                    .recipientUserId(app.getCandidateAuthUserId())
                     .subject(subject)
                     .body(body)
                     .type("OA_INVITE")
@@ -338,6 +340,7 @@ public class AssessmentInviteService {
                 try {
                     notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                             .recipientEmail(email)
+                            .recipientUserId(app.getCandidateAuthUserId())
                             .subject(subject)
                             .body(body)
                             .type("REJECTION")

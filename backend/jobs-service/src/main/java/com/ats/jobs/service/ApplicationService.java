@@ -168,12 +168,22 @@ public class ApplicationService {
         log.info("Application created id={} for jobId={}", saved.getId(), jobId);
 
         // 5. Emit Kafka event
+        Map<String, Object> notificationPayload = new HashMap<>();
+        notificationPayload.put("applicationId", saved.getId().toString());
+        notificationPayload.put("jobId", jobId.toString());
+        notificationPayload.put("candidateAuthUserId", effectiveCandidateId != null ? effectiveCandidateId.toString() : null);
+        notificationPayload.put("candidateEmail", saved.getCandidateEmail());
+        notificationPayload.put("candidateName", saved.getCandidateName());
+        notificationPayload.put("jobTitle", job.getTitle());
+
         ApplicationSubmittedEvent event = ApplicationSubmittedEvent.builder()
                 .applicationId(saved.getId())
                 .jobId(jobId)
                 .candidateAuthUserId(effectiveCandidateId)
                 .filePath(filePath)
                 .createdAt(LocalDateTime.now())
+                .eventType(KafkaConfig.APPLICATION_SUBMITTED_TOPIC)
+                .payload(notificationPayload)
                 .build();
 
         try {
@@ -491,6 +501,7 @@ public class ApplicationService {
         try {
             notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(email)
+                    .recipientUserId(app.getCandidateAuthUserId())
                     .subject(subject)
                     .body(body)
                     .type("REJECTION")

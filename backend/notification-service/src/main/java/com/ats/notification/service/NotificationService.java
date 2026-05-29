@@ -8,6 +8,7 @@ import com.ats.notification.enums.NotificationChannel;
 import com.ats.notification.enums.NotificationStatus;
 import com.ats.notification.repository.NotificationRepository;
 import com.ats.notification.util.EmailTemplate;
+import com.ats.notification.websocket.NotificationWebSocketHandler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.MessagingException;
@@ -33,6 +34,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
+    private final NotificationWebSocketHandler webSocketHandler;
 
     /**
      * Send an email to the specified recipient. Creates a notification record
@@ -40,15 +42,23 @@ public class NotificationService {
      */
     @Transactional
     public Notification sendEmail(String recipientEmail, String subject, String body) {
+        return sendEmail(recipientEmail, null, "EMAIL", subject, body, null, null);
+    }
+
+    private Notification sendEmail(String recipientEmail, UUID recipientUserId, String type, String subject, String body,
+                                   String eventType, String eventPayload) {
         log.info("Sending email to {} with subject: {}", recipientEmail, subject);
         String emailBody = normalizeEmailBody(subject, body);
 
         Notification notification = Notification.builder()
+                .recipientUserId(recipientUserId)
                 .recipientEmail(recipientEmail)
-                .type("EMAIL")
+                .type(type)
                 .channel(NotificationChannel.EMAIL)
                 .subject(subject)
                 .body(emailBody)
+                .eventType(eventType)
+                .eventPayload(eventPayload)
                 .status(NotificationStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -66,7 +76,7 @@ public class NotificationService {
             notification.setStatus(NotificationStatus.SENT);
             notification.setSentAt(LocalDateTime.now());
             log.info("Email sent successfully to {}", recipientEmail);
-        } catch (MessagingException e) {
+        } catch (MessagingException | RuntimeException e) {
             log.error("Failed to send email to {}: {}", recipientEmail, e.getMessage(), e);
             notification.setStatus(NotificationStatus.FAILED);
             notification.setErrorMessage(e.getMessage());
@@ -88,6 +98,7 @@ public class NotificationService {
         String candidateName = getStringValue(payload, "candidateName");
         String jobTitle = getStringValue(payload, "jobTitle");
         String applicationId = getStringValue(payload, "applicationId");
+        UUID candidateUserId = getUuidValue(payload, "candidateAuthUserId");
 
         if (candidateEmail == null || candidateEmail.isBlank()) {
             log.warn("No candidate email found in application.submitted event payload; skipping notification.");
@@ -96,11 +107,11 @@ public class NotificationService {
 
         String subject = "Application Received - " + (jobTitle != null ? jobTitle : "Your Application");
         String body = buildApplicationReceivedEmail(candidateName, jobTitle, applicationId);
+        String eventPayload = serializePayload(payload);
 
-        Notification notification = sendEmail(candidateEmail, subject, body);
-        notification.setEventType(event.getEventType());
-        notification.setEventPayload(serializePayload(payload));
-        notificationRepository.save(notification);
+        Notification notification = sendEmail(candidateEmail, candidateUserId, "APPLICATION_SUBMITTED", subject, body,
+                event.getEventType(), eventPayload);
+        pushIfRecipientConnected(notification);
     }
 
     /**
@@ -220,9 +231,9 @@ public class NotificationService {
      */
     @Transactional
     public NotificationResponse sendNotification(SendNotificationRequest request) {
-        Notification notification = sendEmail(request.getRecipientEmail(), request.getSubject(), request.getBody());
-        notification.setType(request.getType());
-        notification = notificationRepository.save(notification);
+        Notification notification = sendEmail(request.getRecipientEmail(), request.getRecipientUserId(), request.getType(),
+                request.getSubject(), request.getBody(), null, null);
+        pushIfRecipientConnected(notification);
         return toResponse(notification);
     }
 
@@ -252,6 +263,26 @@ public class NotificationService {
         }
         Object value = payload.get(key);
         return value != null ? value.toString() : null;
+    }
+
+    private UUID getUuidValue(Map<String, Object> payload, String key) {
+        String value = getStringValue(payload, key);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid UUID value for {} in notification payload: {}", key, value);
+            return null;
+        }
+    }
+
+    private void pushIfRecipientConnected(Notification notification) {
+        if (notification.getRecipientUserId() == null || notification.getStatus() != NotificationStatus.SENT) {
+            return;
+        }
+        webSocketHandler.sendToUser(notification.getRecipientUserId(), toResponse(notification));
     }
 
     private String serializePayload(Map<String, Object> payload) {

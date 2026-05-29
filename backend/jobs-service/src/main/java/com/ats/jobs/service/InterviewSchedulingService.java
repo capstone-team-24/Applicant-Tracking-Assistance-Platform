@@ -219,6 +219,7 @@ public class InterviewSchedulingService {
             String body = buildConfirmationEmail(app.getCandidateName(), jobTitle, slot.getStartTime(), slot.getEndTime(), meetingLink);
             notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(app.getCandidateEmail())
+                    .recipientUserId(candidateAuthUserId)
                     .subject(subject)
                     .body(body)
                     .type("INTERVIEW_SCHEDULED")
@@ -338,6 +339,7 @@ public class InterviewSchedulingService {
                 String body = buildInterviewCompletionEmail(candidateName, job.getTitle());
                 notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                         .recipientEmail(email)
+                        .recipientUserId(booking.getCandidateAuthUserId())
                         .subject(subject)
                         .body(body)
                         .type("INTERVIEW_COMPLETED")

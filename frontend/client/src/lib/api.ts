@@ -36,6 +36,7 @@ import type {
   SendOfferRequest,
   DeclineOfferRequest,
   OfferResponse,
+  NotificationListResponse,
   RejectRequest,
   RejectResponse,
   OrgAdminUser,
@@ -898,6 +899,16 @@ export const orgAdminApi = {
 
   reassignJob: async (jobId: string, assignedTo: string | null): Promise<import("./types").Job> => {
     const response = await api.put<import("./types").Job>(`/api/v1/jobs/${jobId}/reassign`, { assignedTo: assignedTo ?? "" });
+    return response.data;
+  },
+};
+
+// ---- Notifications API ----
+export const notificationsApi = {
+  getMine: async (size = 20): Promise<NotificationListResponse> => {
+    const response = await api.get<NotificationListResponse>("/api/v1/notifications", {
+      params: { size, sort: "createdAt,desc" },
+    });
     return response.data;
   },
 };

@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,6 +16,8 @@ public class SendNotificationRequest {
     @NotBlank(message = "Recipient email is required")
     @Email(message = "Recipient email must be a valid email address")
     private String recipientEmail;
+
+    private UUID recipientUserId;
 
     @NotBlank(message = "Subject is required")
     private String subject;

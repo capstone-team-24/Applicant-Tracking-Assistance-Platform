@@ -87,13 +87,11 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String token = resolveAccessToken(exchange, path);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (token == null) {
             return onUnauthorized(exchange, "Missing or invalid Authorization header");
         }
-
-        String token = authHeader.substring(7);
 
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
@@ -180,6 +178,26 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             return !remainder.contains("/") && !remainder.isEmpty();
         }
         return false;
+    }
+
+    private String resolveAccessToken(ServerWebExchange exchange, String path) {
+        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        if (isNotificationWebSocketPath(path)) {
+            String queryToken = exchange.getRequest().getQueryParams().getFirst("access_token");
+            if (queryToken != null && !queryToken.isBlank()) {
+                return queryToken;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isNotificationWebSocketPath(String path) {
+        return path.equals("/api/v1/notifications/ws") || path.equals("/api/v1/notifications/ws/");
     }
 
     private Mono<Void> tryValidateAndForward(ServerWebExchange exchange, GatewayFilterChain chain, String token) {

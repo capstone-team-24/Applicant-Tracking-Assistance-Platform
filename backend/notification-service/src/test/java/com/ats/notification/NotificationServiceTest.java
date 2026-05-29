@@ -8,6 +8,7 @@ import com.ats.notification.enums.NotificationChannel;
 import com.ats.notification.enums.NotificationStatus;
 import com.ats.notification.repository.NotificationRepository;
 import com.ats.notification.service.NotificationService;
+import com.ats.notification.websocket.NotificationWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,9 @@ class NotificationServiceTest {
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Mock
+    private NotificationWebSocketHandler webSocketHandler;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -120,6 +124,7 @@ class NotificationServiceTest {
         payload.put("candidateName", "John Doe");
         payload.put("jobTitle", "Software Engineer");
         payload.put("applicationId", "APP-12345");
+        payload.put("candidateAuthUserId", UUID.randomUUID().toString());
 
         NotificationEvent event = NotificationEvent.builder()
                 .eventType("application.submitted")
@@ -149,8 +154,10 @@ class NotificationServiceTest {
         assertThat(lastSaved.getSubject()).contains("Software Engineer");
         assertThat(lastSaved.getEventType()).isEqualTo("application.submitted");
         assertThat(lastSaved.getEventPayload()).isNotNull();
+        assertThat(lastSaved.getRecipientUserId()).isNotNull();
 
         verify(mailSender).send(any(MimeMessage.class));
+        verify(webSocketHandler).sendToUser(eq(lastSaved.getRecipientUserId()), any(NotificationResponse.class));
     }
 
     @Test
@@ -288,6 +295,7 @@ class NotificationServiceTest {
                 .subject("Admin Notification")
                 .body("Sent by admin")
                 .type("ADMIN")
+                .recipientUserId(UUID.randomUUID())
                 .build();
 
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
@@ -309,5 +317,6 @@ class NotificationServiceTest {
         assertThat(response.getStatus()).isEqualTo(NotificationStatus.SENT);
 
         verify(mailSender).send(any(MimeMessage.class));
+        verify(webSocketHandler).sendToUser(eq(response.getRecipientUserId()), any(NotificationResponse.class));
     }
 }

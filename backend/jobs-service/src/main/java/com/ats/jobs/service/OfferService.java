@@ -80,6 +80,7 @@ public class OfferService {
 
         NotificationSendRequest notificationReq = NotificationSendRequest.builder()
                 .recipientEmail(application.getCandidateEmail())
+                .recipientUserId(application.getCandidateAuthUserId())
                 .subject("Job Offer: " + job.getTitle() + " at " + orgName)
                 .body(emailBody)
                 .type("OFFER_INVITE")

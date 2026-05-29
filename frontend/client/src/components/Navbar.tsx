@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { authApi } from "@/lib/api";
+import NotificationBell from "@/components/NotificationBell";
 import toast from "react-hot-toast";
 
 export default function Navbar() {
@@ -97,6 +98,7 @@ export default function Navbar() {
             <div className="hidden md:flex items-center space-x-4">
               {isLoggedIn ? (
                 <>
+                  <NotificationBell />
                   <div className="flex flex-col items-end mr-2">
                     <span className="text-white text-sm font-bold leading-none drop-shadow">
                       {user?.firstName} {user?.lastName}
@@ -185,6 +187,9 @@ export default function Navbar() {
               <div className="pt-5 border-t border-white/10 mt-5">
                 {isLoggedIn ? (
                   <div className="space-y-4">
+                    <div className="px-4">
+                      <NotificationBell />
+                    </div>
                     <div className="px-4 text-white/60 text-xs font-black uppercase tracking-widest">
                       Logged in as {user?.firstName} ({user?.role})
                     </div>
