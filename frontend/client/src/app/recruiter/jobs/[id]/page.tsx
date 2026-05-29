@@ -832,10 +832,16 @@ export default function RecruiterJobDetailPage() {
 
   const handleSendInterviewToApp = async (app: Application) => {
     setSendingInterviewForApp(app.id);
+    setUpdatingKanbanAppId(app.id);
     setOpenDropdownId(null);
     try {
       const res = await applicationsApi.sendInterviewInvite(app.id);
       if (res.sent > 0) {
+        setApplications((prev) =>
+          prev.map((item) =>
+            item.id === app.id ? { ...item, status: "INTERVIEW_INVITED" } : item,
+          ),
+        );
         toast.success(`Interview invite sent to ${app.candidateName}!`);
         fetchApplications();
       } else {
@@ -845,7 +851,16 @@ export default function RecruiterJobDetailPage() {
       toast.error("Failed to send interview invite");
     } finally {
       setSendingInterviewForApp(null);
+      setUpdatingKanbanAppId((current) => (current === app.id ? null : current));
     }
+  };
+
+  const handleCloseOfferModal = () => {
+    setIsOfferModalOpen(false);
+    setOfferApp(null);
+    setOfferMessage("");
+    setOfferSalary("");
+    setOfferStartDate("");
   };
 
   const handleOpenOfferModal = (app: Application) => {
@@ -872,7 +887,7 @@ export default function RecruiterJobDetailPage() {
         ),
       );
       toast.success(`Offer sent to ${offerApp.candidateName}!`);
-      setIsOfferModalOpen(false);
+      handleCloseOfferModal();
       fetchApplications();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string; detail?: string } } };
@@ -890,6 +905,13 @@ export default function RecruiterJobDetailPage() {
     setOpenDropdownId(null);
   };
 
+  const handleCloseRejectModal = () => {
+    setIsRejectModalOpen(false);
+    setRejectApp(null);
+    setRejectReason("");
+    setIsBulkReject(false);
+  };
+
   const handleOpenBulkRejectModal = () => {
     if (selectedAppIds.size === 0) return;
     setRejectApp(null);
@@ -904,17 +926,25 @@ export default function RecruiterJobDetailPage() {
       if (isBulkReject) {
         const res = await applicationsApi.bulkReject(jobId, {
           applicationIds: Array.from(selectedAppIds),
-          reason: rejectReason || undefined,
         });
-        toast.success(`Rejected ${res.rejectedCount} candidate(s) and sent notification emails.`);
+        const sentCount = res.sentTo?.length ?? 0;
+        if (sentCount === res.rejectedCount) {
+          toast.success(`Rejected ${res.rejectedCount} candidate(s) and sent notification emails.`);
+        } else {
+          toast.error(`Rejected ${res.rejectedCount} candidate(s), but only ${sentCount} notification email(s) were sent.`);
+        }
         setSelectedAppIds(new Set());
       } else if (rejectApp) {
-        await applicationsApi.rejectApplication(rejectApp.id, {
-          reason: rejectReason || undefined,
+        const rejected = await applicationsApi.rejectApplication(rejectApp.id, {
+          reason: rejectReason.trim() || undefined,
         });
-        toast.success(`${rejectApp.candidateName} has been rejected and notified via email.`);
+        if (rejected.rejectionEmailSent === false) {
+          toast.error(`${rejectApp.candidateName} was rejected, but the email could not be sent.`);
+        } else {
+          toast.success(`${rejectApp.candidateName} has been rejected and notified via email.`);
+        }
       }
-      setIsRejectModalOpen(false);
+      handleCloseRejectModal();
       fetchApplications();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to reject candidate(s)");
@@ -1053,6 +1083,11 @@ export default function RecruiterJobDetailPage() {
 
     if (column.dropStatus === "OFFERED" && app.status !== "OFFER_SENT" && app.status !== "OFFER_ACCEPTED") {
       handleOpenOfferModal(app);
+      return;
+    }
+
+    if (column.dropStatus === "INTERVIEW_INVITED" && !column.statuses.includes(app.status)) {
+      void handleSendInterviewToApp(app);
       return;
     }
 
@@ -2362,6 +2397,13 @@ export default function RecruiterJobDetailPage() {
                                       handleOpenOfferModal(app);
                                       return;
                                     }
+                                    if (
+                                      nextStatus === "INTERVIEW_INVITED" &&
+                                      !(["INTERVIEW_INVITED", "INTERVIEW_SCHEDULED", "INTERVIEW_COMPLETED"] as ApplicationStatus[]).includes(app.status)
+                                    ) {
+                                      void handleSendInterviewToApp(app);
+                                      return;
+                                    }
                                     void updateApplicationPipelineStatus(app, nextStatus);
                                   }}
                                   className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none transition-colors focus:border-indigo-400 disabled:opacity-50"
@@ -2374,7 +2416,11 @@ export default function RecruiterJobDetailPage() {
                                 </select>
                                 <button
                                   type="button"
-                                  onClick={() => handleOpenOfferModal(app)}
+                                  onMouseDown={(event) => event.stopPropagation()}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleOpenOfferModal(app);
+                                  }}
                                   disabled={isUpdating || app.status === "OFFER_SENT" || app.status === "OFFER_ACCEPTED"}
                                   className="rounded-xl border border-purple-400/30 bg-purple-500/10 px-3 py-2 text-xs font-black uppercase tracking-widest text-purple-200 transition-colors hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
@@ -2623,12 +2669,11 @@ export default function RecruiterJobDetailPage() {
                                   {/* Send Offer */}
                                   <button
                                     type="button"
-                                    onMouseDown={(e) => {
+                                    onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
                                       handleOpenOfferModal(app);
                                     }}
-                                    onClick={(e) => e.stopPropagation()}
                                     disabled={app.status === "OFFER_SENT" || app.status === "OFFER_ACCEPTED"}
                                     className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-purple-300 hover:bg-purple-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     title={`Send offer to ${app.candidateName}`}
@@ -2876,14 +2921,20 @@ export default function RecruiterJobDetailPage() {
 
       {/* ── Offer Modal ──────────────────────────────────────────────────────── */}
       {isOfferModalOpen && offerApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md"
+          onClick={handleCloseOfferModal}
+        >
+          <div
+            className="bg-slate-950 border border-white/10 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">
                 Send Offer to {offerApp.candidateName}
               </h2>
               <button
-                onClick={() => setIsOfferModalOpen(false)}
+                onClick={handleCloseOfferModal}
                 className="text-white/40 hover:text-white/60 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -2898,7 +2949,7 @@ export default function RecruiterJobDetailPage() {
                   value={offerMessage}
                   onChange={(e) => setOfferMessage(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                  className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                   placeholder="We are thrilled to offer you..."
                 />
               </div>
@@ -2909,7 +2960,7 @@ export default function RecruiterJobDetailPage() {
                     type="text"
                     value={offerSalary}
                     onChange={(e) => setOfferSalary(e.target.value)}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                     placeholder="$100,000 / year"
                   />
                 </div>
@@ -2919,14 +2970,14 @@ export default function RecruiterJobDetailPage() {
                     type="date"
                     value={offerStartDate}
                     onChange={(e) => setOfferStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
                   />
                 </div>
               </div>
             </div>
             <div className="p-6 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
-                onClick={() => setIsOfferModalOpen(false)}
+                onClick={handleCloseOfferModal}
                 className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
               >
                 Cancel
@@ -2945,8 +2996,14 @@ export default function RecruiterJobDetailPage() {
 
       {/* ── Rejection Modal ──────────────────────────────────────────────────── */}
       {isRejectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md"
+          onClick={handleCloseRejectModal}
+        >
+          <div
+            className="bg-slate-950 border border-white/10 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={(event) => event.stopPropagation()}
+          >
             {/* Header */}
             <div className="p-6 border-b border-white/10 flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -2957,7 +3014,7 @@ export default function RecruiterJobDetailPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-white">
-                    {isBulkReject ? `Reject ${selectedAppIds.size} Candidates` : `Reject ${rejectApp?.candidateName}`}
+                    {isBulkReject ? `Reject ${selectedAppIds.size} Candidates?` : `Reject ${rejectApp?.candidateName}?`}
                   </h2>
                   <p className="text-sm text-white/50 mt-0.5">
                     {isBulkReject
@@ -2967,7 +3024,7 @@ export default function RecruiterJobDetailPage() {
                 </div>
               </div>
               <button
-                onClick={() => setIsRejectModalOpen(false)}
+                onClick={handleCloseRejectModal}
                 className="text-white/40 hover:text-white/60 transition-colors flex-shrink-0"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -2983,32 +3040,37 @@ export default function RecruiterJobDetailPage() {
                 <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
                 </svg>
-                <p className="text-sm text-red-700">
+                <p className="text-sm text-red-200">
                   This action cannot be undone. The candidate{isBulkReject ? "s" : ""} will be notified by email.
                 </p>
               </div>
 
-              {/* Optional feedback */}
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1.5">
-                  Feedback for Candidate
-                  <span className="ml-1.5 text-xs font-normal text-white/40">(optional — included in the rejection email)</span>
-                </label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  rows={4}
-                  placeholder="e.g. We were impressed by your profile, however we are looking for candidates with more experience in..."
-                  className="w-full px-3 py-2 text-sm border border-white/20 bg-white/5 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all resize-none"
-                />
-                <p className="mt-1 text-xs text-white/40">Personalised feedback helps candidates grow professionally and reflects well on your company.</p>
-              </div>
+              {isBulkReject ? (
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/60">
+                  Selected candidates will receive the standard rejection email. Reject candidates individually if you want to add a personal message.
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-1.5">
+                    Message to Candidate
+                    <span className="ml-1.5 text-xs font-normal text-white/40">(optional — included in the rejection email)</span>
+                  </label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    rows={4}
+                    placeholder="e.g. We were impressed by your profile, however we are looking for candidates with more experience in..."
+                    className="w-full px-3 py-2 text-sm border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all resize-none"
+                  />
+                  <p className="mt-1 text-xs text-white/40">Personalized feedback helps candidates grow professionally and reflects well on your company.</p>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
             <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
-                onClick={() => setIsRejectModalOpen(false)}
+                onClick={handleCloseRejectModal}
                 className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
               >
                 Cancel

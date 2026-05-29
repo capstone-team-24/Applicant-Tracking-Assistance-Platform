@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 import { getAccessToken, useAuth } from "@/lib/auth";
+import { API_URL } from "@/lib/config";
 import type { AppNotification } from "@/lib/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 export const NOTIFICATION_RECEIVED_EVENT = "ats-push-notification";
 
 function buildWebSocketUrl(token: string): string {

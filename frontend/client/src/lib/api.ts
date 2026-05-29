@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
+import { API_URL } from "./config";
 import type {
   LoginResponse,
   SignupData,
@@ -44,8 +45,6 @@ import type {
   OrgMember,
   ChangePasswordData,
 } from "./types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -741,7 +740,10 @@ export const platformAdminApi = {
     const response = await api.get(`/api/v1/contact-messages/${id}/documents/${docId}`, {
       responseType: "blob",
     });
-    const blob = new Blob([response.data], { type: response.headers["content-type"] ?? "application/octet-stream" });
+    const contentType = response.headers["content-type"];
+    const blob = new Blob([response.data], {
+      type: typeof contentType === "string" ? contentType : "application/octet-stream",
+    });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, "_blank", "noopener,noreferrer");
     // Revoke after a short delay so the new tab has time to load it
@@ -862,7 +864,10 @@ export const orgInquiryApi = {
     const response = await api.get(`/api/v1/contact-messages/${id}/documents/${docId}`, {
       responseType: "blob",
     });
-    const blob = new Blob([response.data], { type: response.headers["content-type"] ?? "application/octet-stream" });
+    const contentType = response.headers["content-type"];
+    const blob = new Blob([response.data], {
+      type: typeof contentType === "string" ? contentType : "application/octet-stream",
+    });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
     setTimeout(() => URL.revokeObjectURL(url), 60_000);

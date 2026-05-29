@@ -183,6 +183,8 @@ export interface Application {
   finalRank?: number;
   isWaitlisted?: boolean;
   rejectionReason?: string;
+  rejectionEmailSent?: boolean;
+  rejectionEmailError?: string;
   rejectedAt?: string;
   rejectedBy?: string;
   createdAt?: string;
