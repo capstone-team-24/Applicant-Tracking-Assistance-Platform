@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { jobsApi, profilesApi, applicationsApi, assessmentsApi, interviewsApi, offersApi } from "@/lib/api";
 import type { Job, Application, Profile, ReceivedAssessmentInvite, InterviewInvite, CandidateBookingResponse, OfferResponse } from "@/lib/types";
@@ -118,6 +118,19 @@ function CandidateDashboard() {
       toast.error("Failed to upload CV");
     }
   };
+
+  const upcomingBookings = myBookings
+    .filter((booking) => booking.status === "SCHEDULED")
+    .sort((a, b) => {
+      const aTime = parseDate(a.startTime)?.getTime() ?? 0;
+      const bTime = parseDate(b.startTime)?.getTime() ?? 0;
+      return aTime - bTime;
+    });
+  const completedInterviewCount = myBookings.filter((booking) => booking.status === "COMPLETED").length;
+  const cancelledInterviewCount = myBookings.filter((booking) => booking.status === "CANCELLED").length;
+  const isInterviewBooked = (jobId: string) =>
+    myBookings.some((booking) => booking.jobId === jobId && (booking.status === "SCHEDULED" || booking.status === "COMPLETED"));
+  const pendingInterviewInvites = interviewInvites.filter((invite) => !isInterviewBooked(invite.jobId));
 
   return (
     <div className="min-h-screen w-full relative flex flex-col items-center p-6 md:p-8 transition-all duration-500">
@@ -259,9 +272,10 @@ function CandidateDashboard() {
             ) : applications.length > 0 ? (
               <div className="space-y-4">
                 {applications.map((app) => (
-                  <div
+                  <Link
                     key={app.id}
-                    className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/15 hover:border-white/20 transition-all duration-200"
+                    href={`/dashboard/applications/${app.id}`}
+                    className="block backdrop-blur-sm bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/15 hover:border-white/20 transition-all duration-200"
                   >
                     <div className="flex items-start justify-between">
                       <div>
@@ -282,12 +296,11 @@ function CandidateDashboard() {
                       </div>
                       <StatusBadge status={app.status} type="application" />
                     </div>
-                    {app.compositeScore !== undefined && app.compositeScore !== null && (
-                      <div className="mt-2 text-sm text-white/60">
-                        Score: <span className="font-semibold text-white">{Math.round(app.compositeScore)}</span>
-                      </div>
-                    )}
-                  </div>
+                    <div className="mt-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                      <span>Open submission</span>
+                      <span className="text-white/60">View</span>
+                    </div>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -313,61 +326,114 @@ function CandidateDashboard() {
         </div>
 
         {/* Upcoming Interviews */}
-        {myBookings.length > 0 && (
-          <div className="lg:col-span-3 mt-4">
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Upcoming Interviews
-              </h2>
-              {isLoadingBookings ? (
-                <div className="space-y-3">
-                  {[1].map((i) => (
-                    <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
-                      <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
-                      <div className="h-3 bg-white/10 rounded w-1/2" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {myBookings.filter(b => b.status === "SCHEDULED").map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="backdrop-blur-sm bg-emerald-50/30 border border-emerald-200/50 rounded-xl p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h4 className="font-medium text-emerald-900">
-                            Interview: {booking.jobTitle}
-                          </h4>
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-emerald-700">
-                            <span>
-                              Scheduled for {formatDateTime(booking.startTime)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {booking.meetingLink && (
-                          <a
-                            href={booking.meetingLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 shadow-sm hover:shadow transition-all duration-200 whitespace-nowrap"
-                          >
-                            Join Meeting
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {myBookings.filter(b => b.status === "SCHEDULED").length === 0 && (
-                    <p className="text-sm text-white/50">No upcoming interviews scheduled.</p>
-                  )}
-                </div>
+        <div className="lg:col-span-3 mt-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Upcoming Interviews
+                </h2>
+                <p className="text-sm text-white/50">
+                  Confirmed interview bookings and meeting links will appear here.
+                </p>
+              </div>
+              {!isLoadingBookings && (
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/60">
+                  {upcomingBookings.length} scheduled
+                </span>
               )}
             </div>
+
+            {isLoadingBookings ? (
+              <div className="space-y-3">
+                {[1].map((i) => (
+                  <div key={i} className="animate-pulse border border-white/20 backdrop-blur-sm bg-white/20 rounded-xl p-4">
+                    <div className="h-4 bg-white/10 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-white/10 rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : upcomingBookings.length > 0 ? (
+              <div className="space-y-3">
+                {upcomingBookings.map((booking) => (
+                  <div
+                    key={booking.id}
+                    className="backdrop-blur-sm bg-emerald-50/30 border border-emerald-200/50 rounded-xl p-4 shadow-sm"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h4 className="font-medium text-emerald-100">
+                          Interview: {booking.jobTitle}
+                        </h4>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-emerald-200/90">
+                          <span>Scheduled for {formatDateTime(booking.startTime)}</span>
+                          {booking.endTime && <span>Ends {formatDateTime(booking.endTime)}</span>}
+                        </div>
+                      </div>
+
+                      {booking.meetingLink ? (
+                        <a
+                          href={booking.meetingLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 shadow-sm hover:shadow transition-all duration-200 whitespace-nowrap"
+                        >
+                          Join Meeting
+                        </a>
+                      ) : (
+                        <span className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/50">
+                          Meeting link pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                <h3 className="text-base font-semibold text-white">
+                  You have no upcoming interviews
+                </h3>
+                <p className="mt-2 text-sm text-white/60">
+                  When you book an interview, its job title, date, time, status, and meeting link will be shown here.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+                    {applications.length} application{applications.length === 1 ? "" : "s"}
+                  </span>
+                  <span className="rounded-full border border-indigo-300/20 bg-indigo-400/10 px-3 py-1 text-xs text-indigo-200">
+                    {pendingInterviewInvites.length} pending invite{pendingInterviewInvites.length === 1 ? "" : "s"}
+                  </span>
+                  <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">
+                    {completedInterviewCount} completed
+                  </span>
+                  {cancelledInterviewCount > 0 && (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                      {cancelledInterviewCount} cancelled
+                    </span>
+                  )}
+                </div>
+                {pendingInterviewInvites.length > 0 ? (
+                  <p className="mt-3 text-sm text-indigo-200">
+                    You have interview invitation{pendingInterviewInvites.length === 1 ? "" : "s"} waiting below. Book a time slot to move one into this section.
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm text-white/50">
+                    Interview invitations from recruiters will appear below when available.
+                  </p>
+                )}
+                {applications.length === 0 && (
+                  <Link
+                    href="/jobs"
+                    className="mt-4 inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 shadow-sm transition-all duration-200"
+                  >
+                    Browse Jobs
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Offers */}
         {(myOffers.length > 0 || isLoadingOffers) && (
@@ -444,15 +510,7 @@ function CandidateDashboard() {
         )}
 
         {/* Interview Invites */}
-        {applications.length > 0 && (() => {
-          const isInterviewBooked = (jobId: string) => {
-            return myBookings.some(b => b.jobId === jobId && (b.status === "SCHEDULED" || b.status === "COMPLETED"));
-          };
-          const pendingInterviews = interviewInvites.filter(invite => !isInterviewBooked(invite.jobId));
-
-          if (pendingInterviews.length === 0 && !isLoadingInterviews) return null;
-
-          return (
+        {(pendingInterviewInvites.length > 0 || isLoadingInterviews) && (
             <div className="lg:col-span-3 mt-4">
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">
@@ -470,7 +528,7 @@ function CandidateDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pendingInterviews.map((invite) => {
+                    {pendingInterviewInvites.map((invite) => {
                       const isExpired = invite.expiresAt
                         ? (parseDate(invite.expiresAt) || new Date()) < new Date()
                         : false;
@@ -540,15 +598,11 @@ function CandidateDashboard() {
                 )}
               </div>
             </div>
-          );
-        })()}
+        )}
 
         {/* Pending Assessments */}
-        {applications.length > 0 && (() => {
-          const pendingOAs = invites.filter(invite => {
-            const app = applications.find(a => a.jobId === invite.jobId);
-            return app && app.status === "OA_INVITED";
-          });
+        {(() => {
+          const pendingOAs = invites;
 
           if (pendingOAs.length === 0 && !isLoadingInvites) return null;
 

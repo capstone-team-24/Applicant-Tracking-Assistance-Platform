@@ -87,10 +87,6 @@ public class Application implements Persistable<UUID> {
     @Column(name = "final_rank")
     private Integer finalRank;
 
-    @Builder.Default
-    @Column(name = "is_waitlisted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private Boolean isWaitlisted = false;
-
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
 

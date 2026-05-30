@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     # Service
     SERVICE_PORT: int = 8091
     INTERNAL_SERVICE_TOKEN: str = "dev-internal-token"
+    JOBS_SERVICE_URL: str = "http://localhost:8083"
 
     @property
     def database_url(self) -> str:

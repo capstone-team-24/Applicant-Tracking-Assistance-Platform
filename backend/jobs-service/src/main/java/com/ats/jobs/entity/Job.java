@@ -51,10 +51,6 @@ public class Job {
     private List<String> skills;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "scoring_weights", columnDefinition = "jsonb")
-    private Map<String, Object> scoringWeights;
-
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "custom_scoring_rules", columnDefinition = "jsonb")
     private Map<String, Object> customScoringRules;
 

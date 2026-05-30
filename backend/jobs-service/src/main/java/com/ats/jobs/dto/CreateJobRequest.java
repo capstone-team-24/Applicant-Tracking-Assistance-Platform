@@ -29,8 +29,6 @@ public class CreateJobRequest {
 
     private List<String> skills;
 
-    private Map<String, Object> scoringWeights;
-
     private Map<String, Object> customScoringRules;
 
     /**

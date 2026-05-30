@@ -124,7 +124,9 @@ public class InterviewInviteService {
             Application app = apps.get(0);
 
             // Skip if already rejected or withdrawn
-            if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+            if (app.getStatus() == ApplicationStatus.REJECTED ||
+                    app.getStatus() == ApplicationStatus.WITHDRAWN ||
+                    app.getStatus() == ApplicationStatus.DISQUALIFIED) {
                 skippedReasons.add("Application " + app.getId() + " is already " + app.getStatus());
                 continue;
             }
@@ -220,7 +222,9 @@ public class InterviewInviteService {
             throw new com.ats.jobs.exception.ForbiddenException("You do not have access to this job.");
         }
 
-        if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+        if (app.getStatus() == ApplicationStatus.REJECTED ||
+                app.getStatus() == ApplicationStatus.WITHDRAWN ||
+                app.getStatus() == ApplicationStatus.DISQUALIFIED) {
             return SendInterviewInviteResponse.builder()
                     .sent(0).skipped(1)
                     .sentTo(List.of())
@@ -324,7 +328,9 @@ public class InterviewInviteService {
 
         for (Application app : allApps) {
             // Skip already rejected or withdrawn
-            if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+            if (app.getStatus() == ApplicationStatus.REJECTED ||
+                    app.getStatus() == ApplicationStatus.WITHDRAWN ||
+                    app.getStatus() == ApplicationStatus.DISQUALIFIED) {
                 continue;
             }
 

@@ -24,6 +24,7 @@ import type {
 } from "@/lib/types";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import StatusBadge from "@/components/StatusBadge";
+import { useAuth } from "@/lib/auth";
 import { formatDateTime, parseDate, toLocalInputValue, nowLocalInputValue, toBackendDatetime } from "@/lib/dateUtils";
 import toast from "react-hot-toast";
 
@@ -51,10 +52,6 @@ type JobEditForm = {
   employmentType: string;
   experienceLevel: string;
   skills: string;
-  skillsMatchWeight: string;
-  experienceMatchWeight: string;
-  educationMatchWeight: string;
-  overallFitWeight: string;
   applicationDeadline: string;
 };
 
@@ -66,10 +63,6 @@ const emptyJobEditForm = (): JobEditForm => ({
   employmentType: "",
   experienceLevel: "",
   skills: "",
-  skillsMatchWeight: "25",
-  experienceMatchWeight: "25",
-  educationMatchWeight: "25",
-  overallFitWeight: "25",
   applicationDeadline: "",
 });
 
@@ -89,6 +82,7 @@ const APPLICATION_STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] 
   { value: "SCREENED", label: "Screened" },
   { value: "OA_INVITED", label: "OA Invited" },
   { value: "OA_COMPLETED", label: "OA Completed" },
+  { value: "DISQUALIFIED", label: "Disqualified" },
   { value: "INTERVIEW_INVITED", label: "Interview Invited" },
   { value: "INTERVIEW_SCHEDULED", label: "Interview Scheduled" },
   { value: "INTERVIEW_COMPLETED", label: "Interview Completed" },
@@ -152,8 +146,8 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
   {
     id: "closed",
     title: "Closed",
-    description: "Rejected or withdrawn",
-    statuses: ["REJECTED", "OFFER_DECLINED", "WITHDRAWN"],
+    description: "Rejected, disqualified, or withdrawn",
+    statuses: ["DISQUALIFIED", "REJECTED", "OFFER_DECLINED", "WITHDRAWN"],
     dropStatus: "REJECTED",
     accentClass: "from-rose-400 to-red-600 border-rose-400/30",
   },
@@ -166,6 +160,7 @@ const formatApplicationStatus = (status: ApplicationStatus) =>
 export default function RecruiterJobDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const jobId = params.id as string;
 
   // ── core state ────────────────────────────────────────────────────────────
@@ -224,7 +219,6 @@ export default function RecruiterJobDetailPage() {
   // ── review modal state ────────────────────────────────────────────────────
   const [selectedBooking, setSelectedBooking] = useState<InterviewBooking | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviewRating, setReviewRating] = useState(5);
   const [reviewFeedback, setReviewFeedback] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewTechnical, setReviewTechnical] = useState<number | undefined>(undefined);
@@ -245,7 +239,6 @@ export default function RecruiterJobDetailPage() {
   const [sendingOAForApp, setSendingOAForApp] = useState<string | null>(null);
   const [sendingInterviewForApp, setSendingInterviewForApp] = useState<string | null>(null);
   const [selectedAppIds, setSelectedAppIds] = useState<Set<string>>(new Set());
-  const [isWaitlisting, setIsWaitlisting] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [draggingAppId, setDraggingAppId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
@@ -376,10 +369,6 @@ export default function RecruiterJobDetailPage() {
       employmentType: job.employmentType || "",
       experienceLevel: job.experienceLevel || "",
       skills: job.skills?.join(", ") || "",
-      skillsMatchWeight: String(job.scoringWeights?.skillsMatch ?? 25),
-      experienceMatchWeight: String(job.scoringWeights?.experienceMatch ?? 25),
-      educationMatchWeight: String(job.scoringWeights?.educationMatch ?? 25),
-      overallFitWeight: String(job.scoringWeights?.overallFit ?? 25),
       applicationDeadline: deadline ? toLocalInputValue(deadline) : "",
     });
     setIsEditingJobDetails(true);
@@ -390,11 +379,6 @@ export default function RecruiterJobDetailPage() {
   ) => {
     const { name, value } = e.target;
     setJobEditForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const parseWeight = (value: string) => {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isNaN(parsed) ? 0 : parsed;
   };
 
   const handleSaveJobDetails = async (e: React.FormEvent) => {
@@ -417,12 +401,6 @@ export default function RecruiterJobDetailPage() {
           .split(",")
           .map((skill) => skill.trim())
           .filter(Boolean),
-        scoringWeights: {
-          skillsMatch: parseWeight(jobEditForm.skillsMatchWeight),
-          experienceMatch: parseWeight(jobEditForm.experienceMatchWeight),
-          educationMatch: parseWeight(jobEditForm.educationMatchWeight),
-          overallFit: parseWeight(jobEditForm.overallFitWeight),
-        },
         applicationDeadline: jobEditForm.applicationDeadline
           ? toBackendDatetime(jobEditForm.applicationDeadline)
           : null,
@@ -614,6 +592,7 @@ export default function RecruiterJobDetailPage() {
         assessmentTitle: jobAssessment.title,
         timeLimitMinutes: jobAssessment.timeLimitMinutes,
         topN: inviteTopN,
+        senderEmail: user?.email,
         expiresAt: oaDeadline ? toBackendDatetime(oaDeadline) : undefined,
       });
       toast.success(
@@ -758,7 +737,6 @@ export default function RecruiterJobDetailPage() {
 
   const handleOpenReviewModal = (booking: InterviewBooking) => {
     setSelectedBooking(booking);
-    setReviewRating(booking.rating ?? 5);
     setReviewFeedback(booking.feedback ?? "");
     // populate metric fields if present on booking (backend may return them)
     setReviewTechnical(typeof booking.technical === 'number' ? booking.technical : undefined);
@@ -778,7 +756,6 @@ export default function RecruiterJobDetailPage() {
     setIsSubmittingReview(true);
     try {
       await interviewsApi.completeBooking(jobId, selectedBooking.id, {
-        rating: reviewRating,
         feedback: reviewFeedback,
         technical: reviewTechnical,
         problemSolving: reviewProblemSolving,
@@ -816,6 +793,7 @@ export default function RecruiterJobDetailPage() {
         assessmentToken: jobAssessment.accessToken,
         assessmentTitle: jobAssessment.title,
         timeLimitMinutes: jobAssessment.timeLimitMinutes,
+        senderEmail: user?.email,
       });
       if (res.sent > 0) {
         toast.success(`OA invite sent to ${app.candidateName}!`);
@@ -1005,22 +983,6 @@ export default function RecruiterJobDetailPage() {
 
   const removeQuestion = (idx: number) =>
     setQuestions((prev) => prev.filter((_, i) => i !== idx));
-
-  const handleWaitlist = async () => {
-    if (selectedAppIds.size === 0) return;
-    if (!window.confirm(`Are you sure you want to waitlist ${selectedAppIds.size} candidates?`)) return;
-    setIsWaitlisting(true);
-    try {
-      await applicationsApi.waitlist(jobId, Array.from(selectedAppIds));
-      toast.success("Candidates waitlisted!");
-      setSelectedAppIds(new Set());
-      fetchApplications();
-    } catch {
-      toast.error("Failed to waitlist candidates");
-    } finally {
-      setIsWaitlisting(false);
-    }
-  };
 
   const handleRecalculate = async () => {
     setIsRecalculating(true);
@@ -1437,31 +1399,6 @@ export default function RecruiterJobDetailPage() {
                   onChange={handleJobEditChange}
                   className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-              </div>
-            </div>
-
-            <div className="border-t border-white/10 pt-5">
-              <h3 className="text-sm font-semibold text-white mb-3">Scoring Weights</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  ["skillsMatchWeight", "Skills Match"],
-                  ["experienceMatchWeight", "Experience"],
-                  ["educationMatchWeight", "Education"],
-                  ["overallFitWeight", "Overall Fit"],
-                ].map(([name, label]) => (
-                  <div key={name}>
-                    <label className="block text-xs font-medium text-white/60 mb-1">{label}</label>
-                    <input
-                      name={name}
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={jobEditForm[name as keyof JobEditForm]}
-                      onChange={handleJobEditChange}
-                      className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
-                    />
-                  </div>
-                ))}
               </div>
             </div>
 
@@ -2378,11 +2315,6 @@ export default function RecruiterJobDetailPage() {
 
                               <div className="mt-4 flex items-center justify-between gap-3">
                                 <StatusBadge status={app.status} type="application" />
-                                {app.isWaitlisted && (
-                                  <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">
-                                    Waitlisted
-                                  </span>
-                                )}
                               </div>
 
                               <div className="mt-3 flex items-center gap-2">
@@ -2463,21 +2395,12 @@ export default function RecruiterJobDetailPage() {
             </h2>
             <div className="flex items-center gap-3">
               {selectedAppIds.size > 0 && (
-                <>
-                  <button
-                    onClick={handleWaitlist}
-                    disabled={isWaitlisting}
-                    className="px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-medium rounded hover:bg-amber-500/20 transition-colors disabled:opacity-50"
-                  >
-                    {isWaitlisting ? "Waitlisting..." : `Waitlist Selected (${selectedAppIds.size})`}
-                  </button>
-                  <button
-                    onClick={handleOpenBulkRejectModal}
-                    className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-medium rounded hover:bg-red-500/20 transition-colors"
-                  >
-                    Reject Selected ({selectedAppIds.size})
-                  </button>
-                </>
+                <button
+                  onClick={handleOpenBulkRejectModal}
+                  className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-medium rounded hover:bg-red-500/20 transition-colors"
+                >
+                  Reject Selected ({selectedAppIds.size})
+                </button>
               )}
               <button
                 onClick={handleRecalculate}
@@ -2493,15 +2416,15 @@ export default function RecruiterJobDetailPage() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-3 py-1.5 border border-white/20 bg-white/5 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
                 >
-                <option value="ALL">All</option>
-                {APPLICATION_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                  <option value="ALL">All</option>
+                  {APPLICATION_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
           </div>
 
           {isLoadingApps ? (
@@ -2563,7 +2486,7 @@ export default function RecruiterJobDetailPage() {
                       const detailHref = `/recruiter/jobs/${jobId}/applications/${app.id}`;
 
                       return (
-                        <tr key={app.id} className={`hover:bg-white/5 transition-colors ${app.isWaitlisted ? "bg-amber-50/30" : ""}`}>
+                        <tr key={app.id} className="hover:bg-white/5 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input type="checkbox" checked={selectedAppIds.has(app.id)} onChange={() => toggleSelectApp(app.id)} className="w-4 h-4 text-primary-600 rounded" />
                           </td>
@@ -2571,7 +2494,7 @@ export default function RecruiterJobDetailPage() {
                             {app.finalRank ? `#${app.finalRank}` : "-"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-white">{app.candidateName} {app.isWaitlisted && <span className="ml-2 text-[10px] uppercase font-bold text-amber-400 border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 rounded">Waitlisted</span>}</div>
+                            <div className="text-sm font-medium text-white">{app.candidateName}</div>
                             <div className="text-sm text-white/50">{app.candidateEmail}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
@@ -2748,24 +2671,6 @@ export default function RecruiterJobDetailPage() {
                 <p className="font-medium text-white">
                   {applications.find(a => a.id === selectedBooking.applicationId)?.candidateName || "Candidate"}
                 </p>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-white/70 mb-2">Rating</label>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      disabled={selectedBooking.status === "COMPLETED"}
-                      onClick={() => setReviewRating(star)}
-                      className={`text-2xl focus:outline-none transition-colors ${star <= reviewRating ? "text-yellow-400" : "text-white/30 hover:text-yellow-200"
-                        } ${selectedBooking.status === "COMPLETED" ? "cursor-default" : "cursor-pointer"}`}
-                    >
-                      ★
-                    </button>
-                  ))}
-                  <span className="ml-2 text-sm text-white/50 font-medium">{reviewRating} / 5</span>
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">

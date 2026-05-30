@@ -40,6 +40,7 @@ export default function ApplyPage() {
   const [job, setJob] = useState<Job | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoadingJob, setIsLoadingJob] = useState(true);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useProfileData, setUseProfileData] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -77,21 +78,35 @@ export default function ApplyPage() {
       }));
 
       const fetchProfile = async () => {
+        setIsLoadingProfile(true);
         try {
           const data = await profilesApi.getMe();
           setProfile(data);
         } catch {
           // No profile yet
+          setProfile(null);
+        } finally {
+          setIsLoadingProfile(false);
         }
       };
       fetchProfile();
+    } else {
+      setProfile(null);
+      setIsLoadingProfile(false);
     }
   }, [isLoggedIn, user]);
 
   useEffect(() => {
     if (useProfileData && profile) {
+      const profileName = [profile.firstName, profile.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
       setFormData((prev) => ({
         ...prev,
+        candidateName: profileName || prev.candidateName,
+        candidateEmail: profile.email || prev.candidateEmail,
         phone: profile.phone || prev.phone,
         portfolioUrl: profile.portfolioUrl || prev.portfolioUrl,
         linkedinUrl: profile.linkedinUrl || prev.linkedinUrl,
@@ -161,6 +176,20 @@ export default function ApplyPage() {
     }
   };
 
+  const profileName = profile
+    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim()
+    : "";
+  const accountName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+  const autoFillFields = [
+    { label: "Name", value: profileName || accountName },
+    { label: "Email", value: profile?.email || user?.email },
+    { label: "Phone", value: profile?.phone },
+    { label: "Portfolio", value: profile?.portfolioUrl },
+    { label: "LinkedIn", value: profile?.linkedinUrl },
+  ];
+  const readyAutoFillFields = autoFillFields.filter((field) => field.value);
+  const missingAutoFillFields = autoFillFields.filter((field) => !field.value);
+
   if (isLoadingJob) {
     return (
       <GlassPageWrapper>
@@ -224,25 +253,86 @@ export default function ApplyPage() {
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
-          {/* Use profile data checkbox */}
-          {isLoggedIn && profile && (
-            <div 
-              onClick={() => setUseProfileData(!useProfileData)}
-              className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/[0.08] transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${useProfileData ? 'bg-white border-transparent' : 'border-white/20'}`}>
-                  {useProfileData && (
-                    <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-                <span className="text-[11px] font-black uppercase tracking-[0.15em] text-white/60 group-hover:text-white transition-colors">
-                  Auto-fill using my profile data
-                </span>
+          {/* Profile auto-fill */}
+          {isLoggedIn && (
+            isLoadingProfile ? (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                <div className="h-4 w-48 animate-pulse rounded bg-white/10" />
+                <div className="mt-3 h-3 w-full max-w-md animate-pulse rounded bg-white/10" />
               </div>
-            </div>
+            ) : profile ? (
+              <button
+                type="button"
+                aria-pressed={useProfileData}
+                onClick={() => setUseProfileData((current) => !current)}
+                className={`w-full rounded-2xl p-6 text-left transition-all ${useProfileData
+                  ? "bg-emerald-500/10 border border-emerald-400/50 shadow-lg shadow-emerald-950/20"
+                  : "bg-white/5 border border-white/10 hover:bg-white/[0.08]"
+                  }`}
+              >
+                <span className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <span className="flex items-start gap-4">
+                    <span className={`mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${useProfileData ? "bg-emerald-300 border-emerald-300" : "border-white/20"}`}>
+                      {useProfileData && (
+                        <svg className="w-4 h-4 text-emerald-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </span>
+                    <span>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-black uppercase tracking-[0.15em] text-white">
+                          Profile auto-fill
+                        </span>
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${useProfileData ? "bg-emerald-300 text-emerald-950" : "bg-white/10 text-white/50"}`}>
+                          {useProfileData ? "On - copied" : "Off"}
+                        </span>
+                      </span>
+                      <span className="mt-2 block text-sm text-white/60 leading-relaxed">
+                        {useProfileData
+                          ? "Saved profile fields have been copied into this application. Review or edit them before submitting."
+                          : "Turn this on to copy saved profile fields into the application form."}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="text-xs font-semibold text-white/50">
+                    {readyAutoFillFields.length} of {autoFillFields.length} fields ready
+                  </span>
+                </span>
+
+                <span className="mt-4 flex flex-wrap gap-2">
+                  {autoFillFields.map((field) => (
+                    <span
+                      key={field.label}
+                      className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${field.value
+                        ? "border-emerald-300/30 bg-emerald-400/10 text-emerald-200"
+                        : "border-amber-300/30 bg-amber-400/10 text-amber-200"
+                        }`}
+                    >
+                      {field.label}: {field.value ? "ready" : "missing"}
+                    </span>
+                  ))}
+                </span>
+
+                {missingAutoFillFields.length > 0 && (
+                  <span className="mt-3 block text-xs text-amber-100/80">
+                    Missing in your profile: {missingAutoFillFields.map((field) => field.label).join(", ")}. Empty fields can still be filled manually.
+                  </span>
+                )}
+              </button>
+            ) : (
+              <div className="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-6">
+                <p className="text-[11px] font-black uppercase tracking-[0.15em] text-amber-100">
+                  No saved profile found
+                </p>
+                <p className="mt-2 text-sm text-white/60">
+                  Complete your profile to enable application auto-fill. You can still submit this application manually.
+                </p>
+                <Link href="/account/setup" className="mt-4 inline-flex text-xs font-bold uppercase tracking-widest text-amber-100 underline">
+                  Complete Profile
+                </Link>
+              </div>
+            )
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -287,9 +377,12 @@ export default function ApplyPage() {
               type="tel"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+              className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all ${useProfileData && profile?.phone ? "border-emerald-400/50" : "border-white/10"}`}
               placeholder="+1 (000) 000-0000"
             />
+            {useProfileData && profile?.phone && (
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Auto-filled from profile. You can edit it.</p>
+            )}
           </div>
 
           {/* Cover Letter */}
@@ -313,9 +406,12 @@ export default function ApplyPage() {
                 type="url"
                 value={formData.portfolioUrl}
                 onChange={handleChange}
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all ${useProfileData && profile?.portfolioUrl ? "border-emerald-400/50" : "border-white/10"}`}
                 placeholder="https://portfolio.works"
               />
+              {useProfileData && profile?.portfolioUrl && (
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Auto-filled from profile.</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">LinkedIn Profile</label>
@@ -324,9 +420,12 @@ export default function ApplyPage() {
                 type="url"
                 value={formData.linkedinUrl}
                 onChange={handleChange}
-                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all ${useProfileData && profile?.linkedinUrl ? "border-emerald-400/50" : "border-white/10"}`}
                 placeholder="https://linkedin.com/in/user"
               />
+              {useProfileData && profile?.linkedinUrl && (
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Auto-filled from profile.</p>
+              )}
             </div>
           </div>
 

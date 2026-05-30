@@ -12,6 +12,7 @@ import type {
   CreateJobData,
   UpdateJobData,
   Application,
+  CandidateApplicationDetail,
   ApplicationListResponse,
   ApplicationListParams,
   Assessment,
@@ -326,7 +327,14 @@ export const applicationsApi = {
     return response.data;
   },
 
-  /** Recruiter: update an application's status (whitelist, waitlist, shortlist, etc.) */
+  getMyApplication: async (id: string): Promise<CandidateApplicationDetail> => {
+    const response = await api.get<CandidateApplicationDetail>(
+      `/api/v1/applications/me/${id}`,
+    );
+    return response.data;
+  },
+
+  /** Recruiter: update an application's pipeline status. */
   updateStatus: async (id: string, status: string): Promise<Application> => {
     const response = await api.put<Application>(
       `/api/v1/applications/${id}/status`,
@@ -337,6 +345,13 @@ export const applicationsApi = {
 
   downloadFile: async (id: string): Promise<Blob> => {
     const response = await api.get(`/api/v1/applications/${id}/file`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
+  downloadMyFile: async (id: string): Promise<Blob> => {
+    const response = await api.get(`/api/v1/applications/me/${id}/file`, {
       responseType: "blob",
     });
     return response.data;
@@ -370,11 +385,6 @@ export const applicationsApi = {
       data ?? {},
     );
     return response.data;
-  },
-
-  /** Bulk waitlist applications */
-  waitlist: async (jobId: string, applicationIds: string[]): Promise<void> => {
-    await api.post(`/api/v1/jobs/${jobId}/applications/waitlist`, applicationIds);
   },
 
   /** Recalculate final ranking */
@@ -637,7 +647,6 @@ export const interviewsApi = {
     jobId: string,
     bookingId: string,
     data: {
-      rating: number;
       feedback: string;
       technical?: number;
       problemSolving?: number;

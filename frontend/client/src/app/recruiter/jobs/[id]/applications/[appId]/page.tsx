@@ -13,6 +13,7 @@ import type {
 } from "@/lib/types";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import StatusBadge from "@/components/StatusBadge";
+import { useAuth } from "@/lib/auth";
 import toast from "react-hot-toast";
 import { formatDate, formatDateTime } from "@/lib/dateUtils";
 
@@ -40,6 +41,7 @@ export default function ApplicationDetailPage() {
   const params = useParams();
   const appId = params.appId as string;
   const jobId = params.id as string;
+  const { user } = useAuth();
 
   const [application, setApplication] = useState<Application | null>(null);
   const [job, setJob] = useState<Job | null>(null);
@@ -222,6 +224,8 @@ export default function ApplicationDetailPage() {
         assessmentToken: jobAssessment.accessToken,
         assessmentTitle: jobAssessment.title,
         timeLimitMinutes: jobAssessment.timeLimitMinutes,
+        senderEmail: user?.email,
+        resetDisqualification: isAssessmentDisqualified,
       });
       if (res.sent > 0) {
         toast.success(
@@ -242,6 +246,9 @@ export default function ApplicationDetailPage() {
                   status: "IN_PROGRESS",
                   strikeCount: 0,
                   disqualifiedAt: undefined,
+                  warningAcceptedAt: undefined,
+                  examStartedAt: undefined,
+                  lastActivityAt: undefined,
                   submittedAt: undefined,
                   scoredAt: undefined,
                 }
@@ -295,6 +302,7 @@ export default function ApplicationDetailPage() {
   };
 
   const isAssessmentDisqualified =
+    application?.status === "DISQUALIFIED" ||
     candidateSubmission?.status === "DISQUALIFIED" ||
     Boolean(candidateSubmission?.disqualifiedAt);
 

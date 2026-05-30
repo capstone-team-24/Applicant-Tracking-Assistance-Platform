@@ -101,8 +101,7 @@ curl -X POST http://localhost:8083/api/v1/jobs \
     "location": "Remote",
     "employmentType": "FULL_TIME",
     "experienceLevel": "SENIOR",
-    "skills": ["Java", "Spring Boot", "PostgreSQL", "Docker"],
-    "scoringWeights": {"semantic": 0.4, "assessment": 0.3, "llm_quality": 0.3}
+    "skills": ["Java", "Spring Boot", "PostgreSQL", "Docker"]
   }'
 ```
 

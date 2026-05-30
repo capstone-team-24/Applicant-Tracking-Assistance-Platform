@@ -25,7 +25,6 @@ public class JobResponse {
     private String employmentType;
     private String experienceLevel;
     private List<String> skills;
-    private Map<String, Object> scoringWeights;
     private Map<String, Object> customScoringRules;
     private JobStatus status;
     private UUID createdBy;

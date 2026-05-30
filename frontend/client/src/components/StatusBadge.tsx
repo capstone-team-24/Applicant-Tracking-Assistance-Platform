@@ -43,6 +43,7 @@ const statusConfig: Record<string, { bg: string; text: string; dot: string }> = 
 const statusLabels: Record<string, string> = {
   OA_INVITED: "OA Invited",
   OA_COMPLETED: "OA Completed",
+  DISQUALIFIED: "Disqualified",
   INTERVIEW_INVITED: "Interview Invited",
   INTERVIEW_SCHEDULED: "Interview Scheduled",
   INTERVIEW_COMPLETED: "Interview Completed",

@@ -54,8 +54,9 @@ public class RankingController {
 
         HeaderContext.assertRecruiter(httpRequest);
         UUID orgId = HeaderContext.getOrgId(httpRequest);
+        UUID recruiterAuthUserId = HeaderContext.getAuthUserId(httpRequest);
         SendAssessmentResponse response =
-                assessmentInviteService.sendAssessmentToTopCandidates(jobId, request, orgId);
+                assessmentInviteService.sendAssessmentToTopCandidates(jobId, request, orgId, recruiterAuthUserId);
         return ResponseEntity.ok(response);
     }
 

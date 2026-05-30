@@ -1,7 +1,12 @@
 package com.ats.jobs.dto;
 
 import com.ats.jobs.enums.ApplicationStatus;
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,32 +18,22 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ApplicationDetailResponse {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class CandidateApplicationDetailResponse {
 
     private UUID id;
     private UUID jobId;
-    private UUID candidateAuthUserId;
+    private JobResponse job;
     private String candidateName;
     private String candidateEmail;
     private String coverLetter;
     private List<String> portfolioLinks;
     private String contactPhone;
     private Map<String, Object> candidateProfileSnapshot;
-    private String originalFilePath;
     private String originalFilename;
     private ApplicationStatus status;
-    private Double parseConfidence;
-    private Double compositeScore;
-    private Double oaScore;
-    private Double interviewScore;
-    private Double finalRankingScore;
-    private Integer rankingPosition;
-    private Integer finalRank;
     private String rejectionReason;
-    private Boolean rejectionEmailSent;
-    private String rejectionEmailError;
-    private java.time.LocalDateTime rejectedAt;
-    private java.util.UUID rejectedBy;
+    private LocalDateTime rejectedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

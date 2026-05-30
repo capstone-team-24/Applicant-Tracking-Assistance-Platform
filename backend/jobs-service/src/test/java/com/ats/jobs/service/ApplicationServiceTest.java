@@ -1,37 +1,39 @@
 package com.ats.jobs.service;
 
-import com.ats.jobs.dto.ApplicationDataResponse;
 import com.ats.jobs.dto.ApplicationResponse;
-import com.ats.jobs.dto.ApplyRequest;
+import com.ats.jobs.dto.CandidateApplicationDetailResponse;
 import com.ats.jobs.entity.Application;
 import com.ats.jobs.entity.Job;
 import com.ats.jobs.enums.ApplicationStatus;
 import com.ats.jobs.enums.JobStatus;
-import com.ats.jobs.exception.BadRequestException;
-import com.ats.jobs.exception.ResourceNotFoundException;
+import com.ats.jobs.exception.ForbiddenException;
+import com.ats.jobs.feign.NotificationServiceClient;
+import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.feign.UserServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.JobRepository;
 import com.ats.jobs.util.FileStorageUtil;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ApplicationServiceTest {
@@ -51,135 +53,150 @@ class ApplicationServiceTest {
     @Mock
     private KafkaTemplate<String, Object> kafkaTemplate;
 
+    @Mock
+    private OrgServiceClient orgServiceClient;
+
+    @Mock
+    private NotificationServiceClient notificationServiceClient;
+
     @InjectMocks
     private ApplicationService applicationService;
 
-    private UUID jobId;
-    private UUID orgId;
-    private UUID candidateUserId;
-    private Job publishedJob;
+    @Test
+    void getMyApplicationDetail_rejectsAnotherCandidatesApplication() {
+        UUID applicationId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
-    @BeforeEach
-    void setUp() {
-        jobId = UUID.randomUUID();
-        orgId = UUID.randomUUID();
-        candidateUserId = UUID.randomUUID();
+        Application application = Application.builder()
+                .id(applicationId)
+                .jobId(UUID.randomUUID())
+                .candidateAuthUserId(ownerId)
+                .status(ApplicationStatus.APPLIED)
+                .build();
 
-        publishedJob = Job.builder()
+        when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+
+        assertThrows(
+                ForbiddenException.class,
+                () -> applicationService.getMyApplicationDetail(applicationId, requesterId)
+        );
+    }
+
+    @Test
+    void listMyApplications_omitsRecruiterOnlyFields() {
+        UUID candidateId = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        UUID recruiterId = UUID.randomUUID();
+
+        Application application = Application.builder()
+                .id(UUID.randomUUID())
+                .jobId(jobId)
+                .candidateAuthUserId(candidateId)
+                .candidateName("John Smith")
+                .candidateEmail("john@example.com")
+                .status(ApplicationStatus.REJECTED)
+                .compositeScore(88.5)
+                .oaScore(91.0)
+                .interviewScore(72.0)
+                .rankingPosition(2)
+                .finalRank(1)
+                .rejectionReason("Role closed")
+                .rejectedAt(LocalDateTime.of(2026, 5, 30, 14, 0))
+                .createdAt(LocalDateTime.of(2026, 5, 20, 9, 30))
+                .build();
+
+        Job job = Job.builder()
                 .id(jobId)
                 .orgId(orgId)
-                .title("Java Developer")
+                .title("Backend Engineer")
+                .description("Build APIs")
+                .requirements("Spring Boot")
+                .location("Remote")
+                .employmentType("FULL_TIME")
+                .experienceLevel("MID")
+                .skills(List.of("Java", "Spring"))
+                .status(JobStatus.PUBLISHED)
+                .createdBy(recruiterId)
+                .assignedTo(recruiterId)
+                .createdAt(LocalDateTime.of(2026, 5, 1, 8, 0))
+                .updatedAt(LocalDateTime.of(2026, 5, 2, 8, 0))
+                .build();
+
+        when(applicationRepository.findByCandidateAuthUserId(eq(candidateId), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(application)));
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(orgServiceClient.getOrganizationName(orgId)).thenReturn("Acme");
+
+        Page<ApplicationResponse> result =
+                applicationService.listMyApplications(candidateId, PageRequest.of(0, 20));
+
+        ApplicationResponse payload = result.getContent().get(0);
+        assertThat(payload.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
+        assertThat(payload.getRejectionReason()).isEqualTo("Role closed");
+        assertThat(payload.getCompositeScore()).isNull();
+        assertThat(payload.getOaScore()).isNull();
+        assertThat(payload.getInterviewScore()).isNull();
+        assertThat(payload.getRankingPosition()).isNull();
+        assertThat(payload.getFinalRank()).isNull();
+        assertThat(payload.getJob()).isNotNull();
+        assertThat(payload.getJob().getOrganizationName()).isEqualTo("Acme");
+        assertThat(payload.getJob().getAssignedTo()).isNull();
+        assertThat(payload.getJob().getAssignedRecruiterIds()).isNull();
+        assertThat(payload.getCandidateEmail()).isEqualTo("john@example.com");
+    }
+
+    @Test
+    void getMyApplicationDetail_returnsCandidateSafeFields() {
+        UUID applicationId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+
+        Application application = Application.builder()
+                .id(applicationId)
+                .jobId(jobId)
+                .candidateAuthUserId(candidateId)
+                .candidateName("John Smith")
+                .candidateEmail("john@example.com")
+                .contactPhone("+1-555-0100")
+                .coverLetter("Excited to apply.")
+                .candidateProfileSnapshot(Map.of("fullName", "John Smith"))
+                .originalFilename("resume.pdf")
+                .status(ApplicationStatus.APPLIED)
+                .createdAt(LocalDateTime.of(2026, 5, 20, 9, 30))
+                .updatedAt(LocalDateTime.of(2026, 5, 21, 10, 0))
+                .build();
+
+        Job job = Job.builder()
+                .id(jobId)
+                .orgId(orgId)
+                .title("Backend Engineer")
+                .description("Build APIs")
+                .requirements("Spring Boot")
+                .location("Remote")
+                .employmentType("FULL_TIME")
+                .experienceLevel("MID")
+                .skills(List.of("Java"))
                 .status(JobStatus.PUBLISHED)
                 .createdBy(UUID.randomUUID())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-    }
-
-    @Test
-    void apply_shouldCreateApplicationSuccessfully() throws IOException {
-        ApplyRequest request = ApplyRequest.builder()
-                .candidateAuthUserId(candidateUserId)
-                .coverLetter("I am interested in this position")
-                .contactPhone("+1234567890")
-                .useProfileData(true)
+                .createdAt(LocalDateTime.of(2026, 5, 1, 8, 0))
+                .updatedAt(LocalDateTime.of(2026, 5, 2, 8, 0))
                 .build();
 
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "resume.pdf", "application/pdf", "PDF content".getBytes());
+        when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(orgServiceClient.getOrganizationName(orgId)).thenReturn("Acme");
 
-        ApplicationDataResponse profileData = ApplicationDataResponse.builder()
-                .firstName("John")
-                .lastName("Doe")
-                .email("john@example.com")
-                .phone("+1234567890")
-                .latestCvUrl("/data/storage/test/cv.pdf")
-                .yearsOfExperience(5)
-                .build();
+        CandidateApplicationDetailResponse result =
+                applicationService.getMyApplicationDetail(applicationId, candidateId);
 
-        when(jobRepository.findById(jobId)).thenReturn(Optional.of(publishedJob));
-        when(userServiceClient.getApplicationData(candidateUserId)).thenReturn(profileData);
-        when(fileStorageUtil.storeFile(any(), any(), any())).thenReturn("/data/storage/test/resume.pdf");
-        when(applicationRepository.save(any(Application.class))).thenAnswer(invocation -> {
-            Application app = invocation.getArgument(0);
-            app.setCreatedAt(LocalDateTime.now());
-            app.setUpdatedAt(LocalDateTime.now());
-            return app;
-        });
-
-        ApplicationResponse response = applicationService.apply(jobId, request, file, orgId, candidateUserId);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getJobId()).isEqualTo(jobId);
-        assertThat(response.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
-        assertThat(response.getCandidateName()).isEqualTo("John Doe");
-        assertThat(response.getCandidateEmail()).isEqualTo("john@example.com");
-
-        verify(jobRepository).findById(jobId);
-        verify(userServiceClient).getApplicationData(candidateUserId);
-        verify(fileStorageUtil).storeFile(any(), eq(orgId), any());
-        verify(applicationRepository).save(any(Application.class));
-        // specify Object.class for the third argument matcher to avoid overload ambiguity
-        verify(kafkaTemplate).send(eq("application.submitted"), any(Object.class));
-    }
-
-    @Test
-    void apply_shouldFailForNonPublishedJob() {
-        Job draftJob = Job.builder()
-                .id(jobId)
-                .orgId(orgId)
-                .title("Java Developer")
-                .status(JobStatus.DRAFT)
-                .createdBy(UUID.randomUUID())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        when(jobRepository.findById(jobId)).thenReturn(Optional.of(draftJob));
-
-        ApplyRequest request = ApplyRequest.builder()
-                .candidateAuthUserId(candidateUserId)
-                .build();
-
-        assertThatThrownBy(() -> applicationService.apply(jobId, request, null, orgId, candidateUserId))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Applications can only be submitted for PUBLISHED jobs");
-    }
-
-    @Test
-    void apply_shouldFailForNonExistentJob() {
-        when(jobRepository.findById(jobId)).thenReturn(Optional.empty());
-
-        ApplyRequest request = ApplyRequest.builder()
-                .candidateAuthUserId(candidateUserId)
-                .build();
-
-        assertThatThrownBy(() -> applicationService.apply(jobId, request, null, orgId, candidateUserId))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Job not found");
-    }
-
-    @Test
-    void apply_shouldWorkWithoutProfileDataFetch() throws IOException {
-        ApplyRequest request = ApplyRequest.builder()
-                .candidateAuthUserId(candidateUserId)
-                .coverLetter("Cover letter")
-                .useProfileData(false)
-                .build();
-
-        when(jobRepository.findById(jobId)).thenReturn(Optional.of(publishedJob));
-        when(applicationRepository.save(any(Application.class))).thenAnswer(invocation -> {
-            Application app = invocation.getArgument(0);
-            app.setCreatedAt(LocalDateTime.now());
-            app.setUpdatedAt(LocalDateTime.now());
-            return app;
-        });
-
-        ApplicationResponse response = applicationService.apply(jobId, request, null, orgId, candidateUserId);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
-
-        verify(userServiceClient, never()).getApplicationData(any());
+        assertThat(result.getOriginalFilename()).isEqualTo("resume.pdf");
+        assertThat(result.getCandidateProfileSnapshot()).containsEntry("fullName", "John Smith");
+        assertThat(result.getJob()).isNotNull();
+        assertThat(result.getJob().getTitle()).isEqualTo("Backend Engineer");
+        assertThat(result.getJob().getAssignedTo()).isNull();
+        assertThat(result.getJob().getAssignedRecruiterIds()).isNull();
     }
 }

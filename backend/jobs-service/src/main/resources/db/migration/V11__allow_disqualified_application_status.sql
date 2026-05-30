@@ -1,0 +1,22 @@
+ALTER TABLE application DROP CONSTRAINT IF EXISTS application_status_check;
+
+ALTER TABLE application ADD CONSTRAINT application_status_check CHECK (
+    status::text = ANY (
+        ARRAY[
+            'APPLIED'::character varying,
+            'SCREENED'::character varying,
+            'OA_INVITED'::character varying,
+            'OA_COMPLETED'::character varying,
+            'DISQUALIFIED'::character varying,
+            'INTERVIEW_INVITED'::character varying,
+            'INTERVIEW_SCHEDULED'::character varying,
+            'INTERVIEW_COMPLETED'::character varying,
+            'OFFERED'::character varying,
+            'OFFER_SENT'::character varying,
+            'OFFER_ACCEPTED'::character varying,
+            'OFFER_DECLINED'::character varying,
+            'REJECTED'::character varying,
+            'WITHDRAWN'::character varying
+        ]::text[]
+    )
+);

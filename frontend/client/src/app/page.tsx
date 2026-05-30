@@ -14,7 +14,7 @@ export default function HomePage() {
 const features = [
   {
     title: "Job Management",
-    desc: "Create, publish, and manage job postings with ease. Set requirements, skills, and scoring criteria.",
+    desc: "Create, publish, and manage job postings with ease. Set requirements and skills for each role.",
     icon: <Briefcase className="w-8 h-8" />,
     image: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1200",
   },

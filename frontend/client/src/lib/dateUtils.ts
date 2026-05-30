@@ -7,7 +7,9 @@
  *      in some Spring/Jackson setups.
  *   2. String → "2026-05-15T10:30:00"  (ISO 8601, no timezone)
  *
- * Both are normalised to a UTC-based JS Date.
+ * LocalDateTime has no timezone, so timezone-less values are treated as local
+ * wall-clock time. This keeps a backend value like 14:30 displayed as 14:30
+ * instead of shifting it by the browser's UTC offset.
  */
 export function parseDate(value: unknown): Date | null {
   if (value === null || value === undefined) return null;
@@ -18,9 +20,9 @@ export function parseDate(value: unknown): Date | null {
   if (Array.isArray(value)) {
     const [year, month, day, hour = 0, minute = 0, second = 0, nanos = 0] =
       value as number[];
-    // month is 1-based in Java, 0-based in JS Date.UTC
+    // month is 1-based in Java, 0-based in JS Date
     const ms = Math.floor((nanos || 0) / 1_000_000); // nanos → ms
-    const d = new Date(Date.UTC(year, month - 1, day, hour, minute, second, ms));
+    const d = new Date(year, month - 1, day, hour, minute, second, ms);
     return isNaN(d.getTime()) ? null : d;
   }
 
@@ -30,10 +32,18 @@ export function parseDate(value: unknown): Date | null {
   // Normalise fractional seconds to ≤3 digits (JS Date only supports ms)
   const clean = value.replace(/(\.\d{3})\d+/, "$1");
 
-  // If a timezone offset is already present (Z, +HH:mm, -HH:mm) parse as-is
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clean);
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    const d = new Date(Number(year), Number(month) - 1, Number(day));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // If a timezone offset is already present (Z, +HH:mm, -HH:mm), parse as-is.
+  // Otherwise let JS parse the ISO datetime as local time.
   const hasTimezone =
     /Z$/i.test(clean) || /[+-]\d{2}:?\d{2}$/.test(clean);
-  const normalized = hasTimezone ? clean : clean + "Z";
+  const normalized = hasTimezone ? clean : clean;
 
   const d = new Date(normalized);
   return isNaN(d.getTime()) ? null : d;

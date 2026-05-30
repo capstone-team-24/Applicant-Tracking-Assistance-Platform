@@ -11,7 +11,6 @@ CREATE TABLE jobs (
     employment_type VARCHAR(50),
     experience_level VARCHAR(50),
     skills TEXT[],
-    scoring_weights JSONB DEFAULT '{"semantic": 0.4, "assessment": 0.3, "llm_quality": 0.3}',
     custom_scoring_rules JSONB,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     created_by UUID NOT NULL,

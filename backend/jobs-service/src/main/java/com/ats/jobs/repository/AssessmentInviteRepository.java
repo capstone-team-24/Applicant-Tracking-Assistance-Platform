@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AssessmentInviteRepository extends JpaRepository<AssessmentInvite, UUID> {
@@ -21,6 +22,10 @@ public interface AssessmentInviteRepository extends JpaRepository<AssessmentInvi
     boolean existsByJobIdAndCandidateAuthUserId(UUID jobId, UUID candidateAuthUserId);
 
     List<AssessmentInvite> findByJobIdAndCandidateAuthUserId(UUID jobId, UUID candidateAuthUserId);
+
+    Optional<AssessmentInvite> findFirstByAssessmentTokenAndCandidateAuthUserIdOrderBySentAtDesc(
+            String assessmentToken,
+            UUID candidateAuthUserId);
 
     List<AssessmentInvite> findByJobId(UUID jobId);
 }

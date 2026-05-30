@@ -27,6 +27,7 @@ export type ProctorStrike = {
 };
 
 export type AssessmentFaceProctorHandle = {
+  prepare: () => Promise<void>;
   start: () => Promise<void>;
   stop: () => void;
   captureEvidence: () => Promise<ProctorEvidence>;
@@ -65,6 +66,18 @@ function isWindowMaximized() {
   const widthDiff = Math.abs(window.outerWidth - window.screen.width);
   const heightDiff = Math.abs(window.outerHeight - window.screen.height);
   return widthDiff < 24 && heightDiff < 140;
+}
+
+function hasActiveVideoTrack(stream: MediaStream | null) {
+  return Boolean(
+    stream?.getVideoTracks().some((track) => track.readyState === "live"),
+  );
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function center(points: faceapi.Point[]) {
@@ -294,29 +307,76 @@ const AssessmentFaceProctor = forwardRef<
     emitStatus({ webcamReady: false, faceDetected: false, screenCaptureReady: false });
   }, [emitStatus]);
 
-  const start = useCallback(async () => {
+  const waitForInitialFace = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) {
+      throw new Error("Camera is not ready yet.");
+    }
+
+    setTrackingDetail("Checking face visibility");
+    const deadline = Date.now() + 5000;
+
+    while (Date.now() < deadline) {
+      const detections = await faceapi
+        .detectAllFaces(video, TINY_FACE_OPTIONS)
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      if (detections.length === 1) {
+        const primary = detections[0] as any;
+        baselineDescriptorRef.current = primary.descriptor as Float32Array;
+        setFaceDetected(true);
+        setTrackingDetail("Face tracked");
+        emitStatus({ faceDetected: true });
+        return;
+      }
+
+      setFaceDetected(false);
+      emitStatus({ faceDetected: false });
+      setTrackingDetail(
+        detections.length > 1 ? "Multiple faces detected" : "No face detected",
+      );
+      await wait(400);
+    }
+
+    throw new Error("Keep exactly one face visible before starting.");
+  }, [emitStatus]);
+
+  const prepare = useCallback(async () => {
     if (!modelsLoaded) {
       throw new Error("Face tracking models are still loading");
     }
 
     stop();
 
-    const fullscreenPromise = document.fullscreenElement
-      ? Promise.resolve()
-      : document.documentElement.requestFullscreen();
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => undefined);
+    }
+    updateFullscreenState();
 
-    const screenSharePromise =
-      typeof navigator.mediaDevices.getDisplayMedia === "function"
-        ? navigator.mediaDevices
-            .getDisplayMedia({ video: true, audio: false })
-            .catch((error) => {
-              console.warn("Screen sharing was not granted", error);
-              return null;
-            })
-        : Promise.resolve(null);
+    if (
+      !navigator.mediaDevices ||
+      typeof navigator.mediaDevices.getDisplayMedia !== "function"
+    ) {
+      throw new Error("Screen sharing is not supported by this browser.");
+    }
 
-    let stream: MediaStream;
+    if (typeof navigator.mediaDevices.getUserMedia !== "function") {
+      throw new Error("Camera access is not supported by this browser.");
+    }
+
+    let screenStream: MediaStream | null = null;
+    let stream: MediaStream | null = null;
     try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+
+      if (!hasActiveVideoTrack(screenStream)) {
+        throw new Error("Screen sharing permission is required.");
+      }
+
       stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "user",
@@ -326,21 +386,23 @@ const AssessmentFaceProctor = forwardRef<
         audio: false,
       });
     } catch (error) {
-      const screenStream = await screenSharePromise;
       screenStream?.getTracks().forEach((track) => track.stop());
-      await fullscreenPromise.catch(() => undefined);
-      if (document.fullscreenElement) {
-        await document.exitFullscreen().catch(() => undefined);
-      }
+      stream?.getTracks().forEach((track) => track.stop());
+      stop();
       throw error;
+    }
+
+    if (!stream || !screenStream) {
+      throw new Error("Camera and screen sharing are required.");
     }
 
     streamRef.current = stream;
 
     if (!videoRef.current) {
       stream.getTracks().forEach((track) => track.stop());
+      screenStream.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
-      return;
+      throw new Error("Camera preview is not ready yet.");
     }
     videoRef.current.srcObject = stream;
 
@@ -352,40 +414,61 @@ const AssessmentFaceProctor = forwardRef<
       };
     });
 
-    const screenStream = await screenSharePromise;
-    if (screenStream) {
-      const screenVideo = document.createElement("video");
-      screenVideo.muted = true;
-      screenVideo.playsInline = true;
-      screenVideo.srcObject = screenStream;
-      screenStreamRef.current = screenStream;
-      screenVideoRef.current = screenVideo;
+    const screenVideo = document.createElement("video");
+    screenVideo.muted = true;
+    screenVideo.playsInline = true;
+    screenVideo.srcObject = screenStream;
+    screenStreamRef.current = screenStream;
+    screenVideoRef.current = screenVideo;
 
-      screenStream.getVideoTracks().forEach((track) => {
-        track.addEventListener("ended", () => {
-          if (screenStreamRef.current !== screenStream) return;
-          screenStreamRef.current = null;
-          if (screenVideoRef.current) screenVideoRef.current.srcObject = null;
-          screenVideoRef.current = null;
-          setScreenCaptureReady(false);
-          emitStatus({ screenCaptureReady: false });
-        });
+    screenStream.getVideoTracks().forEach((track) => {
+      track.addEventListener("ended", () => {
+        if (screenStreamRef.current !== screenStream) return;
+        screenStreamRef.current = null;
+        if (screenVideoRef.current) screenVideoRef.current.srcObject = null;
+        screenVideoRef.current = null;
+        setScreenCaptureReady(false);
+        emitStatus({ screenCaptureReady: false });
       });
+    });
 
-      await screenVideo.play().catch(() => undefined);
-      setScreenCaptureReady(true);
-      emitStatus({ screenCaptureReady: true });
-    } else {
-      setScreenCaptureReady(false);
-      emitStatus({ screenCaptureReady: false });
+    await screenVideo.play().catch(() => undefined);
+
+    setWebcamReady(true);
+    setScreenCaptureReady(true);
+    setTrackingDetail("Camera and screen share ready");
+    emitStatus({ webcamReady: true, screenCaptureReady: true });
+    updateFullscreenState();
+  }, [emitStatus, modelsLoaded, stop, updateFullscreenState]);
+
+  const start = useCallback(async () => {
+    if (!modelsLoaded) {
+      throw new Error("Face tracking models are still loading");
     }
 
-    try {
-      await fullscreenPromise;
-    } catch (error) {
-      stop();
-      throw error;
+    if (!hasActiveVideoTrack(screenStreamRef.current)) {
+      throw new Error("Grant screen sharing before starting.");
     }
+
+    if (!hasActiveVideoTrack(streamRef.current) || !videoRef.current) {
+      throw new Error("Grant camera access before starting.");
+    }
+
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+
+    updateFullscreenState();
+
+    if (!document.fullscreenElement) {
+      throw new Error("Fullscreen mode is required before starting.");
+    }
+
+    if (!isWindowMaximized()) {
+      throw new Error("Maximize your browser window before starting.");
+    }
+
+    await waitForInitialFace();
 
     baselineDescriptorRef.current = null;
     missingSinceRef.current = null;
@@ -398,12 +481,12 @@ const AssessmentFaceProctor = forwardRef<
     setTrackingDetail("Camera active");
     emitStatus({ webcamReady: true });
     updateFullscreenState();
-  }, [emitStatus, modelsLoaded, stop, updateFullscreenState]);
+  }, [emitStatus, modelsLoaded, updateFullscreenState, waitForInitialFace]);
 
   useImperativeHandle(
     ref,
-    () => ({ start, stop, captureEvidence }),
-    [captureEvidence, start, stop],
+    () => ({ prepare, start, stop, captureEvidence }),
+    [captureEvidence, prepare, start, stop],
   );
 
   const detect = useCallback(async () => {
