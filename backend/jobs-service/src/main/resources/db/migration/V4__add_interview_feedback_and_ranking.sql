@@ -10,5 +10,4 @@ ADD COLUMN final_score NUMERIC(5, 2);
 ALTER TABLE application
 ADD COLUMN oa_score NUMERIC(5, 2),
 ADD COLUMN final_ranking_score NUMERIC(5, 2),
-ADD COLUMN final_rank INTEGER,
-ADD COLUMN is_waitlisted BOOLEAN DEFAULT FALSE;
+ADD COLUMN final_rank INTEGER;

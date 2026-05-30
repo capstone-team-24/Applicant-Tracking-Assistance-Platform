@@ -27,8 +27,6 @@ public class UpdateJobRequest {
 
     private List<String> skills;
 
-    private Map<String, Object> scoringWeights;
-
     private Map<String, Object> customScoringRules;
 
     /** Update or clear the application deadline (null = no change when not sent). */

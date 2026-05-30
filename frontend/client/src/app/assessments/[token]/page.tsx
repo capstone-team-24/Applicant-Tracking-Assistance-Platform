@@ -123,6 +123,9 @@ export default function TakeAssessmentPage() {
   const [faceDetected, setFaceDetected] =
     useState(false);
 
+  const [screenCaptureReady, setScreenCaptureReady] =
+    useState(false);
+
   const [fullscreenOk, setFullscreenOk] =
     useState(false);
 
@@ -137,7 +140,16 @@ export default function TakeAssessmentPage() {
   const [disqualified, setDisqualified] =
     useState(false);
 
+  const [appealContactEmail, setAppealContactEmail] =
+    useState<string | null>(null);
+
   const [examStarted, setExamStarted] =
+    useState(false);
+
+  const [isPreparingProctor, setIsPreparingProctor] =
+    useState(false);
+
+  const [isStartingExam, setIsStartingExam] =
     useState(false);
 
   const proctorRef =
@@ -258,6 +270,19 @@ export default function TakeAssessmentPage() {
         setAssessment(data);
 
         if (user?.id) {
+          try {
+            const invites =
+              await assessmentsApi.getReceivedInvites();
+            const currentInvite = invites.find(
+              (invite) =>
+                invite.assessmentToken === token
+            );
+            setAppealContactEmail(
+              currentInvite?.appealContactEmail ??
+                null
+            );
+          } catch { }
+
           const submission =
             await assessmentsApi.getMySubmission(
               data.id,
@@ -454,9 +479,51 @@ export default function TakeAssessmentPage() {
   // START EXAM
   // --------------------------------------------------
 
-  const startExam = async () => {
+  const prepareProctor = async () => {
+    if (!proctorRef.current) {
+      toast.error("Proctoring setup is still loading.");
+      return;
+    }
+
+    setIsPreparingProctor(true);
+
     try {
-      await proctorRef.current?.start();
+      await proctorRef.current.prepare();
+      toast.success("Camera and screen sharing are ready.");
+    } catch (err) {
+      console.error(err);
+
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Camera and screen sharing are required."
+      );
+    } finally {
+      setIsPreparingProctor(false);
+    }
+  };
+
+  const startExam = async () => {
+    if (!proctorRef.current) {
+      toast.error("Proctoring setup is still loading.");
+      return;
+    }
+
+    if (
+      !modelsLoaded ||
+      !webcamReady ||
+      !screenCaptureReady
+    ) {
+      toast.error(
+        "Grant camera and screen sharing before starting."
+      );
+      return;
+    }
+
+    setIsStartingExam(true);
+
+    try {
+      await proctorRef.current.start();
 
       if (assessment && user?.id) {
         const updated =
@@ -515,8 +582,10 @@ export default function TakeAssessmentPage() {
       toast.error(
         err instanceof Error
           ? err.message
-          : "Camera permission required."
+          : "Proctoring conditions are required."
       );
+    } finally {
+      setIsStartingExam(false);
     }
   };
 
@@ -734,6 +803,7 @@ export default function TakeAssessmentPage() {
         setModelsLoaded(status.modelsLoaded);
         setWebcamReady(status.webcamReady);
         setFaceDetected(status.faceDetected);
+        setScreenCaptureReady(status.screenCaptureReady);
         setFullscreenOk(status.fullscreenOk);
         setWindowMaximized(status.windowMaximized);
       }}
@@ -749,6 +819,24 @@ export default function TakeAssessmentPage() {
           <h1 className="text-4xl font-black text-red-400 mb-4 uppercase">Disqualified</h1>
           <p className="text-white/60 uppercase tracking-widest text-sm">
             Multiple proctoring violations detected
+          </p>
+          <p className="mt-6 text-white/70 text-sm leading-relaxed">
+            You have been disqualified from this online assessment.
+            {appealContactEmail ? (
+              <>
+                <br />
+                Appeal contact: {" "}
+                <a
+                  href={`mailto:${appealContactEmail}`}
+                  className="text-red-200 font-black underline underline-offset-4"
+                >
+                  {appealContactEmail}
+                </a>
+                .
+              </>
+            ) : (
+              " The recruiter contact is not available for this invite yet. Ask the recruiter to resend the OA if you need to appeal."
+            )}
           </p>
           <div className="mt-6 text-red-400 font-black text-2xl">
             {strikes} / 3 strikes
@@ -812,6 +900,9 @@ export default function TakeAssessmentPage() {
       </div>
     );
   } else if (!examStarted) {
+    const proctorReady =
+      modelsLoaded && webcamReady && screenCaptureReady;
+
     pageContent = (
       <div className="max-w-xl mx-auto px-4 py-20">
         <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[40px] p-10 text-center">
@@ -820,21 +911,72 @@ export default function TakeAssessmentPage() {
           </h1>
           <p className="text-white/60 uppercase tracking-widest text-sm mb-8">
             {hasPersistedStart
-              ? "Your timer and answers are already running. Re-enable webcam and fullscreen to continue."
-              : "Webcam, face tracking, and fullscreen are required."}
+              ? "Your timer is already running. Reconnect screen sharing and camera before returning to fullscreen."
+              : "Grant screen sharing and camera first. Fullscreen and the quiz start only after all checks pass."}
           </p>
-          {!modelsLoaded && (
-            <p className="text-yellow-400 mb-4 uppercase text-xs tracking-widest">
-              Loading face tracking models...
-            </p>
+
+          <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Models</p>
+              <p className={modelsLoaded ? "text-green-300 text-xs font-black uppercase" : "text-yellow-300 text-xs font-black uppercase"}>
+                {modelsLoaded ? "Ready" : "Loading"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Screen Share</p>
+              <p className={screenCaptureReady ? "text-green-300 text-xs font-black uppercase" : "text-red-300 text-xs font-black uppercase"}>
+                {screenCaptureReady ? "Granted" : "Required"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Camera</p>
+              <p className={webcamReady ? "text-green-300 text-xs font-black uppercase" : "text-red-300 text-xs font-black uppercase"}>
+                {webcamReady ? "Granted" : "Required"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Face</p>
+              <p className={faceDetected ? "text-green-300 text-xs font-black uppercase" : "text-yellow-300 text-xs font-black uppercase"}>
+                {faceDetected ? "Detected" : "Verified On Start"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Fullscreen</p>
+              <p className={fullscreenOk ? "text-green-300 text-xs font-black uppercase" : "text-yellow-300 text-xs font-black uppercase"}>
+                {fullscreenOk ? "Active" : "Next Step"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Window</p>
+              <p className={windowMaximized ? "text-green-300 text-xs font-black uppercase" : "text-yellow-300 text-xs font-black uppercase"}>
+                {windowMaximized ? "Maximized" : "Checked On Start"}
+              </p>
+            </div>
+          </div>
+
+          {proctorReady ? (
+            <button
+              disabled={isStartingExam}
+              onClick={startExam}
+              className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-40"
+            >
+              {isStartingExam
+                ? "Checking Conditions..."
+                : hasPersistedStart
+                  ? "Enter Fullscreen & Resume"
+                  : "Enter Fullscreen & Start"}
+            </button>
+          ) : (
+            <button
+              disabled={!modelsLoaded || isPreparingProctor}
+              onClick={prepareProctor}
+              className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-40"
+            >
+              {isPreparingProctor
+                ? "Requesting Permissions..."
+                : "Grant Screen Share & Camera"}
+            </button>
           )}
-          <button
-            disabled={!modelsLoaded}
-            onClick={startExam}
-            className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase tracking-widest disabled:opacity-40"
-          >
-            {hasPersistedStart ? "Resume with Camera" : "Enable Camera & Start"}
-          </button>
         </div>
       </div>
     );

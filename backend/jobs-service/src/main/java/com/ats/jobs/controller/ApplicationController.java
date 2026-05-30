@@ -67,8 +67,23 @@ public class ApplicationController {
     }
 
     @GetMapping("/api/v1/applications/{id}")
-    public ResponseEntity<ApplicationDetailResponse> getApplication(@PathVariable UUID id) {
-        ApplicationDetailResponse response = applicationService.getApplication(id);
+    public ResponseEntity<ApplicationDetailResponse> getApplication(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        ApplicationDetailResponse response = applicationService.getApplicationForRecruiter(id, orgId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/api/v1/applications/me/{id}")
+    public ResponseEntity<CandidateApplicationDetailResponse> getMyApplication(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+
+        HeaderContext.assertCandidate(httpRequest);
+        UUID candidateAuthUserId = HeaderContext.getAuthUserId(httpRequest);
+        CandidateApplicationDetailResponse response = applicationService.getMyApplicationDetail(id, candidateAuthUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -80,6 +95,7 @@ public class ApplicationController {
             @RequestParam(defaultValue = "desc") String sortDir,
             HttpServletRequest httpRequest) {
 
+        HeaderContext.assertCandidate(httpRequest);
         UUID candidateAuthUserId = HeaderContext.getAuthUserId(httpRequest);
 
         Sort sort = sortDir.equalsIgnoreCase("asc")
@@ -92,9 +108,28 @@ public class ApplicationController {
     }
 
     @GetMapping("/api/v1/applications/{id}/file")
-    public ResponseEntity<Resource> downloadFile(@PathVariable UUID id) {
-        Resource resource = applicationService.getApplicationFile(id);
-        String filename = applicationService.getOriginalFilename(id);
+    public ResponseEntity<Resource> downloadFile(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        Resource resource = applicationService.getApplicationFileForRecruiter(id, orgId);
+        String filename = applicationService.getOriginalFilenameForRecruiter(id, orgId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + (filename != null ? filename : "download") + "\"")
+                .body(resource);
+    }
+
+    @GetMapping("/api/v1/applications/me/{id}/file")
+    public ResponseEntity<Resource> downloadMyFile(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        HeaderContext.assertCandidate(httpRequest);
+        UUID candidateAuthUserId = HeaderContext.getAuthUserId(httpRequest);
+        Resource resource = applicationService.getMyApplicationFile(id, candidateAuthUserId);
+        String filename = applicationService.getMyOriginalFilename(id, candidateAuthUserId);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -103,8 +138,12 @@ public class ApplicationController {
     }
 
     @GetMapping("/api/v1/applications/{id}/status")
-    public ResponseEntity<ApplicationResponse> getApplicationStatus(@PathVariable UUID id) {
-        ApplicationDetailResponse detail = applicationService.getApplication(id);
+    public ResponseEntity<ApplicationResponse> getApplicationStatus(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        ApplicationDetailResponse detail = applicationService.getApplicationForRecruiter(id, orgId);
         ApplicationResponse response = ApplicationResponse.builder()
                 .id(detail.getId())
                 .jobId(detail.getJobId())
@@ -142,7 +181,8 @@ public class ApplicationController {
 
         HeaderContext.assertRecruiter(httpRequest);
         UUID orgId = HeaderContext.getOrgId(httpRequest);
-        SendAssessmentResponse response = assessmentInviteService.sendAssessmentToApplication(id, request, orgId);
+        UUID recruiterAuthUserId = HeaderContext.getAuthUserId(httpRequest);
+        SendAssessmentResponse response = assessmentInviteService.sendAssessmentToApplication(id, request, orgId, recruiterAuthUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -162,23 +202,6 @@ public class ApplicationController {
         UUID orgId = HeaderContext.getOrgId(httpRequest);
         SendInterviewInviteResponse response = interviewInviteService.sendInterviewInviteToApplication(id, request, orgId);
         return ResponseEntity.ok(response);
-    }
-
-    /**
-     * POST /api/v1/jobs/{jobId}/applications/waitlist
-     *
-     * Bulk waitlist candidates.
-     */
-    @PostMapping("/api/v1/jobs/{jobId}/applications/waitlist")
-    public ResponseEntity<Void> waitlistApplications(
-            @PathVariable UUID jobId,
-            @RequestBody java.util.List<UUID> applicationIds,
-            HttpServletRequest httpRequest) {
-
-        HeaderContext.assertRecruiter(httpRequest);
-        UUID orgId = HeaderContext.getOrgId(httpRequest);
-        applicationService.waitlistApplications(jobId, applicationIds, orgId);
-        return ResponseEntity.ok().build();
     }
 
     /**

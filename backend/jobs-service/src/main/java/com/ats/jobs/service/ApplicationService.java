@@ -209,9 +209,17 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public ApplicationDetailResponse getApplication(UUID id) {
+    public ApplicationDetailResponse getApplicationForRecruiter(UUID id, UUID orgId) {
         Application app = findApplicationOrThrow(id);
+        assertRecruiterOrgAccess(app, orgId);
         return mapToDetailResponse(app);
+    }
+
+    @Transactional(readOnly = true)
+    public CandidateApplicationDetailResponse getMyApplicationDetail(UUID id, UUID candidateAuthUserId) {
+        Application app = findApplicationOrThrow(id);
+        assertCandidateAccess(app, candidateAuthUserId);
+        return mapToCandidateDetailResponse(app);
     }
 
     @Transactional(readOnly = true)
@@ -243,22 +251,21 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public Page<ApplicationResponse> listMyApplications(UUID candidateAuthUserId, Pageable pageable) {
         Page<Application> page = applicationRepository.findByCandidateAuthUserId(candidateAuthUserId, pageable);
-        return page.map(this::mapToResponse);
+        return page.map(this::mapToCandidateResponse);
     }
 
     @Transactional(readOnly = true)
-    public Resource getApplicationFile(UUID id) {
+    public Resource getApplicationFileForRecruiter(UUID id, UUID orgId) {
         Application app = findApplicationOrThrow(id);
-        if (app.getOriginalFilePath() == null) {
-            throw new ResourceNotFoundException("No file found for application: " + id);
-        }
+        assertRecruiterOrgAccess(app, orgId);
+        return getApplicationFileResource(app);
+    }
 
-        Path path = fileStorageUtil.getFilePath(app.getOriginalFilePath());
-        Resource resource = new FileSystemResource(path);
-        if (!resource.exists()) {
-            throw new ResourceNotFoundException("File not found on disk for application: " + id);
-        }
-        return resource;
+    @Transactional(readOnly = true)
+    public Resource getMyApplicationFile(UUID id, UUID candidateAuthUserId) {
+        Application app = findApplicationOrThrow(id);
+        assertCandidateAccess(app, candidateAuthUserId);
+        return getApplicationFileResource(app);
     }
 
     @Transactional
@@ -268,25 +275,6 @@ public class ApplicationService {
         Application saved = applicationRepository.save(app);
         log.info("Updated application id={} status to {}", id, newStatus);
         return mapToDetailResponse(saved);
-    }
-
-    @Transactional
-    public void waitlistApplications(UUID jobId, java.util.List<UUID> applicationIds, UUID orgId) {
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
-
-        if (orgId != null && !job.getOrgId().equals(orgId)) {
-            throw new ForbiddenException("You do not have access to this job.");
-        }
-
-        java.util.List<Application> apps = applicationRepository.findAllById(applicationIds);
-        for (Application app : apps) {
-            if (app.getJobId().equals(jobId)) {
-                app.setIsWaitlisted(true);
-            }
-        }
-        applicationRepository.saveAll(apps);
-        log.info("Waitlisted {} applications for job {}", applicationIds.size(), jobId);
     }
 
     @Transactional
@@ -327,8 +315,16 @@ public class ApplicationService {
         log.info("Recalculated final ranking for job {}", jobId);
     }
 
-    public String getOriginalFilename(UUID id) {
+    public String getOriginalFilenameForRecruiter(UUID id, UUID orgId) {
         Application app = findApplicationOrThrow(id);
+        assertRecruiterOrgAccess(app, orgId);
+        return app.getOriginalFilename();
+    }
+
+    @Transactional(readOnly = true)
+    public String getMyOriginalFilename(UUID id, UUID candidateAuthUserId) {
+        Application app = findApplicationOrThrow(id);
+        assertCandidateAccess(app, candidateAuthUserId);
         return app.getOriginalFilename();
     }
 
@@ -338,31 +334,7 @@ public class ApplicationService {
     }
 
     private ApplicationResponse mapToResponse(Application app) {
-        JobResponse jobResponse = null;
-        if (app.getJobId() != null) {
-            try {
-                Job job = jobRepository.findById(app.getJobId()).orElse(null);
-                if (job != null) {
-                    String orgName = null;
-                    try { orgName = orgServiceClient.getOrganizationName(job.getOrgId()); } catch (Exception ignored) {}
-                    jobResponse = JobResponse.builder()
-                            .id(job.getId())
-                            .orgId(job.getOrgId())
-                            .organizationName(orgName)
-                            .title(job.getTitle())
-                            .description(job.getDescription())
-                            .location(job.getLocation())
-                            .employmentType(job.getEmploymentType())
-                            .experienceLevel(job.getExperienceLevel())
-                            .status(job.getStatus())
-                            .assignedTo(job.getEffectiveAssignedRecruiterIds().stream().findFirst().orElse(null))
-                            .assignedRecruiterIds(new ArrayList<>(job.getEffectiveAssignedRecruiterIds()))
-                            .build();
-                }
-            } catch (Exception e) {
-                log.warn("Failed to load job details for application {}: {}", app.getId(), e.getMessage());
-            }
-        }
+        JobResponse jobResponse = buildJobResponse(app.getJobId(), true);
 
         return ApplicationResponse.builder()
                 .id(app.getId())
@@ -379,10 +351,23 @@ public class ApplicationService {
                 .finalRankingScore(app.getFinalRankingScore())
                 .rankingPosition(app.getRankingPosition())
                 .finalRank(app.getFinalRank())
-                .isWaitlisted(app.getIsWaitlisted())
                 .rejectionReason(app.getRejectionReason())
                 .rejectedAt(app.getRejectedAt())
                 .rejectedBy(app.getRejectedBy())
+                .build();
+    }
+
+    private ApplicationResponse mapToCandidateResponse(Application app) {
+        return ApplicationResponse.builder()
+                .id(app.getId())
+                .jobId(app.getJobId())
+                .job(buildJobResponse(app.getJobId(), false))
+                .candidateName(app.getCandidateName())
+                .candidateEmail(app.getCandidateEmail())
+                .status(app.getStatus())
+                .createdAt(app.getCreatedAt())
+                .rejectionReason(app.getRejectionReason())
+                .rejectedAt(app.getRejectedAt())
                 .build();
     }
 
@@ -407,13 +392,113 @@ public class ApplicationService {
                 .finalRankingScore(app.getFinalRankingScore())
                 .rankingPosition(app.getRankingPosition())
                 .finalRank(app.getFinalRank())
-                .isWaitlisted(app.getIsWaitlisted())
                 .rejectionReason(app.getRejectionReason())
                 .rejectedAt(app.getRejectedAt())
                 .rejectedBy(app.getRejectedBy())
                 .createdAt(app.getCreatedAt())
                 .updatedAt(app.getUpdatedAt())
                 .build();
+    }
+
+    private CandidateApplicationDetailResponse mapToCandidateDetailResponse(Application app) {
+        return CandidateApplicationDetailResponse.builder()
+                .id(app.getId())
+                .jobId(app.getJobId())
+                .job(buildJobResponse(app.getJobId(), false))
+                .candidateName(app.getCandidateName())
+                .candidateEmail(app.getCandidateEmail())
+                .coverLetter(app.getCoverLetter())
+                .portfolioLinks(app.getPortfolioLinks())
+                .contactPhone(app.getContactPhone())
+                .candidateProfileSnapshot(app.getCandidateProfileSnapshot())
+                .originalFilename(app.getOriginalFilename())
+                .status(app.getStatus())
+                .rejectionReason(app.getRejectionReason())
+                .rejectedAt(app.getRejectedAt())
+                .createdAt(app.getCreatedAt())
+                .updatedAt(app.getUpdatedAt())
+                .build();
+    }
+
+    private JobResponse buildJobResponse(UUID jobId, boolean includeRecruiterFields) {
+        if (jobId == null) {
+            return null;
+        }
+
+        try {
+            Job job = jobRepository.findById(jobId).orElse(null);
+            if (job == null) {
+                return null;
+            }
+
+            String orgName = null;
+            try {
+                orgName = orgServiceClient.getOrganizationName(job.getOrgId());
+            } catch (Exception ignored) {
+            }
+
+            JobResponse.JobResponseBuilder builder = JobResponse.builder()
+                    .id(job.getId())
+                    .organizationName(orgName)
+                    .title(job.getTitle())
+                    .description(job.getDescription())
+                    .requirements(job.getRequirements())
+                    .location(job.getLocation())
+                    .employmentType(job.getEmploymentType())
+                    .experienceLevel(job.getExperienceLevel())
+                    .skills(job.getSkills())
+                    .status(job.getStatus())
+                    .applicationDeadline(job.getApplicationDeadline())
+                    .createdAt(job.getCreatedAt())
+                    .updatedAt(job.getUpdatedAt())
+                    .publishedAt(job.getPublishedAt())
+                    .closedAt(job.getClosedAt());
+
+            if (includeRecruiterFields) {
+                builder.orgId(job.getOrgId())
+                        .createdBy(job.getCreatedBy())
+                        .assignedTo(job.getEffectiveAssignedRecruiterIds().stream().findFirst().orElse(null))
+                        .assignedRecruiterIds(new ArrayList<>(job.getEffectiveAssignedRecruiterIds()));
+            }
+
+            return builder.build();
+        } catch (Exception e) {
+            log.warn("Failed to load job details for application {}: {}", jobId, e.getMessage());
+            return null;
+        }
+    }
+
+    private Resource getApplicationFileResource(Application app) {
+        if (app.getOriginalFilePath() == null) {
+            throw new ResourceNotFoundException("No file found for application: " + app.getId());
+        }
+
+        Path path = fileStorageUtil.getFilePath(app.getOriginalFilePath());
+        Resource resource = new FileSystemResource(path);
+        if (!resource.exists()) {
+            throw new ResourceNotFoundException("File not found on disk for application: " + app.getId());
+        }
+        return resource;
+    }
+
+    private void assertCandidateAccess(Application app, UUID candidateAuthUserId) {
+        if (candidateAuthUserId == null || app.getCandidateAuthUserId() == null
+                || !candidateAuthUserId.equals(app.getCandidateAuthUserId())) {
+            throw new ForbiddenException("You do not have access to this application.");
+        }
+    }
+
+    private void assertRecruiterOrgAccess(Application app, UUID orgId) {
+        if (orgId == null) {
+            return;
+        }
+
+        Job job = jobRepository.findById(app.getJobId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + app.getJobId()));
+
+        if (!orgId.equals(job.getOrgId())) {
+            throw new ForbiddenException("You do not have access to this application.");
+        }
     }
 
     // ── Rejection methods ─────────────────────────────────────────────────────
@@ -427,6 +512,9 @@ public class ApplicationService {
 
         if (app.getStatus() == ApplicationStatus.REJECTED) {
             throw new BadRequestException("Application is already rejected.");
+        }
+        if (app.getStatus() == ApplicationStatus.DISQUALIFIED) {
+            throw new BadRequestException("Application is already disqualified.");
         }
 
         Job job = jobRepository.findById(app.getJobId())
@@ -472,7 +560,11 @@ public class ApplicationService {
 
         for (Application app : apps) {
             if (!app.getJobId().equals(jobId)) continue;
-            if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) continue;
+            if (app.getStatus() == ApplicationStatus.REJECTED ||
+                    app.getStatus() == ApplicationStatus.WITHDRAWN ||
+                    app.getStatus() == ApplicationStatus.DISQUALIFIED) {
+                continue;
+            }
 
             app.setStatus(ApplicationStatus.REJECTED);
             app.setRejectionReason(reason);

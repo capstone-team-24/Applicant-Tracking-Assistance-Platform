@@ -93,7 +93,6 @@ export interface Job {
     | "REMOTE";
   experienceLevel: "ENTRY" | "MID" | "SENIOR" | "LEAD" | "EXECUTIVE";
   skills: string[];
-  scoringWeights?: ScoringWeights;
   status: "DRAFT" | "PUBLISHED" | "CLOSED" | "ARCHIVED" | "SUSPENDED";
   applicationCount?: number;
   createdAt?: string;
@@ -105,13 +104,6 @@ export interface Job {
   applicationDeadline?: string;
 }
 
-export interface ScoringWeights {
-  skillsMatch: number;
-  experienceMatch: number;
-  educationMatch: number;
-  overallFit: number;
-}
-
 export interface CreateJobData {
   title: string;
   description: string;
@@ -120,7 +112,6 @@ export interface CreateJobData {
   employmentType: string;
   experienceLevel: string;
   skills: string[];
-  scoringWeights?: ScoringWeights;
   applicationDeadline?: string;
 }
 
@@ -166,6 +157,7 @@ export interface Application {
     | "SCREENED"
     | "OA_INVITED"
     | "OA_COMPLETED"
+    | "DISQUALIFIED"
     | "INTERVIEW_INVITED"
     | "INTERVIEW_SCHEDULED"
     | "INTERVIEW_COMPLETED"
@@ -181,12 +173,43 @@ export interface Application {
   finalRankingScore?: number;
   rankingPosition?: number;
   finalRank?: number;
-  isWaitlisted?: boolean;
   rejectionReason?: string;
   rejectionEmailSent?: boolean;
   rejectionEmailError?: string;
   rejectedAt?: string;
   rejectedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CandidateApplicationDetail {
+  id: string;
+  jobId: string;
+  job?: Job;
+  candidateName: string;
+  candidateEmail: string;
+  contactPhone?: string;
+  coverLetter?: string;
+  portfolioLinks?: string[];
+  originalFilename?: string;
+  candidateProfileSnapshot?: Record<string, unknown>;
+  status:
+    | "APPLIED"
+    | "SCREENED"
+    | "OA_INVITED"
+    | "OA_COMPLETED"
+    | "DISQUALIFIED"
+    | "INTERVIEW_INVITED"
+    | "INTERVIEW_SCHEDULED"
+    | "INTERVIEW_COMPLETED"
+    | "OFFERED"
+    | "OFFER_SENT"
+    | "OFFER_ACCEPTED"
+    | "OFFER_DECLINED"
+    | "REJECTED"
+    | "WITHDRAWN";
+  rejectionReason?: string;
+  rejectedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -351,6 +374,10 @@ export interface SendAssessmentRequest {
   assessmentTitle: string;
   timeLimitMinutes?: number;
   topN?: number;
+  /** Recruiter email used as OA disqualification appeal contact. */
+  senderEmail?: string;
+  /** Require clearing an existing disqualified attempt before sending. */
+  resetDisqualification?: boolean;
   /** ISO datetime string — deadline for candidate to complete the OA. */
   expiresAt?: string;
 }
@@ -373,6 +400,8 @@ export interface ReceivedAssessmentInvite {
   sentAt: string;
   /** ISO datetime string — when this invite expires (null = no deadline). */
   expiresAt?: string;
+  /** Recruiter email candidates should contact for OA disqualification appeals. */
+  appealContactEmail?: string;
 }
 
 export interface InterviewInvite {
@@ -435,7 +464,6 @@ export interface InterviewBooking {
 }
 
 export interface SubmitInterviewFeedbackRequest {
-  rating: number;
   feedback: string;
   technical?: number;
   problemSolving?: number;

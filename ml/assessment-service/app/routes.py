@@ -9,6 +9,7 @@ from typing import Optional
 import json
 import re
 
+import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -90,6 +91,37 @@ def _reset_disqualified_submission(db: Session, submission: AssessmentSubmission
         ProctoringEvent.submission_id == submission.id
     ).delete(synchronize_session=False)
     return submission
+
+
+def _notify_jobs_service_of_disqualification(
+    assessment: Assessment,
+    submission: AssessmentSubmission,
+) -> None:
+    if not assessment.access_token or not submission.candidate_id:
+        return
+
+    payload = {
+        "assessmentToken": assessment.access_token,
+        "jobId": str(assessment.job_id),
+        "candidateAuthUserId": str(submission.candidate_id),
+        "strikeCount": submission.strike_count or 0,
+        "disqualifiedAt": submission.disqualified_at.isoformat()
+        if submission.disqualified_at
+        else None,
+    }
+    url = f"{settings.JOBS_SERVICE_URL.rstrip('/')}/internal/assessment-disqualifications"
+    headers = {"X-Internal-Service-Token": settings.INTERNAL_SERVICE_TOKEN}
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+    except Exception as exc:
+        logger.warning(
+            "Failed to notify jobs-service about OA disqualification for submission %s: %s",
+            submission.id,
+            exc,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -283,6 +315,7 @@ def update_attempt_state(
     cid = uuid.UUID(candidate_id)
 
     submission = _get_or_create_submission(db, aid, cid)
+    became_disqualified = False
 
     if req.warningAccepted and submission.warning_accepted_at is None:
         submission.warning_accepted_at = datetime.now(timezone.utc)
@@ -316,9 +349,16 @@ def update_attempt_state(
         if submission.strike_count >= 3 and submission.disqualified_at is None:
             submission.disqualified_at = datetime.now(timezone.utc)
             submission.status = "DISQUALIFIED"
+            became_disqualified = True
 
     db.commit()
     db.refresh(submission)
+
+    if became_disqualified:
+        assessment = db.query(Assessment).filter(Assessment.id == aid).first()
+        if assessment:
+            _notify_jobs_service_of_disqualification(assessment, submission)
+
     return _submission_to_response(submission)
 
 
@@ -515,29 +555,33 @@ def reset_candidate_disqualification(
         raise HTTPException(status_code=404, detail="Assessment not found.")
 
     cid = uuid.UUID(candidate_id)
-    submission = (
+    submissions = (
         db.query(AssessmentSubmission)
         .filter(
             AssessmentSubmission.assessment_id == assessment.id,
             AssessmentSubmission.candidate_id == cid,
         )
-        .first()
+        .all()
     )
-    if not submission:
+    if not submissions:
         raise HTTPException(status_code=404, detail="Submission not found.")
 
-    if submission.status != "DISQUALIFIED" and submission.disqualified_at is None:
-        return _submission_to_response(submission)
+    reset_submission = None
+    for submission in submissions:
+        if submission.status == "DISQUALIFIED" or submission.disqualified_at is not None:
+            reset_submission = _reset_disqualified_submission(db, submission)
 
-    _reset_disqualified_submission(db, submission)
+    if reset_submission is None:
+        return _submission_to_response(submissions[0])
+
     db.commit()
-    db.refresh(submission)
+    db.refresh(reset_submission)
     logger.info(
-        "Reset disqualified assessment submission %s for candidate %s",
-        submission.id,
+        "Reset disqualified assessment attempt(s) for candidate %s and assessment %s",
         cid,
+        assessment.id,
     )
-    return _submission_to_response(submission)
+    return _submission_to_response(reset_submission)
 
 
 # ---------------------------------------------------------------------------
@@ -677,12 +721,6 @@ def delete_assessment(assessment_id: str, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": "Assessment deleted"}
 
-
-import httpx
-
-from app.config import settings
-
-
 @router.post("/assessments/generate")
 def generate_assessment(
     payload: GenerateAssessmentRequest,
@@ -692,7 +730,7 @@ def generate_assessment(
         raise HTTPException(status_code=500, detail="GROQ_API_KEY is not configured")
 
     # fetch job description from jobs-service
-    job_resp = httpx.get(f"http://jobs-service:8083/api/v1/jobs/{payload.jobId}")
+    job_resp = httpx.get(f"{settings.JOBS_SERVICE_URL.rstrip('/')}/api/v1/jobs/{payload.jobId}")
     if job_resp.status_code != 200:
         raise HTTPException(status_code=500, detail="Could not fetch job info")
 

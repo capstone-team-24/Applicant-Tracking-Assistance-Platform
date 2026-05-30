@@ -52,6 +52,12 @@ public class AssessmentInvite implements Persistable<UUID> {
     @Column(name = "time_limit_minutes")
     private Integer timeLimitMinutes;
 
+    @Column(name = "sent_by_auth_user_id")
+    private UUID sentByAuthUserId;
+
+    @Column(name = "sent_by_email")
+    private String sentByEmail;
+
     @Column(name = "sent_at", nullable = false, updatable = false)
     private LocalDateTime sentAt;
 

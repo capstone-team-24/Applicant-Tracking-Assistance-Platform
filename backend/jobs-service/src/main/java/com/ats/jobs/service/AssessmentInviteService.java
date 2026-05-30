@@ -1,17 +1,23 @@
 package com.ats.jobs.service;
 
 import com.ats.jobs.dto.NotificationSendRequest;
+import com.ats.jobs.dto.NotificationResponse;
+import com.ats.jobs.dto.AssessmentDisqualificationNotificationResponse;
+import com.ats.jobs.dto.AssessmentDisqualificationRequest;
 import com.ats.jobs.entity.AssessmentInvite;
 import com.ats.jobs.dto.SendAssessmentRequest;
 import com.ats.jobs.dto.SendAssessmentResponse;
 import com.ats.jobs.dto.RejectResponse;
+import com.ats.jobs.dto.ApplicationDataResponse;
 import com.ats.jobs.entity.Application;
 import com.ats.jobs.entity.Job;
 import com.ats.jobs.enums.ApplicationStatus;
+import com.ats.jobs.exception.BadRequestException;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
 import com.ats.jobs.feign.NotificationServiceClient;
 import com.ats.jobs.feign.OrgServiceClient;
+import com.ats.jobs.feign.UserServiceClient;
 import com.ats.jobs.repository.ApplicationRepository;
 import com.ats.jobs.repository.AssessmentInviteRepository;
 import com.ats.jobs.repository.JobRepository;
@@ -27,7 +33,10 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import java.time.LocalDateTime;
@@ -42,12 +51,13 @@ public class AssessmentInviteService {
     private final NotificationServiceClient notificationServiceClient;
     private final AssessmentInviteRepository assessmentInviteRepository;
     private final OrgServiceClient orgServiceClient;
+    private final UserServiceClient userServiceClient;
     private final RestTemplate restTemplate;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
-    @Value("${ASSESSMENT_SERVICE_URL:http://assessment-service:8091}")
+    @Value("${ASSESSMENT_SERVICE_URL:http://localhost:8091}")
     private String assessmentServiceUrl;
 
     @Value("${INTERNAL_SERVICE_TOKEN:dev-internal-token}")
@@ -68,7 +78,8 @@ public class AssessmentInviteService {
     public SendAssessmentResponse sendAssessmentToTopCandidates(
             UUID jobId,
             SendAssessmentRequest request,
-            UUID orgId) {
+            UUID orgId,
+            UUID recruiterAuthUserId) {
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
@@ -90,7 +101,9 @@ public class AssessmentInviteService {
             List<Application> allApps = applicationRepository.findByJobId(jobId);
             for (Application app : allApps) {
                 if (candidates.size() >= topN) break;
-                if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+                if (app.getStatus() == ApplicationStatus.REJECTED ||
+                        app.getStatus() == ApplicationStatus.WITHDRAWN ||
+                        app.getStatus() == ApplicationStatus.DISQUALIFIED) {
                     continue;
                 }
                 if (app.getCandidateAuthUserId() != null && 
@@ -102,7 +115,9 @@ public class AssessmentInviteService {
         } else {
             for (Application app : rankedCandidates) {
                 if (candidates.size() >= topN) break;
-                if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+                if (app.getStatus() == ApplicationStatus.REJECTED ||
+                        app.getStatus() == ApplicationStatus.WITHDRAWN ||
+                        app.getStatus() == ApplicationStatus.DISQUALIFIED) {
                     continue;
                 }
                 if (app.getCandidateAuthUserId() != null && 
@@ -113,7 +128,9 @@ public class AssessmentInviteService {
             }
         }
 
-        log.info("Sending OA invites for job {} to {} candidate(s).", jobId, candidates.size());
+        String recruiterEmail = resolveRecruiterEmail(recruiterAuthUserId, request.getSenderEmail());
+        log.info("Recruiter {} <{}> is mass sending OA invites for job {} to {} candidate(s).",
+                recruiterAuthUserId, recruiterEmail, jobId, candidates.size());
 
         List<String> sentTo = new ArrayList<>();
         List<String> skippedReasons = new ArrayList<>();
@@ -167,6 +184,8 @@ public class AssessmentInviteService {
                                 .assessmentToken(request.getAssessmentToken())
                                 .assessmentTitle(request.getAssessmentTitle())
                                 .timeLimitMinutes(request.getTimeLimitMinutes())
+                                .sentByAuthUserId(recruiterAuthUserId)
+                                .sentByEmail(recruiterEmail)
                                 .expiresAt(request.getExpiresAt())
                                 .build());
                                 
@@ -213,7 +232,8 @@ public class AssessmentInviteService {
     public SendAssessmentResponse sendAssessmentToApplication(
             UUID applicationId,
             SendAssessmentRequest request,
-            UUID orgId) {
+            UUID orgId,
+            UUID recruiterAuthUserId) {
 
         Application app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
@@ -224,6 +244,10 @@ public class AssessmentInviteService {
         if (orgId != null && !job.getOrgId().equals(orgId)) {
             throw new ForbiddenException("You do not have access to this job.");
         }
+
+        String recruiterEmail = resolveRecruiterEmail(recruiterAuthUserId, request.getSenderEmail());
+        log.info("Recruiter {} <{}> requested manual OA invite for application {} on job {}.",
+                recruiterAuthUserId, recruiterEmail, applicationId, app.getJobId());
 
         if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
             return SendAssessmentResponse.builder()
@@ -253,7 +277,10 @@ public class AssessmentInviteService {
                 assessmentLink);
 
         try {
-            resetDisqualifiedAttemptIfPresent(request.getAssessmentToken(), app.getCandidateAuthUserId());
+            resetDisqualifiedAttemptIfPresent(
+                    request.getAssessmentToken(),
+                    app.getCandidateAuthUserId(),
+                    Boolean.TRUE.equals(request.getResetDisqualification()));
 
             notificationServiceClient.sendNotification(NotificationSendRequest.builder()
                     .recipientEmail(email)
@@ -262,7 +289,8 @@ public class AssessmentInviteService {
                     .body(body)
                     .type("OA_INVITE")
                     .build());
-            log.info("Manual OA invite sent to {} (application {}) for job {}.", email, applicationId, app.getJobId());
+            log.info("Recruiter {} <{}> manually sent OA invite to {} (application {}) for job {}.",
+                    recruiterAuthUserId, recruiterEmail, email, applicationId, app.getJobId());
 
             if (app.getCandidateAuthUserId() != null) {
                 // Upsert: update existing invite or create a new one
@@ -273,6 +301,8 @@ public class AssessmentInviteService {
                     inv.setAssessmentToken(request.getAssessmentToken());
                     inv.setAssessmentTitle(request.getAssessmentTitle());
                     inv.setTimeLimitMinutes(request.getTimeLimitMinutes());
+                    inv.setSentByAuthUserId(recruiterAuthUserId);
+                    inv.setSentByEmail(recruiterEmail);
                     inv.setExpiresAt(request.getExpiresAt());
                     assessmentInviteRepository.save(inv);
                 } else {
@@ -288,6 +318,8 @@ public class AssessmentInviteService {
                             .assessmentToken(request.getAssessmentToken())
                             .assessmentTitle(request.getAssessmentTitle())
                             .timeLimitMinutes(request.getTimeLimitMinutes())
+                            .sentByAuthUserId(recruiterAuthUserId)
+                            .sentByEmail(recruiterEmail)
                             .expiresAt(request.getExpiresAt())
                             .build());
                 }
@@ -303,7 +335,8 @@ public class AssessmentInviteService {
                     .build();
 
         } catch (Exception e) {
-            log.error("Failed to send manual OA invite to {} for application {}: {}", email, applicationId, e.getMessage());
+            log.error("Failed to send manual OA invite to {} for application {} by recruiter {} <{}>: {}",
+                    email, applicationId, recruiterAuthUserId, recruiterEmail, e.getMessage());
             return SendAssessmentResponse.builder()
                     .sent(0).skipped(1)
                     .sentTo(List.of())
@@ -329,7 +362,9 @@ public class AssessmentInviteService {
 
         for (Application app : allApps) {
             // Skip already rejected or withdrawn
-            if (app.getStatus() == ApplicationStatus.REJECTED || app.getStatus() == ApplicationStatus.WITHDRAWN) {
+            if (app.getStatus() == ApplicationStatus.REJECTED ||
+                    app.getStatus() == ApplicationStatus.WITHDRAWN ||
+                    app.getStatus() == ApplicationStatus.DISQUALIFIED) {
                 continue;
             }
 
@@ -372,7 +407,203 @@ public class AssessmentInviteService {
                 .build();
     }
 
+    public AssessmentDisqualificationNotificationResponse notifyAssessmentDisqualification(
+            AssessmentDisqualificationRequest request) {
+        if (request.getAssessmentToken() == null || request.getAssessmentToken().isBlank()) {
+            throw new BadRequestException("Assessment token is required.");
+        }
+        if (request.getCandidateAuthUserId() == null) {
+            throw new BadRequestException("Candidate auth user ID is required.");
+        }
+
+        AssessmentInvite invite = findInviteForDisqualification(request)
+                .orElse(null);
+
+        List<Application> applications = findApplicationsForDisqualification(request, invite);
+        if (applications.isEmpty()) {
+            log.warn(
+                    "No matching application found to mark DISQUALIFIED for assessment token {} and candidate {}",
+                    request.getAssessmentToken(),
+                    request.getCandidateAuthUserId());
+        } else {
+            applications.forEach(this::markApplicationDisqualified);
+        }
+
+        Optional<Job> job = request.getJobId() != null
+                ? jobRepository.findById(request.getJobId())
+                : invite != null && invite.getJobId() != null
+                ? jobRepository.findById(invite.getJobId())
+                : Optional.empty();
+
+        String appealContactEmail = firstNonBlank(
+                invite != null ? invite.getSentByEmail() : null,
+                invite != null ? resolveRecruiterEmail(invite.getSentByAuthUserId(), null) : null);
+        String candidateEmail = firstNonBlank(
+                invite != null ? invite.getCandidateEmail() : null,
+                applications.stream()
+                        .map(Application::getCandidateEmail)
+                        .filter(email -> email != null && !email.isBlank())
+                        .findFirst()
+                        .orElse(null));
+
+        if (candidateEmail == null) {
+            throw new BadRequestException("Candidate email is missing for disqualification notification.");
+        }
+
+        String candidateName = firstNonBlank(
+                applications.stream()
+                        .map(Application::getCandidateName)
+                        .filter(name -> name != null && !name.isBlank())
+                        .findFirst()
+                        .orElse(null),
+                "Candidate");
+        String jobTitle = firstNonBlank(
+                invite != null ? invite.getJobTitle() : null,
+                job.map(Job::getTitle).orElse(null),
+                "the role");
+        String assessmentTitle = firstNonBlank(
+                invite != null ? invite.getAssessmentTitle() : null,
+                "Online Assessment");
+        String subject = "Online Assessment Disqualification — " + jobTitle;
+        String body = buildDisqualificationEmailHtml(
+                candidateName,
+                jobTitle,
+                assessmentTitle,
+                request.getStrikeCount(),
+                appealContactEmail);
+
+        try {
+            NotificationResponse response = notificationServiceClient.sendNotification(NotificationSendRequest.builder()
+                    .recipientEmail(candidateEmail)
+                    .recipientUserId(request.getCandidateAuthUserId())
+                    .subject(subject)
+                    .body(body)
+                    .type("OA_DISQUALIFICATION")
+                    .build());
+            if (response == null || response.getStatus() == null || !response.getStatus().equalsIgnoreCase("SENT")) {
+                String error = response != null ? response.getErrorMessage() : "Notification service did not return a response.";
+                log.error("OA disqualification email to {} was not sent: {}", candidateEmail, error);
+                return AssessmentDisqualificationNotificationResponse.builder()
+                        .sent(false)
+                        .appealContactEmail(appealContactEmail)
+                        .errorMessage(error != null ? error : "Notification service did not mark the email as sent.")
+                        .build();
+            }
+            log.info(
+                    "Sent OA disqualification email to {} for assessment token {}; appeal contact={}",
+                    candidateEmail,
+                    request.getAssessmentToken(),
+                    appealContactEmail);
+            return AssessmentDisqualificationNotificationResponse.builder()
+                    .sent(true)
+                    .appealContactEmail(appealContactEmail)
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to send OA disqualification email to {}: {}", candidateEmail, e.getMessage());
+            return AssessmentDisqualificationNotificationResponse.builder()
+                    .sent(false)
+                    .appealContactEmail(appealContactEmail)
+                    .errorMessage(e.getMessage())
+                    .build();
+        }
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private Optional<AssessmentInvite> findInviteForDisqualification(AssessmentDisqualificationRequest request) {
+        Optional<AssessmentInvite> invite = assessmentInviteRepository
+                .findFirstByAssessmentTokenAndCandidateAuthUserIdOrderBySentAtDesc(
+                        request.getAssessmentToken(),
+                        request.getCandidateAuthUserId());
+        if (invite.isPresent() || request.getJobId() == null) {
+            return invite;
+        }
+
+        return assessmentInviteRepository
+                .findByJobIdAndCandidateAuthUserId(request.getJobId(), request.getCandidateAuthUserId())
+                .stream()
+                .filter(i -> i.getSentAt() != null)
+                .max((left, right) -> left.getSentAt().compareTo(right.getSentAt()));
+    }
+
+    private List<Application> findApplicationsForDisqualification(
+            AssessmentDisqualificationRequest request,
+            AssessmentInvite invite) {
+        Map<UUID, Application> applications = new LinkedHashMap<>();
+
+        if (invite != null && invite.getApplicationId() != null) {
+            applicationRepository.findById(invite.getApplicationId())
+                    .ifPresent(application -> applications.put(application.getId(), application));
+        }
+
+        UUID jobId = request.getJobId() != null
+                ? request.getJobId()
+                : invite != null ? invite.getJobId() : null;
+
+        if (jobId == null || request.getCandidateAuthUserId() == null) {
+            return new ArrayList<>(applications.values());
+        }
+
+        applicationRepository.findByJobIdAndCandidateAuthUserId(jobId, request.getCandidateAuthUserId())
+                .stream()
+                .filter(application -> canTransitionToDisqualified(application.getStatus())
+                        || application.getStatus() == ApplicationStatus.DISQUALIFIED)
+                .forEach(application -> applications.putIfAbsent(application.getId(), application));
+
+        return new ArrayList<>(applications.values());
+    }
+
+    private void markApplicationDisqualified(Application application) {
+        if (application.getStatus() == ApplicationStatus.DISQUALIFIED) {
+            return;
+        }
+
+        if (!canTransitionToDisqualified(application.getStatus())) {
+            log.info(
+                    "Application {} is in status {}; leaving unchanged after OA disqualification event.",
+                    application.getId(),
+                    application.getStatus());
+            return;
+        }
+
+        application.setStatus(ApplicationStatus.DISQUALIFIED);
+        applicationRepository.save(application);
+        log.info("Marked application {} as DISQUALIFIED after OA disqualification.", application.getId());
+    }
+
+    private boolean canTransitionToDisqualified(ApplicationStatus status) {
+        return status == ApplicationStatus.APPLIED ||
+                status == ApplicationStatus.SCREENED ||
+                status == ApplicationStatus.OA_INVITED ||
+                status == ApplicationStatus.OA_COMPLETED;
+    }
+
+    private String resolveRecruiterEmail(UUID recruiterAuthUserId, String fallbackEmail) {
+        if (recruiterAuthUserId == null) {
+            return firstNonBlank(fallbackEmail);
+        }
+        try {
+            ApplicationDataResponse profile = userServiceClient.getApplicationData(recruiterAuthUserId);
+            if (profile != null && profile.getEmail() != null && !profile.getEmail().isBlank()) {
+                return profile.getEmail();
+            }
+        } catch (Exception e) {
+            log.warn("Could not resolve recruiter email for {}: {}", recruiterAuthUserId, e.getMessage());
+        }
+        return firstNonBlank(fallbackEmail);
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
 
     /**
      * Build the candidate-personalised assessment URL.
@@ -386,8 +617,14 @@ public class AssessmentInviteService {
                 : base;
     }
 
-    private void resetDisqualifiedAttemptIfPresent(String assessmentToken, UUID candidateAuthUserId) {
+    private void resetDisqualifiedAttemptIfPresent(
+            String assessmentToken,
+            UUID candidateAuthUserId,
+            boolean required) {
         if (assessmentToken == null || assessmentToken.isBlank() || candidateAuthUserId == null) {
+            if (required) {
+                throw new BadRequestException("Cannot clear disqualification without an assessment token and candidate ID.");
+            }
             return;
         }
 
@@ -401,10 +638,13 @@ public class AssessmentInviteService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-Internal-Service-Token", internalServiceToken);
-            restTemplate.postForEntity(url, new HttpEntity<>(headers), String.class);
+            restTemplate.postForEntity(url, new HttpEntity<>(null, headers), String.class);
         } catch (HttpClientErrorException.NotFound ignored) {
             // No existing submission yet. The candidate can start normally from the invite link.
         } catch (Exception e) {
+            if (required) {
+                throw new BadRequestException("Could not clear the existing disqualified OA attempt. Please try again.");
+            }
             log.warn(
                     "Could not reset disqualified assessment attempt for candidate {} and token {}: {}",
                     candidateAuthUserId,
@@ -436,6 +676,34 @@ public class AssessmentInviteService {
                 + EmailTemplate.button(assessmentLink, "Start Assessment")
                 + EmailTemplate.fallbackLink(assessmentLink);
         return EmailTemplate.render("Online Assessment Invitation", content, "Please do not reply to this email.");
+    }
+
+    private String buildDisqualificationEmailHtml(String candidateName,
+                                                  String jobTitle,
+                                                  String assessmentTitle,
+                                                  Integer strikeCount,
+                                                  String appealContactEmail) {
+        String appealMessage = appealContactEmail != null
+                ? "If you believe this decision was made in error, contact the recruiter who sent your OA at <strong>"
+                + EmailTemplate.escape(appealContactEmail) + "</strong> to appeal."
+                : "If you believe this decision was made in error, contact the recruiter who sent your OA to appeal.";
+
+        String content = EmailTemplate.paragraph("Dear <strong>" + EmailTemplate.escape(candidateName) + "</strong>,")
+                + EmailTemplate.paragraph("You have been disqualified from the online assessment for the <strong>"
+                + EmailTemplate.escape(jobTitle) + "</strong> role because multiple proctoring violations were detected.")
+                + EmailTemplate.detailBox("Disqualification Details", new String[][]{
+                        {"Position", EmailTemplate.escape(jobTitle)},
+                        {"Assessment", EmailTemplate.escape(assessmentTitle)},
+                        {"Recorded Strikes", strikeCount != null ? EmailTemplate.escape(strikeCount.toString()) : null},
+                        {"Appeal Contact", appealContactEmail != null ? EmailTemplate.escape(appealContactEmail) : null}
+                })
+                + EmailTemplate.paragraph(appealMessage);
+        return EmailTemplate.render(
+                "Assessment Disqualification",
+                content,
+                appealContactEmail != null
+                        ? "Appeals should be sent to " + EmailTemplate.escape(appealContactEmail) + "."
+                        : "Please do not reply to this email.");
     }
 
     /**

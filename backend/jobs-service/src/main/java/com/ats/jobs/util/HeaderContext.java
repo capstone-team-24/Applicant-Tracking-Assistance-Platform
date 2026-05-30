@@ -38,6 +38,13 @@ public final class HeaderContext {
         }
     }
 
+    public static void assertCandidate(HttpServletRequest request) {
+        String role = getUserRole(request);
+        if (!"CANDIDATE".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("Access denied. CANDIDATE role is required.");
+        }
+    }
+
     /**
      * Alias for {@link #getUserId(HttpServletRequest)} kept for semantic clarity where the
      * ID represents the authenticated user (authUserId) rather than an arbitrary user.

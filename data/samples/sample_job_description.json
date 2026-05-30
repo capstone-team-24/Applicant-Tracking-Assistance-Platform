@@ -5,10 +5,5 @@
   "location": "San Francisco, CA (Hybrid)",
   "employmentType": "FULL_TIME",
   "experienceLevel": "SENIOR",
-  "skills": ["Java", "Spring Boot", "PostgreSQL", "Docker", "Kubernetes", "Microservices", "Redis", "RabbitMQ", "REST APIs", "CI/CD"],
-  "scoringWeights": {
-    "semantic": 0.4,
-    "assessment": 0.3,
-    "llm_quality": 0.3
-  }
+  "skills": ["Java", "Spring Boot", "PostgreSQL", "Docker", "Kubernetes", "Microservices", "Redis", "RabbitMQ", "REST APIs", "CI/CD"]
 }

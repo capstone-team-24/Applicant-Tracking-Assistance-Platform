@@ -19,4 +19,5 @@ public class ReceivedAssessmentInviteResponse {
     private Integer timeLimitMinutes;
     private String sentAt;
     private String expiresAt;
+    private String appealContactEmail;
 }

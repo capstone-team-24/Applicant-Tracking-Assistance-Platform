@@ -42,7 +42,6 @@ public class JobService {
                 .employmentType(request.getEmploymentType())
                 .experienceLevel(request.getExperienceLevel())
                 .skills(request.getSkills())
-                .scoringWeights(request.getScoringWeights())
                 .customScoringRules(request.getCustomScoringRules())
                 .status(JobStatus.DRAFT)
                 .createdBy(userId)
@@ -82,9 +81,6 @@ public class JobService {
         }
         if (request.getSkills() != null) {
             job.setSkills(request.getSkills());
-        }
-        if (request.getScoringWeights() != null) {
-            job.setScoringWeights(request.getScoringWeights());
         }
         if (request.getCustomScoringRules() != null) {
             job.setCustomScoringRules(request.getCustomScoringRules());
@@ -313,7 +309,6 @@ public class JobService {
                 .employmentType(job.getEmploymentType())
                 .experienceLevel(job.getExperienceLevel())
                 .skills(job.getSkills())
-                .scoringWeights(job.getScoringWeights())
                 .customScoringRules(job.getCustomScoringRules())
                 .status(job.getStatus())
                 .createdBy(job.getCreatedBy())

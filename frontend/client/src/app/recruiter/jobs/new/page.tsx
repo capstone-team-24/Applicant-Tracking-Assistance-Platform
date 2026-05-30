@@ -30,10 +30,6 @@ export default function CreateJobPage() {
     employmentType: "",
     experienceLevel: "",
     skills: "",
-    skillsMatchWeight: "25",
-    experienceMatchWeight: "25",
-    educationMatchWeight: "25",
-    overallFitWeight: "25",
     applicationDeadline: "",
   });
 
@@ -82,12 +78,6 @@ export default function CreateJobPage() {
         employmentType: formData.employmentType,
         experienceLevel: formData.experienceLevel,
         skills,
-        scoringWeights: {
-          skillsMatch: parseInt(formData.skillsMatchWeight) || 25,
-          experienceMatch: parseInt(formData.experienceMatchWeight) || 25,
-          educationMatch: parseInt(formData.educationMatchWeight) || 25,
-          overallFit: parseInt(formData.overallFitWeight) || 25,
-        },
         // Convert local datetime-local value to Spring-safe LocalDateTime format
         applicationDeadline: formData.applicationDeadline
           ? toBackendDatetime(formData.applicationDeadline)
@@ -313,91 +303,6 @@ export default function CreateJobPage() {
                     ))}
                 </div>
               )}
-            </div>
-
-            {/* Scoring Weights */}
-            <div className="border-t border-white/10 pt-6">
-              <h3 className="text-sm font-semibold text-white mb-3">
-                Scoring Weights
-              </h3>
-              <p className="text-xs text-white/50 mb-4">
-                Assign weights to different scoring criteria. These weights will
-                be used when ranking candidates.
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <label
-                    htmlFor="skillsMatchWeight"
-                    className="block text-xs font-medium text-white/60 mb-1"
-                  >
-                    Skills Match
-                  </label>
-                  <input
-                    id="skillsMatchWeight"
-                    name="skillsMatchWeight"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.skillsMatchWeight}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="experienceMatchWeight"
-                    className="block text-xs font-medium text-white/60 mb-1"
-                  >
-                    Experience
-                  </label>
-                  <input
-                    id="experienceMatchWeight"
-                    name="experienceMatchWeight"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.experienceMatchWeight}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="educationMatchWeight"
-                    className="block text-xs font-medium text-white/60 mb-1"
-                  >
-                    Education
-                  </label>
-                  <input
-                    id="educationMatchWeight"
-                    name="educationMatchWeight"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.educationMatchWeight}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="overallFitWeight"
-                    className="block text-xs font-medium text-white/60 mb-1"
-                  >
-                    Overall Fit
-                  </label>
-                  <input
-                    id="overallFitWeight"
-                    name="overallFitWeight"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.overallFitWeight}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-sm text-white"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Application Deadline */}
