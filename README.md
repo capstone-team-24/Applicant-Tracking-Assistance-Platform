@@ -143,7 +143,7 @@ Relevant environment variables:
 | `GROQ_API_KEY` | empty | Required for Groq-backed analysis |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq chat model |
 | `RAG_EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | HuggingFace embedding model |
-| `RAG_CROSS_ENCODER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Optional cross-encoder model |
+| `RAG_CROSS_ENCODER_MODEL` | `kirubelmidru/resume-cross-encoder` | Optional cross-encoder model |
 | `CHROMA_COLLECTION_NAME` | `hiring_resumes` | Chroma collection name |
 
 ## API Examples
