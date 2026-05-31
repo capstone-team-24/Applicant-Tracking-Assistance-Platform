@@ -1,0 +1,6 @@
+ALTER TABLE user_profile
+ADD COLUMN headline VARCHAR(160),
+ADD COLUMN location VARCHAR(160),
+ADD COLUMN linkedin_url VARCHAR(500),
+ADD COLUMN portfolio_url VARCHAR(500),
+ADD COLUMN website_url VARCHAR(500);

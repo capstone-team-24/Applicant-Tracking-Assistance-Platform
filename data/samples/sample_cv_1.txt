@@ -1,0 +1,43 @@
+John Smith
+Senior Software Engineer
+john.smith@example.com | (555) 123-4567 | San Francisco, CA
+LinkedIn: linkedin.com/in/johnsmith | GitHub: github.com/johnsmith
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 7+ years of expertise in building scalable web applications
+and distributed systems. Proficient in Java, Python, React, and cloud technologies. Strong
+background in microservices architecture and agile development practices.
+
+TECHNICAL SKILLS
+Languages: Java, Python, JavaScript, TypeScript, SQL, Go
+Frameworks: Spring Boot, React, Next.js, FastAPI, Django, Node.js
+Cloud & DevOps: AWS (EC2, S3, Lambda, RDS), Docker, Kubernetes, Terraform, CI/CD
+Databases: PostgreSQL, MongoDB, Redis, Elasticsearch
+Tools: Git, JIRA, Jenkins, GitHub Actions, Kafka, RabbitMQ
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | TechCorp Inc. | Jan 2021 - Present
+- Designed and implemented microservices architecture serving 50M+ requests/day
+- Led migration from monolithic Java application to Spring Boot microservices, reducing deployment time by 70%
+- Built real-time data pipeline using Kafka and Elasticsearch for search functionality
+- Mentored team of 5 junior developers through code reviews and pair programming
+
+Software Engineer | StartupXYZ | Mar 2018 - Dec 2020
+- Developed RESTful APIs using Spring Boot and Python/FastAPI
+- Implemented CI/CD pipelines with Jenkins and GitHub Actions
+- Built responsive frontend using React and TypeScript
+- Optimized database queries reducing average response time by 40%
+
+Junior Developer | WebAgency Co. | Jun 2016 - Feb 2018
+- Developed web applications using JavaScript, React, and Node.js
+- Participated in agile sprints and daily stand-ups
+- Wrote unit and integration tests achieving 85% code coverage
+
+EDUCATION
+Bachelor of Science in Computer Science | University of California, Berkeley | 2016
+GPA: 3.7/4.0
+
+CERTIFICATIONS
+- AWS Solutions Architect Associate (2023)
+- Oracle Certified Professional Java SE 17 (2022)

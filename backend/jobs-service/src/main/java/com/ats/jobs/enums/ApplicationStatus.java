@@ -1,0 +1,18 @@
+package com.ats.jobs.enums;
+
+public enum ApplicationStatus {
+    APPLIED,
+    SCREENED,
+    OA_INVITED,
+    OA_COMPLETED,
+    DISQUALIFIED,
+    INTERVIEW_INVITED,
+    INTERVIEW_SCHEDULED,
+    INTERVIEW_COMPLETED,
+    OFFERED,
+    OFFER_SENT,
+    OFFER_ACCEPTED,
+    OFFER_DECLINED,
+    REJECTED,
+    WITHDRAWN
+}

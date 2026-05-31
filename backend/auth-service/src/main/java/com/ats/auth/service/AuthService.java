@@ -1,0 +1,519 @@
+package com.ats.auth.service;
+
+import com.ats.auth.dto.AcceptInviteRequest;
+import com.ats.auth.dto.BootstrapProfileRequest;
+import com.ats.auth.dto.InviteTokenResponse;
+import com.ats.auth.dto.LoginResponse;
+import com.ats.auth.dto.RefreshResponse;
+import com.ats.auth.dto.SignupRequest;
+import com.ats.auth.entity.AuthUser;
+import com.ats.auth.entity.InviteToken;
+import com.ats.auth.entity.RefreshToken;
+import com.ats.auth.entity.Role;
+import com.ats.auth.exception.DuplicateEmailException;
+import com.ats.auth.exception.InvalidCredentialsException;
+import com.ats.auth.exception.InvalidTokenException;
+import com.ats.auth.feign.JobServiceClient;
+import com.ats.auth.feign.NotificationServiceClient;
+import com.ats.auth.feign.UserServiceClient;
+import com.ats.auth.repository.AuthUserRepository;
+import com.ats.auth.repository.InviteTokenRepository;
+import com.ats.auth.repository.RefreshTokenRepository;
+import com.ats.auth.util.EmailTemplate;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final AuthUserRepository authUserRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final InviteTokenRepository inviteTokenRepository;
+    private final JwtService jwtService;
+    private final UserServiceClient userServiceClient;
+    private final NotificationServiceClient notificationServiceClient;
+    private final JobServiceClient jobServiceClient;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    @Value("${app.frontend-base-url:http://localhost:3000}")
+    private String frontendBaseUrl;
+
+    // ──────────────────────────────────────────────────────────────
+    //  Candidate self-signup
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional
+    public UUID signup(SignupRequest request) {
+        if (authUserRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new DuplicateEmailException(request.getEmail());
+        }
+
+        if (request.getRole() == Role.RECRUITER) {
+            throw new IllegalArgumentException("Recruiter signup is not allowed publicly. Must be invited by an Organization Admin.");
+        }
+
+        UUID orgId = request.getOrgId();
+
+        AuthUser user = AuthUser.builder()
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .role(request.getRole())
+                .orgId(orgId)
+                .build();
+
+        AuthUser saved = authUserRepository.save(user);
+
+        try {
+            userServiceClient.bootstrapProfile(BootstrapProfileRequest.builder()
+                    .authUserId(saved.getId())
+                    .firstName(saved.getFirstName())
+                    .lastName(saved.getLastName())
+                    .email(saved.getEmail())
+                    .role(saved.getRole())
+                    .orgId(saved.getOrgId())
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to bootstrap user profile for userId={}: {}", saved.getId(), e.getMessage());
+        }
+
+        log.info("User signed up successfully: userId={}, email={}", saved.getId(), saved.getEmail());
+        return saved.getId();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Invite: Org Admin (Platform Admin action)
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional
+    public void inviteOrgAdmin(String email, UUID orgId) {
+        if (authUserRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException(email);
+        }
+
+        InviteToken invite = InviteToken.builder()
+                .email(email)
+                .role(Role.ORG_ADMIN)
+                .orgId(orgId)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .build();
+
+        inviteTokenRepository.save(invite);
+
+        String setupLink = frontendBaseUrl + "/invite/setup?token=" + invite.getToken();
+
+        try {
+            notificationServiceClient.sendNotification(com.ats.auth.dto.SendNotificationRequest.builder()
+                    .recipientEmail(email)
+                    .subject("You've been invited to join as an Organization Admin")
+                    .body(buildInviteEmail(
+                            "Organization Admin Invitation",
+                            "You have been invited to join the platform as an <strong>Organization Admin</strong>.",
+                            "Click the button below to set up your name and password and activate your account.",
+                            "Set Up My Account",
+                            setupLink,
+                            "This secure link expires in <strong>7 days</strong>. If you did not expect this invitation, you can safely ignore this email."
+                    ))
+                    .type("EMAIL")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to send org admin invite email to {}: {}", email, e.getMessage());
+        }
+
+        log.info("Org Admin invite created: token={}, email={}, orgId={}", invite.getToken(), email, orgId);
+    }
+
+    @Transactional
+    public UUID generateOrgAdminInviteToken(String email, UUID orgId) {
+        if (authUserRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException(email);
+        }
+
+        InviteToken invite = InviteToken.builder()
+                .email(email)
+                .role(Role.ORG_ADMIN)
+                .orgId(orgId)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .build();
+
+        inviteTokenRepository.save(invite);
+        log.info("Org Admin invite token generated silently: token={}, email={}, orgId={}", invite.getToken(), email, orgId);
+        return invite.getToken();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Invite: Recruiter (Org Admin action)
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional
+    public void inviteRecruiter(String email, String firstName, String lastName, UUID orgId) {
+        if (authUserRepository.findByEmail(email).isPresent()) {
+            throw new DuplicateEmailException(email);
+        }
+
+        InviteToken invite = InviteToken.builder()
+                .email(email)
+                .role(Role.RECRUITER)
+                .orgId(orgId)
+                .firstName(firstName)
+                .lastName(lastName)
+                .expiresAt(LocalDateTime.now().plusHours(72))
+                .build();
+
+        inviteTokenRepository.save(invite);
+
+        String setupLink = frontendBaseUrl + "/invite/setup?token=" + invite.getToken();
+
+        try {
+            notificationServiceClient.sendNotification(com.ats.auth.dto.SendNotificationRequest.builder()
+                    .recipientEmail(email)
+                    .subject("You've been invited to join as a Recruiter")
+                    .body(buildInviteEmail(
+                            "Recruiter Invitation",
+                            "Hi <strong>" + EmailTemplate.escape(firstName) + "</strong>, you have been invited to join the platform as a <strong>Recruiter</strong>.",
+                            "Click the button below to confirm your details and choose a password to activate your account.",
+                            "Set Up My Account",
+                            setupLink,
+                            "This secure link expires in <strong>72 hours</strong>. If you did not expect this invitation, you can safely ignore this email."
+                    ))
+                    .type("EMAIL")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to send recruiter invite email to {}: {}", email, e.getMessage());
+        }
+
+        log.info("Recruiter invite created: token={}, email={}, orgId={}", invite.getToken(), email, orgId);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Validate invite token (public – called by setup page on load)
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public InviteTokenResponse validateInviteToken(UUID token) {
+        InviteToken invite = inviteTokenRepository.findByToken(token)
+                .orElseThrow(() -> new InvalidTokenException("Invite link is invalid or does not exist."));
+
+        if (Boolean.TRUE.equals(invite.getUsed())) {
+            throw new InvalidTokenException("This invite link has already been used.");
+        }
+
+        if (invite.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidTokenException("This invite link has expired.");
+        }
+
+        return InviteTokenResponse.builder()
+                .token(invite.getToken())
+                .email(invite.getEmail())
+                .role(invite.getRole())
+                .orgId(invite.getOrgId())
+                .firstName(invite.getFirstName())
+                .lastName(invite.getLastName())
+                .expiresAt(invite.getExpiresAt())
+                .build();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Accept invite – creates the account
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional
+    public UUID acceptInvite(AcceptInviteRequest request) {
+        InviteToken invite = inviteTokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new InvalidTokenException("Invite link is invalid or does not exist."));
+
+        if (Boolean.TRUE.equals(invite.getUsed())) {
+            throw new InvalidTokenException("This invite link has already been used.");
+        }
+
+        if (invite.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidTokenException("This invite link has expired.");
+        }
+
+        if (authUserRepository.findByEmail(invite.getEmail()).isPresent()) {
+            throw new DuplicateEmailException(invite.getEmail());
+        }
+
+        AuthUser user = AuthUser.builder()
+                .email(invite.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .role(invite.getRole())
+                .orgId(invite.getOrgId())
+                .build();
+
+        AuthUser saved = authUserRepository.save(user);
+
+        // Mark invite as used
+        invite.setUsed(true);
+        inviteTokenRepository.save(invite);
+
+        try {
+            userServiceClient.bootstrapProfile(BootstrapProfileRequest.builder()
+                    .authUserId(saved.getId())
+                    .firstName(saved.getFirstName())
+                    .lastName(saved.getLastName())
+                    .email(saved.getEmail())
+                    .role(saved.getRole())
+                    .orgId(saved.getOrgId())
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to bootstrap profile for userId={}: {}", saved.getId(), e.getMessage());
+        }
+
+        log.info("Account created via invite: userId={}, email={}, role={}", saved.getId(), saved.getEmail(), saved.getRole());
+        return saved.getId();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Recruiters – list / suspend
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<AuthUser> getRecruiters(UUID orgId) {
+        return authUserRepository.findByOrgIdAndRole(orgId, Role.RECRUITER);
+    }
+
+    @Transactional
+    public void suspendRecruiter(UUID recruiterId, UUID orgId, boolean suspend) {
+        AuthUser recruiter = authUserRepository.findById(recruiterId)
+                .orElseThrow(() -> new IllegalArgumentException("Recruiter not found"));
+
+        if (!recruiter.getOrgId().equals(orgId)) {
+            throw new IllegalArgumentException("Recruiter does not belong to your organization");
+        }
+
+        if (recruiter.getRole() != Role.RECRUITER) {
+            throw new IllegalArgumentException("User is not a recruiter");
+        }
+
+        recruiter.setIsSuspended(suspend);
+        authUserRepository.save(recruiter);
+
+        try {
+            jobServiceClient.suspendJobsByRecruiter(recruiterId, suspend);
+        } catch (Exception e) {
+            log.error("Failed to notify jobs-service of recruiter suspension: {}", e.getMessage());
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Platform Admin – Org Admin management
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<AuthUser> getAllOrgAdmins() {
+        return authUserRepository.findByRole(Role.ORG_ADMIN);
+    }
+
+    @Transactional
+    public void suspendOrgAdmin(UUID userId, boolean suspend) {
+        AuthUser user = authUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Org admin not found"));
+
+        if (user.getRole() != Role.ORG_ADMIN) {
+            throw new IllegalArgumentException("User is not an org admin");
+        }
+
+        user.setIsSuspended(suspend);
+        authUserRepository.save(user);
+        log.info("Org admin id={} suspension set to {}", userId, suspend);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuthUser> getOrgMembers(UUID orgId) {
+        return authUserRepository.findByOrgIdAndRoleIn(orgId, List.of(Role.ORG_ADMIN, Role.RECRUITER));
+    }
+
+    @Transactional
+    public void suspendOrgMember(UUID userId, boolean suspend) {
+        AuthUser user = authUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getRole() != Role.ORG_ADMIN && user.getRole() != Role.RECRUITER) {
+            throw new IllegalArgumentException("User is not an org admin or recruiter");
+        }
+
+        user.setIsSuspended(suspend);
+        authUserRepository.save(user);
+
+        if (user.getRole() == Role.RECRUITER) {
+            try {
+                jobServiceClient.suspendJobsByRecruiter(userId, suspend);
+            } catch (Exception e) {
+                log.error("Failed to notify jobs-service of recruiter suspension: {}", e.getMessage());
+            }
+        }
+
+        log.info("Org member id={} role={} suspension set to {}", userId, user.getRole(), suspend);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Auth – login / refresh / logout
+    // ──────────────────────────────────────────────────────────────
+
+    @Transactional
+    public LoginResponse login(String email, String password) {
+        AuthUser user = authUserRepository.findByEmail(email)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        if (Boolean.TRUE.equals(user.getIsSuspended())) {
+            throw new InvalidCredentialsException();
+        }
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String rawRefreshToken = generateOpaqueToken();
+        String tokenHash = sha256(rawRefreshToken);
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .id(UUID.randomUUID())
+                .userId(user.getId())
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusDays(jwtService.getRefreshTtlDays()))
+                .build();
+
+        refreshTokenRepository.save(refreshToken);
+
+        log.info("User logged in: userId={}", user.getId());
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(rawRefreshToken)
+                .expiresIn(jwtService.getAccessTtlSeconds())
+                .userId(user.getId())
+                .role(user.getRole())
+                .orgId(user.getOrgId())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .build();
+    }
+
+    @Transactional
+    public RefreshResponse refresh(String rawRefreshToken) {
+        String tokenHash = sha256(rawRefreshToken);
+
+        RefreshToken storedToken = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash)
+                .orElseThrow(() -> new InvalidTokenException("Invalid or revoked refresh token"));
+
+        if (storedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            storedToken.setRevoked(true);
+            refreshTokenRepository.save(storedToken);
+            throw new InvalidTokenException("Refresh token has expired");
+        }
+
+        storedToken.setRevoked(true);
+        refreshTokenRepository.save(storedToken);
+
+        AuthUser user = authUserRepository.findById(storedToken.getUserId())
+                .orElseThrow(() -> new InvalidTokenException("User not found for refresh token"));
+
+        String newAccessToken = jwtService.generateAccessToken(user);
+        String newRawRefreshToken = generateOpaqueToken();
+        String newTokenHash = sha256(newRawRefreshToken);
+
+        RefreshToken newRefreshToken = RefreshToken.builder()
+                .id(UUID.randomUUID())
+                .userId(user.getId())
+                .tokenHash(newTokenHash)
+                .expiresAt(LocalDateTime.now().plusDays(jwtService.getRefreshTtlDays()))
+                .build();
+
+        refreshTokenRepository.save(newRefreshToken);
+
+        log.info("Token refreshed for userId={}", user.getId());
+
+        return RefreshResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRawRefreshToken)
+                .expiresIn(jwtService.getAccessTtlSeconds())
+                .build();
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        AuthUser user = authUserRepository.findById(userId)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("New password must be different from the current password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
+        authUserRepository.save(user);
+        refreshTokenRepository.revokeAllByUserId(userId);
+
+        log.info("Password changed for userId={}", userId);
+    }
+
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        String tokenHash = sha256(rawRefreshToken);
+        refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash)
+                .ifPresent(token -> {
+                    token.setRevoked(true);
+                    refreshTokenRepository.save(token);
+                    log.info("Refresh token revoked for userId={}", token.getUserId());
+                });
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Helpers
+    // ──────────────────────────────────────────────────────────────
+
+    private String generateOpaqueToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /**
+     * Builds a branded HTML invite email.
+     */
+    private String buildInviteEmail(String title, String intro, String instruction,
+                                    String buttonText, String buttonUrl, String footer) {
+        String content = EmailTemplate.paragraph(intro)
+                + EmailTemplate.paragraph(instruction)
+                + EmailTemplate.button(buttonUrl, buttonText)
+                + EmailTemplate.fallbackLink(buttonUrl);
+        return EmailTemplate.render(title, content, footer);
+    }
+
+    private String sha256(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
+    }
+}

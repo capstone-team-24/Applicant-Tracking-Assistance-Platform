@@ -1,0 +1,9 @@
+{
+  "title": "Senior Backend Engineer",
+  "description": "We are looking for a Senior Backend Engineer to join our platform team. You will design and build scalable microservices, work with distributed systems, and mentor junior engineers. This is a high-impact role where you'll shape the technical direction of our core infrastructure.",
+  "requirements": "- 5+ years of backend development experience\n- Strong proficiency in Java and Spring Boot\n- Experience with microservices architecture and distributed systems\n- Familiarity with PostgreSQL, Redis, and Kafka-based messaging\n- Experience with Docker, Kubernetes, and CI/CD pipelines\n- Strong understanding of RESTful API design\n- Excellent problem-solving and communication skills\n- BS/MS in Computer Science or equivalent experience",
+  "location": "San Francisco, CA (Hybrid)",
+  "employmentType": "FULL_TIME",
+  "experienceLevel": "SENIOR",
+  "skills": ["Java", "Spring Boot", "PostgreSQL", "Docker", "Kubernetes", "Microservices", "Redis", "Kafka", "REST APIs", "CI/CD"]
+}
