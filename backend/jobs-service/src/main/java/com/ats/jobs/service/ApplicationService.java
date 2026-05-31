@@ -9,6 +9,7 @@ import com.ats.jobs.enums.JobStatus;
 import com.ats.jobs.exception.BadRequestException;
 import com.ats.jobs.exception.ForbiddenException;
 import com.ats.jobs.exception.ResourceNotFoundException;
+import com.ats.jobs.exception.ServiceUnavailableException;
 import com.ats.jobs.feign.NotificationServiceClient;
 import com.ats.jobs.feign.OrgServiceClient;
 import com.ats.jobs.feign.UserServiceClient;
@@ -24,8 +25,13 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -52,9 +58,13 @@ public class ApplicationService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final OrgServiceClient orgServiceClient;
     private final NotificationServiceClient notificationServiceClient;
+    private final RestTemplate restTemplate;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
+
+    @Value("${app.hiring-rag-service-url:http://localhost:8090}")
+    private String hiringRagServiceUrl;
 
     @Transactional
     public ApplicationResponse apply(UUID jobId, ApplyRequest request, MultipartFile file, UUID orgId, UUID candidateAuthUserId) {
@@ -220,6 +230,49 @@ public class ApplicationService {
         Application app = findApplicationOrThrow(id);
         assertCandidateAccess(app, candidateAuthUserId);
         return mapToCandidateDetailResponse(app);
+    }
+
+    @Transactional(readOnly = true)
+    public ApplicationExplainResponse explainApplicationMatch(UUID id, UUID orgId) {
+        Application app = findApplicationOrThrow(id);
+        assertRecruiterOrgAccess(app, orgId);
+
+        Job job = jobRepository.findById(app.getJobId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + app.getJobId()));
+
+        if (app.getOriginalFilePath() == null || app.getOriginalFilePath().isBlank()) {
+            throw new ResourceNotFoundException("No resume file found for application: " + id);
+        }
+
+        String jobDescription = buildJobDescriptionForRag(job);
+        Map<String, Object> request = new HashMap<>();
+        request.put("job_id", job.getId().toString());
+        request.put("job_description", jobDescription);
+        request.put("resume_id", app.getId().toString());
+        request.put("candidate_id", app.getCandidateAuthUserId() != null ? app.getCandidateAuthUserId().toString() : app.getId().toString());
+        request.put("file_path", app.getOriginalFilePath());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> response;
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> ragResponse = restTemplate.postForObject(
+                    hiringRagServiceUrl + "/explain",
+                    new HttpEntity<>(request, headers),
+                    Map.class);
+            response = ragResponse;
+        } catch (RestClientException e) {
+            log.warn("Hiring RAG explanation request failed for application {}: {}", id, e.getMessage());
+            throw new ServiceUnavailableException("AI explanation service is not available yet. Please try again in a moment.");
+        }
+
+        if (response == null) {
+            throw new BadRequestException("The hiring RAG service did not return an explanation.");
+        }
+
+        return mapExplainResponse(app, response);
     }
 
     @Transactional(readOnly = true)
@@ -464,6 +517,67 @@ public class ApplicationService {
             return builder.build();
         } catch (Exception e) {
             log.warn("Failed to load job details for application {}: {}", jobId, e.getMessage());
+            return null;
+        }
+    }
+
+    private String buildJobDescriptionForRag(Job job) {
+        StringBuilder description = new StringBuilder();
+        if (job.getTitle() != null && !job.getTitle().isBlank()) {
+            description.append("Title: ").append(job.getTitle()).append("\n\n");
+        }
+        if (job.getDescription() != null && !job.getDescription().isBlank()) {
+            description.append(job.getDescription()).append("\n\n");
+        }
+        if (job.getRequirements() != null && !job.getRequirements().isBlank()) {
+            description.append("Requirements: ").append(job.getRequirements()).append("\n\n");
+        }
+        if (job.getSkills() != null && !job.getSkills().isEmpty()) {
+            description.append("Skills: ").append(String.join(", ", job.getSkills()));
+        }
+        return description.toString().trim();
+    }
+
+    private ApplicationExplainResponse mapExplainResponse(Application app, Map<String, Object> response) {
+        return ApplicationExplainResponse.builder()
+                .applicationId(app.getId())
+                .jobId(app.getJobId())
+                .candidateAuthUserId(app.getCandidateAuthUserId())
+                .score(asDouble(response.get("score")))
+                .analysis(mapExplainAnalysis(response.get("analysis")))
+                .analysisError(response.get("analysis_error") != null ? response.get("analysis_error").toString() : null)
+                .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private ApplicationExplainResponse.Analysis mapExplainAnalysis(Object value) {
+        if (!(value instanceof Map<?, ?> raw)) {
+            return null;
+        }
+
+        Object strengthsValue = raw.get("strengths");
+        List<String> strengths = strengthsValue instanceof List<?> values
+                ? values.stream().filter(item -> item != null).map(Object::toString).toList()
+                : List.of();
+
+        return ApplicationExplainResponse.Analysis.builder()
+                .summary(raw.get("summary") != null ? raw.get("summary").toString() : null)
+                .strengths(strengths)
+                .gap(raw.get("gap") != null ? raw.get("gap").toString() : null)
+                .recommendation(raw.get("recommendation") != null ? raw.get("recommendation").toString() : null)
+                .build();
+    }
+
+    private Double asDouble(Object value) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (NumberFormatException ignored) {
             return null;
         }
     }

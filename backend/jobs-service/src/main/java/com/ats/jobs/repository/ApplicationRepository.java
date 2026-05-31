@@ -28,7 +28,7 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
 
     /**
      * Return the top-N applications for a job that have already been assigned a
-     * ranking position by the AI-orchestrator, ordered by position ascending
+     * ranking position by the hiring RAG service, ordered by position ascending
      * (rank 1 = best candidate first).
      */
     @Query("SELECT a FROM Application a " +

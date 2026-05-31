@@ -151,6 +151,7 @@ export interface Application {
   coverLetter?: string;
   portfolioLinks?: string[];
   originalFilename?: string;
+  originalFilePath?: string;
   candidateProfileSnapshot?: Record<string, unknown>;
   status:
     | "APPLIED"
@@ -168,6 +169,7 @@ export interface Application {
     | "REJECTED"
     | "WITHDRAWN";
   compositeScore?: number;
+  parseConfidence?: number;
   oaScore?: number;
   interviewScore?: number;
   finalRankingScore?: number;
@@ -245,6 +247,20 @@ export interface ApplicationListParams {
   status?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+}
+
+export interface ApplicationMatchExplanation {
+  applicationId: string;
+  jobId: string;
+  candidateAuthUserId?: string;
+  score?: number;
+  analysis?: {
+    summary?: string;
+    strengths?: string[];
+    gap?: string;
+    recommendation?: string;
+  };
+  analysisError?: string;
 }
 
 export interface Assessment {
@@ -357,6 +373,11 @@ export interface RankingStatus {
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   progress?: number;
   results?: RankingResult[];
+  result?: {
+    error?: string;
+    metadata?: Record<string, unknown>;
+    rankings?: unknown[];
+  };
   completedAt?: string;
   error?: string;
 }

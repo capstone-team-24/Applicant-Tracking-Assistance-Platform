@@ -1,145 +1,163 @@
-# ATS Platform — Local-First Microservices
+# ATS Platform - Local Microservices
 
-A complete Applicant Tracking System built with microservices architecture, runnable entirely locally via `docker-compose`.
+A local-first Applicant Tracking System built with Spring Boot, FastAPI, Next.js, Kafka, PostgreSQL, and Docker Compose.
 
-## Architecture Overview
+## Architecture
 
-```
-┌─────────────┐     ┌──────────────────────────────────────────────────┐
-│   Frontend   │────▸│              API Gateway (:8080)                 │
-│  Next.js     │     │  JWT validation · Rate limiting · Header inject │
-│  (:3000)     │     └──────┬──────┬──────┬──────┬──────┬──────────────┘
-└─────────────┘            │      │      │      │      │
-                    ┌──────▼┐ ┌───▼───┐ ┌▼─────┐ ┌▼────┐ ┌▼──────────┐
-                    │ Auth  │ │ User  │ │ Jobs │ │Notif│ │  ML Svcs   │
-                    │:8081  │ │:8082  │ │:8083 │ │:8084│ │:8090-8092  │
-                    └───┬───┘ └───┬───┘ └──┬───┘ └──┬──┘ └─────┬──────┘
-                        │         │        │        │           │
-                    ┌───▼─────────▼────────▼────────▼───────────▼──┐
-                    │              PostgreSQL (:5432)              │
-                    │  ats_auth │ ats_users │ ats_jobs │ ats_notif │
-                    └──────────────────────────────────────────────┘
-                    ┌────────────┐  ┌────────────┐  ┌──────────────┐
-                    │  RabbitMQ  │  │  Weaviate   │  │    MinIO     │
-                    │  (:5672)   │  │  (:8079)    │  │  (:9000)     │
-                    └────────────┘  └────────────┘  └──────────────┘
+```text
+Frontend (:3000)
+    |
+    v
+API Gateway (:8080) -- JWT validation, rate limiting, trusted headers
+    |
+    +--> auth-service (:8081)
+    +--> user-service (:8082)
+    +--> jobs-service (:8083)
+    +--> notification-service (:8084)
+    +--> assessment-service (:8091)
+
+Kafka (:9092)
+    | application.submitted
+    | resume.parse.completed
+    | job.rank.request
+    | job.rank.result
+    v
+hiring-rag-service (:8097 host -> :8090 container)
+    - resume parsing and OCR
+    - Chroma resume indexing
+    - candidate ranking
+    - match explanations
+
+PostgreSQL, MinIO, MailHog, Kafka UI, Jaeger
 ```
 
 ## Services
 
 | Service | Tech | Port | Description |
 |---------|------|------|-------------|
-| **eureka-server** | Spring Boot | 8761 | Service discovery |
-| **api-gateway** | Spring Cloud Gateway | 8080 | JWT validation, routing, rate limiting |
-| **auth-service** | Spring Boot | 8081 | Authentication, RS256 JWT, JWKS |
-| **user-service** | Spring Boot | 8082 | User profiles, CV upload, organizations |
-| **jobs-service** | Spring Boot | 8083 | Job CRUD, applications, ranking triggers |
-| **notification-service** | Spring Boot | 8084 | Email notifications via MailHog |
-| **parsing-service** | FastAPI | 8090 | Resume parsing, embeddings, Weaviate |
-| **assessment-service** | FastAPI | 8091 | Assessments, scoring, proctoring |
-| **ai-orchestrator** | FastAPI | 8092 | RAG ranking, LLM scoring |
-| **frontend** | Next.js | 3000 | Recruiter & candidate UI |
+| `eureka-server` | Spring Boot | 8761 | Service discovery |
+| `api-gateway` | Spring Cloud Gateway | 8080 | JWT validation, routing, rate limiting |
+| `auth-service` | Spring Boot | 8081 | Authentication, RS256 JWT, JWKS |
+| `user-service` | Spring Boot | 8082 | User profiles, CV upload, organizations |
+| `jobs-service` | Spring Boot | 8083 | Job CRUD, applications, ranking triggers |
+| `notification-service` | Spring Boot | 8084 | Email and in-app notifications |
+| `hiring-rag-service` | FastAPI | 8097 | Resume parsing, Chroma indexing, ranking, explanations |
+| `assessment-service` | FastAPI | 8091 | Assessments, scoring, proctoring |
+| `frontend` | Next.js | 3000 | Recruiter and candidate UI |
 
 ## Infrastructure
 
 | Service | Port | Description |
 |---------|------|-------------|
-| PostgreSQL | 5432 | Primary database (4 databases) |
-| RabbitMQ | 5672 (AMQP), 15672 (UI) | Message bus |
-| Weaviate | 8079 | Vector database for RAG |
-| MinIO | 9000 (API), 9001 (Console) | Object storage |
-| MailHog | 1025 (SMTP), 8025 (UI) | Dev email server |
+| PostgreSQL | 5433 host -> 5432 container | Primary database |
+| Kafka | 9092 | Event bus |
+| Kafka UI | 8089 | Local Kafka inspection UI |
+| Chroma | internal volume | Embedded vector store used by `hiring-rag-service` |
+| MinIO | 9000, 9001 | Object storage |
+| MailHog | 1025, 8025 | Local email capture |
+| Jaeger | 16686 | Trace UI |
+| pgAdmin | 5050 | PostgreSQL admin UI |
 
 ## Auth Model
 
-The platform uses a **gateway-only auth trust model**:
+The platform uses a gateway-only auth trust model.
 
-1. Clients send JWT in `Authorization: Bearer <token>` header
-2. API Gateway validates RS256 JWT using JWKS from auth-service
-3. Gateway injects trusted headers: `X-User-Id`, `X-User-Role`, `X-Org-Id`
-4. Downstream services trust these headers — they do NOT validate tokens
-5. Public routes bypass JWT validation (job listing, signup, login, docs)
+1. Clients send JWTs to the API Gateway.
+2. API Gateway validates RS256 JWTs using JWKS from `auth-service`.
+3. API Gateway injects `X-User-Id`, `X-User-Role`, and `X-Org-Id`.
+4. Downstream services trust those headers.
+5. Public routes bypass JWT validation where configured.
 
 ## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose (v2+)
-- 8GB+ RAM recommended (for all services + Weaviate)
+
+- Git
+- Docker and Docker Compose v2+
+- 16GB+ RAM recommended
+
+### Clone The Repository
+
+```bash
+git clone https://github.com/capstone-team-24/Applicant-Tracking-Assistance-Platform.git
+cd Applicant-Tracking-Assistance-Platform
+```
 
 ### Start Everything
 
 ```bash
-# 1. Clone and enter the project
-cd /path/to/project
-
-# 2. Copy environment config
 cp .env.example .env
-
-# 3. Start all services
 ./scripts/dev_up.sh
-
-# Or manually:
-docker compose up --build -d
 ```
 
-### Seed Sample Data
+Or manually:
 
 ```bash
-# After services are healthy (~60s):
-./scripts/seed_data.sh
+docker compose up --build -d
 ```
 
 ### Stop Everything
 
 ```bash
 ./scripts/dev_down.sh
+```
 
-# To also remove volumes (full reset):
+Full reset, including volumes:
+
+```bash
 docker compose down -v
 ```
 
-## Sample API Calls
+## Event Flow
 
-### Sign Up
-```bash
-curl -X POST http://localhost:8080/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Alice",
-    "lastName": "Recruiter",
-    "email": "alice@example.com",
-    "password": "Password123!",
-    "role": "RECRUITER"
-  }'
+```text
+Application submitted
+    -> jobs-service publishes application.submitted
+    -> notification-service sends application notification
+    -> hiring-rag-service parses, OCRs, anonymizes, chunks, embeds, and indexes resume
+    -> hiring-rag-service publishes resume.parse.completed
+
+Recruiter triggers ranking
+    -> jobs-service publishes job.rank.request with rank-eligible application IDs and resume file paths
+    -> hiring-rag-service backfills any missing Chroma index entries
+    -> hiring-rag-service ranks candidates and publishes job.rank.result
+    -> jobs-service stores scores/rank positions and advances APPLIED candidates to SCREENED
+    -> notification-service handles ranking completion notification
 ```
 
+## RAG And Ranking
+
+| Component | Current Implementation |
+|-----------|------------------------|
+| Resume extraction | PyMuPDF, OCR fallback, image OCR, DOCX/text parsing |
+| Vector store | Chroma persisted in `hiring_rag_chroma` volume |
+| Embeddings | `BAAI/bge-small-en-v1.5` by default |
+| Ranking | lexical or cross-encoder scoring depending on config |
+| LLM analysis | Groq, Ollama, or disabled/mock mode |
+
+Relevant environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RAG_LLM_PROVIDER` | `groq` | `groq`, `ollama`, `mock`, `none`, or `disabled` |
+| `GROQ_API_KEY` | empty | Required for Groq-backed analysis |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq chat model |
+| `RAG_EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | HuggingFace embedding model |
+| `RAG_CROSS_ENCODER_MODEL` | `kirubelmidru/resume-cross-encoder` | Optional cross-encoder model |
+| `CHROMA_COLLECTION_NAME` | `hiring_resumes` | Chroma collection name |
+
+## API Examples
+
 ### Login
+
 ```bash
 curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "alice@example.com", "password": "Password123!"}'
-
-# Response: {"accessToken":"eyJ...","refreshToken":"...","expiresIn":900,...}
+  -d '{"email":"alice@example.com","password":"Password123!"}'
 ```
 
-### Create a Job (Recruiter)
-```bash
-curl -X POST http://localhost:8080/api/v1/jobs \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <access_token>" \
-  -d '{
-    "title": "Senior Backend Engineer",
-    "description": "Join our platform team...",
-    "skills": ["Java", "Spring Boot", "PostgreSQL"]
-  }'
-```
+### Apply To A Job
 
-### List Jobs (Public)
-```bash
-curl http://localhost:8080/api/v1/jobs
-```
-
-### Apply to a Job
 ```bash
 curl -X POST http://localhost:8080/api/v1/jobs/{jobId}/apply \
   -H "Authorization: Bearer <candidate_token>" \
@@ -148,126 +166,87 @@ curl -X POST http://localhost:8080/api/v1/jobs/{jobId}/apply \
 ```
 
 ### Trigger Ranking
+
 ```bash
 curl -X POST http://localhost:8080/api/v1/jobs/{jobId}/rank \
   -H "Authorization: Bearer <recruiter_token>"
 ```
 
-## Event Flow (RabbitMQ)
-
-```
-Application Submit ──▸ application.submitted ──▸ notification-service (email)
-                   ──▸ resume.parse.request  ──▸ parsing-service
-                                                    │
-                                                    ▼
-                       resume.parse.completed ◀── (parse + embed + Weaviate)
-                                                    │
-                                                    ▼
-Rank Trigger ─────────▸ job.rank.request ────▸ ai-orchestrator
-                                                    │
-                                                    ▼
-                       job.rank.result ◀──── (RAG + LLM + composite score)
-                            │
-                            ▼
-                       notification-service (ranking complete email)
-```
-
-## RAG / Vector Search
-
-- **Embeddings**: `sentence-transformers/all-MiniLM-L6-v2` (384 dims)
-- **Vector DB**: Weaviate with classes `ResumeChunk` and `JobDesc`
-- **Chunking**: ~1000 chars with 200 char overlap
-- **Ranking**: Composite score = `semantic * W_s + assessment * W_a + llm_quality * W_l`
-- **LLM**: Mock adapter by default; swap to OpenAI/Anthropic via `LLM_PROVIDER` env var
-
-## Development
-
-### Run Individual Services
-
-```bash
-# Backend (requires JDK 17 + Maven):
-cd backend/auth-service && mvn spring-boot:run
-
-# Python ML service:
-cd ml/parsing-service && pip install -r requirements.txt && uvicorn app.main:app --port 8090
-
-# Frontend:
-cd frontend/client && npm install && npm run dev
-```
-
-### Environment Variables
-
-See `.env.example` for all configurable values. Key settings:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DEMO_MODE` | `true` | Use mock embeddings/LLM |
-| `LLM_PROVIDER` | `mock` | LLM adapter: mock, openai, claude |
-| `OPENAI_API_KEY` | (empty) | Required if LLM_PROVIDER=openai |
-| `JWT_ACCESS_TTL_MINUTES` | `15` | JWT access token lifetime |
-
-### Access UIs
+## Local UIs
 
 | UI | URL |
 |----|-----|
 | Frontend | http://localhost:3000 |
-| Eureka Dashboard | http://localhost:8761 |
-| RabbitMQ Management | http://localhost:15672 (ats/ats_rabbit_2024) |
-| MailHog (emails) | http://localhost:8025 |
-| MinIO Console | http://localhost:9001 (minio_admin/minio_secret_2024) |
-| Weaviate | http://localhost:8079/v1 |
+| Eureka | http://localhost:8761 |
+| Kafka UI | http://localhost:8089 |
+| MailHog | http://localhost:8025 |
+| MinIO Console | http://localhost:9001 |
+| Jaeger | http://localhost:16686 |
+| pgAdmin | http://localhost:5050 |
 
-## Vector DB Choice
+## Development
 
-| DB | Pros | Cons | When to use |
-|----|------|------|-------------|
-| **Weaviate** (default) | Full-featured, semantic modules, production-ready | Heavier resource use | Default recommendation |
-| **Chroma** | Lightweight, pure Python, easy setup | Less production-ready | Resource-constrained dev |
-| **Milvus** | Great at scale, distributed | Heavy, complex setup | Large-scale production |
+Docker is the default local workflow. Rebuild or restart individual services with Docker Compose:
+
+```bash
+# Rebuild one service image
+docker compose build jobs-service
+
+# Restart one service after changes
+docker compose up -d jobs-service
+
+# Follow logs for one service
+docker compose logs -f jobs-service
+```
+
+Optional Dockerized Maven checks, without requiring Maven installed locally:
+
+```bash
+docker run --rm -v "$PWD/backend/jobs-service:/workspace" -w /workspace maven:3.9.6-eclipse-temurin-17 mvn test
+```
 
 ## Project Structure
 
-```
-├── backend/
-│   ├── eureka-server/      # Service discovery
-│   ├── api-gateway/        # JWT validation + routing
-│   ├── auth-service/       # Authentication + JWKS
-│   ├── user-service/       # Profiles + file upload
-│   ├── jobs-service/       # Jobs + applications
-│   └── notification-service/ # Email notifications
-├── ml/
-│   ├── parsing-service/    # Resume parsing + embeddings
-│   ├── assessment-service/ # Assessments + scoring
-│   └── ai-orchestrator/    # RAG ranking + LLM
-├── frontend/
-│   └── client/             # Next.js + TypeScript
-├── scripts/
-│   ├── dev_up.sh          # Start platform
-│   ├── dev_down.sh        # Stop platform
-│   ├── seed_data.sh       # Seed sample data
-│   └── init-databases.sql # DB initialization
-├── data/
-│   ├── storage/           # File uploads (mounted)
-│   └── samples/           # Sample CVs and job descriptions
-├── .github/workflows/
-│   └── ci.yml             # CI pipeline
-├── docker-compose.yml
-├── .env.example
-└── README.md
+```text
+backend/
+  api-gateway/
+  auth-service/
+  eureka-server/
+  jobs-service/
+  notification-service/
+  user-service/
+ml/
+  assessment-service/
+  hiring-rag-service/
+frontend/
+  client/
+scripts/
+  dev_up.sh
+  dev_down.sh
+  build_all.sh
+  init-databases.sql
+data/
+  storage/
+  samples/
 ```
 
-## Testing
+## Verification
 
 ```bash
-# Java services:
-cd backend/auth-service && mvn test
+# Java service Docker builds
+docker compose build eureka-server auth-service user-service jobs-service notification-service api-gateway
 
-# Python services:
-cd ml/parsing-service && pytest tests/ -v
+# Python syntax check
+python3 -m py_compile ml/hiring-rag-service/app/main.py
 
-# Frontend:
-cd frontend/client && npm run lint
+# Frontend type check
+cd frontend/client && npx tsc --noEmit
 ```
+
+## Notes
+
+- Legacy standalone parsing and orchestration services were retired. Their responsibilities now live in `hiring-rag-service`.
+- The legacy vector database was retired. Chroma is embedded in `hiring-rag-service` and persisted via Docker volume.
 
 ## License
 

@@ -462,7 +462,7 @@ export default function RecruiterJobDetailPage() {
             fetchApplications();
             setIsRanking(false);
           } else {
-            toast.error("Ranking failed: " + (status.error || "Unknown error"));
+            toast.error("Ranking failed: " + (status.error || status.result?.error || "Unknown error"));
             setIsRanking(false);
           }
         } catch {
@@ -1130,7 +1130,7 @@ export default function RecruiterJobDetailPage() {
           </h2>
           <button
             onClick={() => router.push("/dashboard")}
-            className="text-primary-600 hover:text-primary-500 font-medium"
+            className="text-indigo-400 hover:text-indigo-300 font-medium"
           >
             Back to Dashboard
           </button>
@@ -1146,7 +1146,7 @@ export default function RecruiterJobDetailPage() {
         <nav className="flex items-center gap-2 text-sm text-white/50 mb-6">
           <Link
             href="/dashboard"
-            className="hover:text-primary-600 transition-colors"
+            className="hover:text-indigo-400 transition-colors"
           >
             Dashboard
           </Link>
@@ -1167,7 +1167,7 @@ export default function RecruiterJobDetailPage() {
         </nav>
 
         {/* ── Job Header ──────────────────────────────────────────────────── */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
+        <div className="bg-black/40 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -1227,7 +1227,7 @@ export default function RecruiterJobDetailPage() {
                   <button
                     onClick={handleSaveJobDeadline}
                     disabled={isSavingJobDeadline}
-                    className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    className="px-2 py-1 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
                   >
                     {isSavingJobDeadline ? "Saving..." : "Save"}
                   </button>
@@ -1243,7 +1243,7 @@ export default function RecruiterJobDetailPage() {
             <div className="flex gap-2">
               <button
                 onClick={openJobDetailsEditor}
-                className="px-4 py-2 bg-white/10 text-white text-sm font-medium rounded-lg hover:bg-white/15 transition-colors border border-white/10"
+                className="px-4 py-2 bg-white/10 text-white text-sm font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
               >
                 Edit Details
               </button>
@@ -1273,7 +1273,7 @@ export default function RecruiterJobDetailPage() {
               {job.skills.map((skill, i) => (
                 <span
                   key={i}
-                  className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                  className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/20 text-indigo-300"
                 >
                   {skill}
                 </span>
@@ -1283,7 +1283,7 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {isEditingJobDetails && (
-          <form onSubmit={handleSaveJobDetails} className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6 space-y-5">
+          <form onSubmit={handleSaveJobDetails} className="bg-black/40 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6 space-y-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-white">Edit Job Details</h2>
@@ -1305,7 +1305,7 @@ export default function RecruiterJobDetailPage() {
                   name="title"
                   value={jobEditForm.title}
                   onChange={handleJobEditChange}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g., Senior Software Engineer"
                 />
               </div>
@@ -1316,7 +1316,7 @@ export default function RecruiterJobDetailPage() {
                   name="location"
                   value={jobEditForm.location}
                   onChange={handleJobEditChange}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Remote, city, or region"
                 />
               </div>
@@ -1327,7 +1327,7 @@ export default function RecruiterJobDetailPage() {
                   name="employmentType"
                   value={jobEditForm.employmentType}
                   onChange={handleJobEditChange}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select type</option>
                   <option value="FULL_TIME">Full Time</option>
@@ -1344,7 +1344,7 @@ export default function RecruiterJobDetailPage() {
                   name="experienceLevel"
                   value={jobEditForm.experienceLevel}
                   onChange={handleJobEditChange}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select level</option>
                   <option value="ENTRY">Entry Level</option>
@@ -1363,7 +1363,7 @@ export default function RecruiterJobDetailPage() {
                   value={jobEditForm.applicationDeadline}
                   onChange={handleJobEditChange}
                   min={nowLocalInputValue()}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1373,7 +1373,7 @@ export default function RecruiterJobDetailPage() {
                   name="skills"
                   value={jobEditForm.skills}
                   onChange={handleJobEditChange}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="React, TypeScript, PostgreSQL"
                 />
                 <p className="mt-1 text-xs text-white/40">Separate skills with commas.</p>
@@ -1386,7 +1386,7 @@ export default function RecruiterJobDetailPage() {
                   rows={7}
                   value={jobEditForm.description}
                   onChange={handleJobEditChange}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1397,7 +1397,7 @@ export default function RecruiterJobDetailPage() {
                   rows={5}
                   value={jobEditForm.requirements}
                   onChange={handleJobEditChange}
-                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2.5 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -1413,7 +1413,7 @@ export default function RecruiterJobDetailPage() {
               <button
                 type="submit"
                 disabled={isSavingJobDetails}
-                className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
               >
                 {isSavingJobDetails ? "Saving..." : "Save Changes"}
               </button>
@@ -1432,32 +1432,32 @@ export default function RecruiterJobDetailPage() {
             {
               label: "Applied",
               value: statusCounts["APPLIED"] || 0,
-              color: "text-blue-600",
+              color: "text-blue-400",
             },
             {
               label: "Screened",
               value: statusCounts["SCREENED"] || 0,
-              color: "text-violet-600",
+              color: "text-violet-400",
             },
             {
               label: "OA Invited",
               value: statusCounts["OA_INVITED"] || 0,
-              color: "text-amber-600",
+              color: "text-amber-400",
             },
             {
               label: "OA Done",
               value: statusCounts["OA_COMPLETED"] || 0,
-              color: "text-teal-600",
+              color: "text-teal-400",
             },
             {
               label: "Interview",
               value: (statusCounts["INTERVIEW_INVITED"] || 0) + (statusCounts["INTERVIEW_SCHEDULED"] || 0) + (statusCounts["INTERVIEW_COMPLETED"] || 0),
-              color: "text-indigo-600",
+              color: "text-indigo-400",
             },
           ].map(({ label, value, color }) => (
             <div
               key={label}
-              className="bg-white/5 backdrop-blur-lg rounded-lg border border-white/10 p-4 text-center"
+              className="bg-black/40 backdrop-blur-lg rounded-lg border border-white/10 p-4 text-center"
             >
               <p className={`text-2xl font-bold ${color}`}>{value}</p>
               <p className="text-xs text-white/50 mt-0.5">{label}</p>
@@ -1466,7 +1466,7 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── Online Assessment ────────────────────────────────────────────── */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
+        <div className="bg-black/40 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold text-white">
@@ -1577,14 +1577,14 @@ export default function RecruiterJobDetailPage() {
                     />
                     {oaDeadline && (
                       <span className="text-xs flex items-center gap-2">
-                        <span className="text-amber-600 flex items-center gap-1">
+                        <span className="text-amber-400 flex items-center gap-1">
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                           Expires {formatDateTime(oaDeadline)}
                         </span>
                         <button
                           onClick={handleUpdateOADeadline}
                           disabled={isUpdatingOADeadline}
-                          className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          className="px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                         >
                           {isUpdatingOADeadline ? "Updating..." : "Update sent invites"}
                         </button>
@@ -1627,14 +1627,8 @@ export default function RecruiterJobDetailPage() {
 
           {/* Assessment creation form */}
           {!jobAssessment && showCreateAssessment && (
-            <div className="border border-white/10 rounded-lg p-5 space-y-5">
-              {/* Title + time limit
-                    </p>
-                    </p>
-                    <div className="flex gap-2 mt-2">
-                      <button onClick={handleEditAssessment} className="text-xs bg-indigo-600/20 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30 hover:bg-indigo-500/20 flex items-center gap-1">✏️ Edit</button>
-                      <button onClick={handleDeleteAssessment} className="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded border border-red-500/20 hover:bg-red-500/20 flex items-center gap-1">🗑️ Delete</button>
-                    </div> */}
+            <div className="border border-white/10 rounded-lg p-5 space-y-5 bg-black/20">
+              {/* Title + time limit */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-1">
@@ -1715,7 +1709,7 @@ export default function RecruiterJobDetailPage() {
                   {questions.map((q, qi) => (
                     <div
                       key={qi}
-                      className="border border-white/10 rounded-lg p-4 space-y-3"
+                      className="border border-white/10 rounded-lg p-4 space-y-3 bg-black/20"
                     >
                       {/* Question meta row */}
                       <div className="flex items-center gap-3 flex-wrap">
@@ -1814,7 +1808,7 @@ export default function RecruiterJobDetailPage() {
 
                 <button
                   onClick={addQuestion}
-                  className="mt-3 inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                  className="mt-3 inline-flex items-center text-sm text-indigo-400 hover:text-indigo-300 font-medium"
                 >
                   <svg
                     className="w-4 h-4 mr-1"
@@ -1865,7 +1859,7 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── Candidate Ranking ────────────────────────────────────────────── */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
+        <div className="bg-black/40 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">
               Candidate Ranking
@@ -1873,7 +1867,7 @@ export default function RecruiterJobDetailPage() {
             <button
               onClick={handleRankCandidates}
               disabled={isRanking || applications.length === 0}
-              className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isRanking ? (
                 <span className="flex items-center gap-2">
@@ -1928,7 +1922,7 @@ export default function RecruiterJobDetailPage() {
                   <div className="flex-1">
                     <div className="w-full bg-white/10 rounded-full h-2">
                       <div
-                        className="bg-primary-600 h-2 rounded-full transition-all"
+                        className="bg-indigo-600 h-2 rounded-full transition-all"
                         style={{ width: `${rankingStatus.progress}%` }}
                       />
                     </div>
@@ -1948,7 +1942,7 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── OA Results & Interview Invites ───────────────────────────────── */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6">
+        <div className="bg-black/40 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <h2 className="text-lg font-semibold text-white mb-4">
             OA Results & Interview Invites
           </h2>
@@ -1962,7 +1956,7 @@ export default function RecruiterJobDetailPage() {
                 min="1"
                 value={interviewTopN}
                 onChange={(e) => setInterviewTopN(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-white"
               />
             </div>
             <div className="flex-1 min-w-[200px]">
@@ -1975,7 +1969,7 @@ export default function RecruiterJobDetailPage() {
                 max="100"
                 value={interviewMinScore}
                 onChange={(e) => setInterviewMinScore(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-white"
               />
             </div>
             <div className="flex-1 min-w-[220px]">
@@ -1989,19 +1983,19 @@ export default function RecruiterJobDetailPage() {
                   value={interviewDeadline}
                   onChange={(e) => setInterviewDeadline(e.target.value)}
                   min={nowLocalInputValue()}
-                  className="flex-1 px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  className="flex-1 px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-white"
                 />
               </div>
               {interviewDeadline && (
                 <div className="mt-1 flex items-center justify-between">
-                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                  <p className="text-xs text-amber-400 flex items-center gap-1">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     Booking closes {formatDateTime(interviewDeadline)}
                   </p>
                   <button
                     onClick={handleUpdateInterviewDeadline}
                     disabled={isUpdatingInterviewDeadline}
-                    className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    className="px-2 py-1 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                   >
                     {isUpdatingInterviewDeadline ? "Updating..." : "Update sent invites"}
                   </button>
@@ -2033,7 +2027,7 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── Interview Scheduling ─────────────────────────────────────────── */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
+        <div className="bg-black/40 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-6 mb-6">
           <h2 className="text-lg font-semibold text-white mb-4">
             Interview Scheduling
           </h2>
@@ -2053,7 +2047,7 @@ export default function RecruiterJobDetailPage() {
                   onChange={(e) => setScheduleDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
                   disabled={!isGoogleConnected}
-                  className="px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 disabled:bg-white/10 disabled:cursor-not-allowed"
+                  className="px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-white/10 disabled:cursor-not-allowed text-white"
                 />
                 <div className="flex gap-2">
                   <input
@@ -2061,12 +2055,12 @@ export default function RecruiterJobDetailPage() {
                     value={scheduleTime}
                     onChange={(e) => setScheduleTime(e.target.value)}
                     disabled={!isGoogleConnected}
-                    className="flex-1 px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 disabled:bg-white/10 disabled:cursor-not-allowed"
+                    className="flex-1 px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-white/10 disabled:cursor-not-allowed text-white"
                   />
                   <button
                     onClick={handleCreateSlot}
                     disabled={isCreatingSlot || !scheduleDate || !scheduleTime || !isGoogleConnected}
-                    className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                    className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                   >
                     {isCreatingSlot ? "Adding..." : "Add"}
                   </button>
@@ -2096,11 +2090,11 @@ export default function RecruiterJobDetailPage() {
                   <table className="min-w-full divide-y divide-gray-200 border border-white/10 rounded-lg">
                     <thead className="bg-white/5">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Candidate</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Time</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Meeting</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase">Status</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-white/50 uppercase">Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">Candidate</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">Time</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">Meeting</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-white/50 uppercase tracking-wider">Action</th>
                       </tr>
                     </thead>
                     <tbody className="bg-transparent divide-y divide-white/10">
@@ -2110,7 +2104,7 @@ export default function RecruiterJobDetailPage() {
                         return (
                           <tr key={booking.id} className="hover:bg-white/5 transition-colors">
                             <td className="px-4 py-3 whitespace-nowrap">
-                              <Link href={`/recruiter/jobs/${jobId}/applications/${app?.id}`} className="text-sm font-medium text-indigo-600 hover:text-indigo-300">
+                              <Link href={`/recruiter/jobs/${jobId}/applications/${app?.id}`} className="text-sm font-medium text-indigo-400 hover:text-indigo-300">
                                 {app?.candidateName || "Candidate"}
                               </Link>
                               <div className="text-xs text-white/50">{app?.candidateEmail}</div>
@@ -2120,18 +2114,18 @@ export default function RecruiterJobDetailPage() {
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">
                               {booking.meetingLink ? (
-                                <a href={booking.meetingLink} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-300 underline">
+                                <a href={booking.meetingLink} target="_blank" rel="noreferrer" className="text-indigo-400 hover:text-indigo-300 underline">
                                   Join Link
                                 </a>
                               ) : "-"}
-                            </td>
+                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">
                               {booking.status === "COMPLETED" ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400">
                                   Completed
                                 </span>
                               ) : booking.status === "SCHEDULED" ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400">
                                   Scheduled
                                 </span>
                               ) : (
@@ -2139,12 +2133,12 @@ export default function RecruiterJobDetailPage() {
                                   {booking.status}
                                 </span>
                               )}
-                            </td>
+                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                               {booking.status === "SCHEDULED" && (
                                 <button
                                   onClick={() => handleOpenReviewModal(booking)}
-                                  className="text-indigo-600 hover:text-indigo-300 font-medium"
+                                  className="text-indigo-400 hover:text-indigo-300 font-medium"
                                 >
                                   Complete & Review
                                 </button>
@@ -2157,12 +2151,12 @@ export default function RecruiterJobDetailPage() {
                                   View Review
                                 </button>
                               )}
-                            </td>
-                          </tr>
+                             </td>
+                           </tr>
                         );
                       })}
                     </tbody>
-                  </table>
+                   </table>
                 </div>
               )}
             </div>
@@ -2170,7 +2164,7 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── Pipeline Kanban ──────────────────────────────────────────────── */}
-        <div className="mb-8 bg-white/5 backdrop-blur-xl rounded-[2rem] shadow-sm border border-white/10 overflow-hidden">
+        <div className="mb-8 bg-black/40 backdrop-blur-xl rounded-[2rem] shadow-sm border border-white/10 overflow-hidden">
           <div className="p-6 border-b border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -2223,7 +2217,7 @@ export default function RecruiterJobDetailPage() {
                       if (dragOverColumn !== column.id) setDragOverColumn(column.id);
                     }}
                     onDrop={(event) => handleKanbanDrop(event, column)}
-                    className={`flex max-h-[70vh] w-80 shrink-0 flex-col rounded-[1.5rem] border bg-black/20 p-4 transition-all ${column.accentClass} ${
+                    className={`flex max-h-[70vh] w-80 shrink-0 flex-col rounded-[1.5rem] border bg-black/30 p-4 transition-all ${column.accentClass} ${
                       dragOverColumn === column.id ? "ring-2 ring-white/50 bg-white/10" : ""
                     }`}
                   >
@@ -2268,7 +2262,7 @@ export default function RecruiterJobDetailPage() {
                                 setDraggingAppId(null);
                                 setDragOverColumn(null);
                               }}
-                              className={`group rounded-2xl border border-white/10 bg-slate-950/70 p-4 shadow-lg transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-slate-900/90 ${
+                              className={`group rounded-2xl border border-white/10 bg-black/50 p-4 shadow-lg transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-black/60 ${
                                 draggingAppId === app.id ? "opacity-50 scale-[0.98]" : ""
                               } ${isUpdating ? "opacity-60" : "cursor-grab active:cursor-grabbing"}`}
                             >
@@ -2338,7 +2332,7 @@ export default function RecruiterJobDetailPage() {
                                     }
                                     void updateApplicationPipelineStatus(app, nextStatus);
                                   }}
-                                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none transition-colors focus:border-indigo-400 disabled:opacity-50"
+                                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-xs text-white outline-none transition-colors focus:border-indigo-400 disabled:opacity-50"
                                 >
                                   {APPLICATION_STATUS_OPTIONS.map((option) => (
                                     <option key={option.value} value={option.value}>
@@ -2388,7 +2382,7 @@ export default function RecruiterJobDetailPage() {
         </div>
 
         {/* ── Applications Table ───────────────────────────────────────────── */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 overflow-hidden">
+        <div className="bg-black/40 backdrop-blur-xl rounded-xl shadow-sm border border-white/10 overflow-hidden">
           <div className="p-6 border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-white">
               Applications ({applications.length})
@@ -2405,7 +2399,7 @@ export default function RecruiterJobDetailPage() {
               <button
                 onClick={handleRecalculate}
                 disabled={isRecalculating}
-                className="px-3 py-1.5 border border-indigo-500/30 text-indigo-700 bg-white text-sm font-medium rounded hover:bg-indigo-500/20 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 border border-indigo-500/30 text-indigo-300 bg-white/5 text-sm font-medium rounded hover:bg-indigo-500/20 transition-colors disabled:opacity-50"
               >
                 {isRecalculating ? "Recalculating..." : "Recalculate Final Ranking"}
               </button>
@@ -2414,7 +2408,7 @@ export default function RecruiterJobDetailPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-1.5 border border-white/20 bg-white/5 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
+                  className="px-3 py-1.5 border border-white/20 bg-white/5 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500 text-white"
                 >
                   <option value="ALL">All</option>
                   {APPLICATION_STATUS_OPTIONS.map((option) => (
@@ -2435,11 +2429,11 @@ export default function RecruiterJobDetailPage() {
             </div>
           ) : applications.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-white/10">
                 <thead className="bg-white/5">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left">
-                      <input type="checkbox" checked={filteredApplications.length > 0 && filteredApplications.every((app) => selectedAppIds.has(app.id))} onChange={toggleSelectAll} className="w-4 h-4 text-primary-600 rounded" />
+                      <input type="checkbox" checked={filteredApplications.length > 0 && filteredApplications.every((app) => selectedAppIds.has(app.id))} onChange={toggleSelectAll} className="w-4 h-4 text-indigo-600 rounded" />
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider cursor-pointer" onClick={() => { setSortField("rank"); setSortDir(sortDir === "asc" ? "desc" : "asc"); }}>
                       Final Rank {sortField === "rank" && (sortDir === "asc" ? "↑" : "↓")}
@@ -2488,7 +2482,7 @@ export default function RecruiterJobDetailPage() {
                       return (
                         <tr key={app.id} className="hover:bg-white/5 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" checked={selectedAppIds.has(app.id)} onChange={() => toggleSelectApp(app.id)} className="w-4 h-4 text-primary-600 rounded" />
+                            <input type="checkbox" checked={selectedAppIds.has(app.id)} onChange={() => toggleSelectApp(app.id)} className="w-4 h-4 text-indigo-600 rounded" />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                             {app.finalRank ? `#${app.finalRank}` : "-"}
@@ -2499,21 +2493,21 @@ export default function RecruiterJobDetailPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                             {app.compositeScore != null ? (
-                              <span className="font-semibold text-primary-600">{Math.round(app.compositeScore)}</span>
+                              <span className="font-semibold text-indigo-400">{Math.round(app.compositeScore)}</span>
                             ) : (
                               "-"
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                             {app.oaScore != null ? (
-                              <span className="font-bold text-indigo-600">{Math.round(app.oaScore)}</span>
+                              <span className="font-bold text-indigo-400">{Math.round(app.oaScore)}</span>
                             ) : (
                               <span className="text-white/40">-</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                             {app.interviewScore != null ? (
-                              <span className="font-bold text-emerald-600">{app.interviewScore} <span className="font-normal text-xs text-white/40">/50</span></span>
+                              <span className="font-bold text-emerald-400">{app.interviewScore} <span className="font-normal text-xs text-white/40">/50</span></span>
                             ) : "-"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -2546,14 +2540,14 @@ export default function RecruiterJobDetailPage() {
 
                               {openDropdownId === app.id && (
                                 <div
-                                  className="absolute right-0 mt-1 w-52 bg-slate-900 border border-white/10 backdrop-blur-xl rounded-lg shadow-lg z-30 py-1 animate-in fade-in zoom-in-95 duration-100"
+                                  className="absolute right-0 mt-1 w-52 bg-black/80 border border-white/10 backdrop-blur-xl rounded-lg shadow-lg z-30 py-1 animate-in fade-in zoom-in-95 duration-100"
                                   onMouseDown={(e) => e.stopPropagation()}
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {/* View Details */}
                                   <Link
                                     href={detailHref}
-                                    className="flex items-center gap-2.5 px-4 py-2 text-sm text-white/70 hover:bg-white/5 transition-colors"
+                                    className="flex items-center gap-2.5 px-4 py-2 text-sm text-white/70 hover:bg-white/10 transition-colors"
                                     onClick={() => setOpenDropdownId(null)}
                                   >
                                     <svg className="w-4 h-4 text-white/40" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -2568,7 +2562,7 @@ export default function RecruiterJobDetailPage() {
                                   <button
                                     onClick={() => handleSendOAToApp(app)}
                                     disabled={!jobAssessment}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-indigo-400 hover:bg-indigo-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     title={!jobAssessment ? "Create an assessment first" : `Send OA invite to ${app.candidateName}`}
                                   >
                                     <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -2580,7 +2574,7 @@ export default function RecruiterJobDetailPage() {
                                   {/* Send Interview Invite */}
                                   <button
                                     onClick={() => handleSendInterviewToApp(app)}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-emerald-400 hover:bg-emerald-500/20 transition-colors"
                                     title={`Send interview invite to ${app.candidateName}`}
                                   >
                                     <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -2598,7 +2592,7 @@ export default function RecruiterJobDetailPage() {
                                       handleOpenOfferModal(app);
                                     }}
                                     disabled={app.status === "OFFER_SENT" || app.status === "OFFER_ACCEPTED"}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-purple-300 hover:bg-purple-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-purple-400 hover:bg-purple-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     title={`Send offer to ${app.candidateName}`}
                                   >
                                     <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -2615,7 +2609,7 @@ export default function RecruiterJobDetailPage() {
                                       <div className="border-t border-white/10 my-1" />
                                       <button
                                         onClick={() => handleOpenRejectModal(app)}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-400 hover:bg-red-500/20 transition-colors"
                                         title={`Reject ${app.candidateName}`}
                                       >
                                         <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -2628,8 +2622,8 @@ export default function RecruiterJobDetailPage() {
                                 </div>
                               )}
                             </div>
-                          </td>
-                        </tr>
+                           </td>
+                         </tr>
                       );
                     })}
                 </tbody>
@@ -2650,8 +2644,8 @@ export default function RecruiterJobDetailPage() {
       </div>
       {/* ── Feedback Modal ────────────────────────────────────────────────────── */}
       {isReviewModalOpen && selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-black/80 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-white/10">
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">
                 {selectedBooking.status === "COMPLETED" ? "Interview Review" : "Complete & Review Interview"}
@@ -2683,7 +2677,7 @@ export default function RecruiterJobDetailPage() {
                     value={reviewTechnical ?? ""}
                     onChange={(e) => setReviewTechnical(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md text-white"
                   />
                 </div>
 
@@ -2696,7 +2690,7 @@ export default function RecruiterJobDetailPage() {
                     value={reviewProblemSolving ?? ""}
                     onChange={(e) => setReviewProblemSolving(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md text-white"
                   />
                 </div>
 
@@ -2709,7 +2703,7 @@ export default function RecruiterJobDetailPage() {
                     value={reviewCommunication ?? ""}
                     onChange={(e) => setReviewCommunication(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md text-white"
                   />
                 </div>
 
@@ -2722,7 +2716,7 @@ export default function RecruiterJobDetailPage() {
                     value={reviewBehavioral ?? ""}
                     onChange={(e) => setReviewBehavioral(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md text-white"
                   />
                 </div>
 
@@ -2735,7 +2729,7 @@ export default function RecruiterJobDetailPage() {
                     value={reviewCultureFit ?? ""}
                     onChange={(e) => setReviewCultureFit(e.target.value === "" ? undefined : Number(e.target.value))}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md text-white"
                   />
                 </div>
               </div>
@@ -2747,7 +2741,7 @@ export default function RecruiterJobDetailPage() {
                     value={reviewRecruiterSummary}
                     onChange={(e) => setReviewRecruiterSummary(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[80px] text-white"
                   />
                 </div>
 
@@ -2758,7 +2752,7 @@ export default function RecruiterJobDetailPage() {
                     onChange={(e) => setReviewFeedback(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
                     placeholder="How did the interview go?"
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px] disabled:bg-white/5 disabled:text-white/70"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[80px] disabled:bg-white/5 disabled:text-white/70 text-white"
                   />
                 </div>
               </div>
@@ -2771,7 +2765,7 @@ export default function RecruiterJobDetailPage() {
                     onChange={(e) => setReviewStrengths(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
                     placeholder="Comma-separated or bulleted"
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[80px] text-white"
                   />
                 </div>
 
@@ -2782,7 +2776,7 @@ export default function RecruiterJobDetailPage() {
                     onChange={(e) => setReviewWeaknesses(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
                     placeholder="Comma-separated or bulleted"
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 min-h-[80px]"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[80px] text-white"
                   />
                 </div>
 
@@ -2792,7 +2786,7 @@ export default function RecruiterJobDetailPage() {
                     value={reviewHireRecommendation}
                     onChange={(e) => setReviewHireRecommendation(e.target.value)}
                     disabled={selectedBooking.status === "COMPLETED"}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-white"
                   >
                     <option value="Strong Hire">Strong Hire</option>
                     <option value="Hire">Hire</option>
@@ -2806,7 +2800,7 @@ export default function RecruiterJobDetailPage() {
             <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
                 onClick={() => setIsReviewModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5"
+                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/10"
               >
                 {selectedBooking.status === "COMPLETED" ? "Close" : "Cancel"}
               </button>
@@ -2827,11 +2821,11 @@ export default function RecruiterJobDetailPage() {
       {/* ── Offer Modal ──────────────────────────────────────────────────────── */}
       {isOfferModalOpen && offerApp && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
           onClick={handleCloseOfferModal}
         >
           <div
-            className="bg-slate-950 border border-white/10 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            className="bg-black/80 border border-white/10 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
@@ -2854,7 +2848,7 @@ export default function RecruiterJobDetailPage() {
                   value={offerMessage}
                   onChange={(e) => setOfferMessage(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                  className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   placeholder="We are thrilled to offer you..."
                 />
               </div>
@@ -2865,7 +2859,7 @@ export default function RecruiterJobDetailPage() {
                     type="text"
                     value={offerSalary}
                     onChange={(e) => setOfferSalary(e.target.value)}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     placeholder="$100,000 / year"
                   />
                 </div>
@@ -2875,7 +2869,7 @@ export default function RecruiterJobDetailPage() {
                     type="date"
                     value={offerStartDate}
                     onChange={(e) => setOfferStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+                    className="w-full px-3 py-2 border border-white/20 bg-white/5 rounded-lg text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -2883,14 +2877,14 @@ export default function RecruiterJobDetailPage() {
             <div className="p-6 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
                 onClick={handleCloseOfferModal}
-                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white/70 bg-transparent border border-white/20 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSendOfferSubmit}
                 disabled={isSendingOffer || !offerMessage.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
               >
                 {isSendingOffer ? "Sending..." : "Send Offer"}
               </button>
@@ -2902,18 +2896,18 @@ export default function RecruiterJobDetailPage() {
       {/* ── Rejection Modal ──────────────────────────────────────────────────── */}
       {isRejectModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
           onClick={handleCloseRejectModal}
         >
           <div
-            className="bg-slate-950 border border-white/10 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            className="bg-black/80 border border-white/10 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             onClick={(event) => event.stopPropagation()}
           >
             {/* Header */}
             <div className="p-6 border-b border-white/10 flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                  <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                   </svg>
                 </div>
@@ -2971,8 +2965,7 @@ export default function RecruiterJobDetailPage() {
                 </div>
               )}
             </div>
-
-            {/* Footer */}
+ {/* Footer */}
             <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end gap-3">
               <button
                 onClick={handleCloseRejectModal}
@@ -3005,3 +2998,5 @@ export default function RecruiterJobDetailPage() {
     </ProtectedRoute>
   );
 }
+
+               

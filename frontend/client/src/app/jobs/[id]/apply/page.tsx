@@ -44,6 +44,10 @@ export default function ApplyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useProfileData, setUseProfileData] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [autoFilledResume, setAutoFilledResume] = useState<{
+    name: string;
+    url: string;
+  } | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const [formData, setFormData] = useState({
@@ -113,6 +117,51 @@ export default function ApplyPage() {
       }));
     }
   }, [useProfileData, profile]);
+  useEffect(() => {
+  const loadResume = async () => {
+    if (
+      !useProfileData ||
+      !profile ||
+      !(profile as any).resumeUrl
+    ) {
+      setAutoFilledResume(null);
+      return;
+    }
+
+    try {
+      setAutoFilledResume({
+        name:
+          (profile as any).resumeFileName ||
+          "Saved Resume",
+        url: (profile as any).resumeUrl,
+      });
+
+      const response = await fetch(
+        (profile as any).resumeUrl
+      );
+
+      const blob = await response.blob();
+
+      const file = new File(
+        [blob],
+        (profile as any).resumeFileName ||
+          "resume.pdf",
+        {
+          type: blob.type,
+        }
+      );
+
+      setResumeFile(file);
+    } catch (error) {
+      console.error(
+        "Failed to load profile resume",
+        error
+      );
+    }
+  };
+
+  loadResume();
+}, [useProfileData, profile]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -431,12 +480,45 @@ export default function ApplyPage() {
 
           {/* File Upload Section */}
           <div className="p-1 bg-white/5 rounded-[2.5rem] border border-white/10">
-            <FileUpload
-              onFileSelect={(file) => setResumeFile(file)}
-              label="Resume / CV"
-              hint="PDF, DOC, or DOCX up to 10MB"
-              accept=".pdf,.doc,.docx"
-            />
+            <div className="space-y-4">
+  <FileUpload
+    onFileSelect={(file) => {
+      setResumeFile(file);
+      setAutoFilledResume(null);
+    }}
+    label="Resume / CV"
+    hint="PDF, DOC, or DOCX up to 10MB"
+    accept=".pdf,.doc,.docx"
+  />
+
+  {resumeFile && (
+    <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
+      <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+        Uploaded File
+      </p>
+
+      <p className="text-sm text-white mt-1">
+        {resumeFile.name}
+      </p>
+    </div>
+  )}
+
+  {!resumeFile && autoFilledResume && (
+    <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
+      <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+        Auto-Filled Resume
+      </p>
+
+      <p className="text-sm text-white mt-1">
+        {autoFilledResume.name}
+      </p>
+
+      <p className="text-xs text-white/50 mt-1">
+        Resume will be submitted from your profile.
+      </p>
+    </div>
+  )}
+</div>
           </div>
 
           {/* Actions */}

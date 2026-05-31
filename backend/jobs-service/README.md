@@ -7,7 +7,7 @@ ATS Jobs Service - manages job postings, applications, and candidate ranking.
 - Spring Boot 3.4.1
 - Java 17
 - PostgreSQL (with Flyway migrations)
-- RabbitMQ (event-driven messaging)
+- Kafka (event-driven messaging)
 - Spring Cloud (Eureka discovery, OpenFeign)
 - SpringDoc OpenAPI (Swagger UI)
 
@@ -17,7 +17,7 @@ ATS Jobs Service - manages job postings, applications, and candidate ranking.
 
 - Java 17+
 - PostgreSQL running on `localhost:5432` with database `ats_jobs`
-- RabbitMQ running on `localhost:5672`
+- Kafka running on `localhost:9092`
 - Eureka server running on `localhost:8761`
 
 ### Start the service
@@ -39,7 +39,7 @@ Open [http://localhost:8083/swagger-ui.html](http://localhost:8083/swagger-ui.ht
 docker build -t jobs-service .
 docker run -p 8083:8083 \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/ats_jobs \
-  -e SPRING_RABBITMQ_HOST=host.docker.internal \
+  -e SPRING_KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092 \
   -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://host.docker.internal:8761/eureka \
   jobs-service
 ```
@@ -169,10 +169,7 @@ curl http://localhost:8083/api/v1/jobs/ranking/RANKING_JOB_ID_HERE
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/ats_jobs` | Database URL |
 | `SPRING_DATASOURCE_USERNAME` | `ats_admin` | Database username |
 | `SPRING_DATASOURCE_PASSWORD` | `ats_secret_2024` | Database password |
-| `SPRING_RABBITMQ_HOST` | `localhost` | RabbitMQ host |
-| `SPRING_RABBITMQ_PORT` | `5672` | RabbitMQ port |
-| `SPRING_RABBITMQ_USERNAME` | `ats` | RabbitMQ username |
-| `SPRING_RABBITMQ_PASSWORD` | `ats_rabbit_2024` | RabbitMQ password |
+| `SPRING_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka bootstrap servers |
 | `EUREKA_CLIENT_SERVICEURL_DEFAULTZONE` | `http://localhost:8761/eureka` | Eureka server URL |
 | `APP_STORAGE_PATH` | `./data/storage` | File storage base path |
 

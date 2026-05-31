@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ats.jobs.enums.ApplicationStatus;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -50,37 +52,56 @@ public class RankingService {
                 .build();
         RankingJob saved = rankingJobRepository.save(rankingJob);
 
-        // 2. Get only APPLIED application IDs for jobId.
-        // Candidates in any other status have already progressed and must not
-        // be fed back into the ranking pipeline.
-        List<UUID> applicationIds = applicationRepository.findByJobId(jobId)
+        // 2. Get candidates that can still be ranked or re-ranked at CV review.
+        // Candidates beyond SCREENED have progressed to later hiring stages.
+        List<Application> rankableApplications = applicationRepository.findByJobId(jobId)
                 .stream()
-                .filter(a -> a.getStatus() == ApplicationStatus.APPLIED)
-                .map(Application::getId)
+                .filter(a -> a.getStatus() == ApplicationStatus.APPLIED
+                        || a.getStatus() == ApplicationStatus.SCREENED)
                 .collect(Collectors.toList());
 
-        if (applicationIds.isEmpty()) {
-            log.warn("No APPLIED candidates found for jobId={}; ranking request not sent", jobId);
+        if (rankableApplications.isEmpty()) {
+            String message = "No rank-eligible candidates found for this job. Candidates must be APPLIED or SCREENED.";
+            log.warn("{} jobId={}; ranking request not sent", message, jobId);
             saved.setStatus(RankingStatus.FAILED);
+            saved.setCompletedAt(LocalDateTime.now());
+            saved.setResult(Map.of("error", message));
             rankingJobRepository.save(saved);
             return mapToResponse(saved);
         }
+
+        List<UUID> applicationIds = rankableApplications.stream()
+                .map(Application::getId)
+                .collect(Collectors.toList());
+
+        List<RankRequestEvent.ApplicationPayload> applicationPayloads = rankableApplications.stream()
+                .map(a -> RankRequestEvent.ApplicationPayload.builder()
+                        .applicationId(a.getId())
+                        .candidateAuthUserId(a.getCandidateAuthUserId())
+                        .filePath(a.getOriginalFilePath())
+                        .build())
+                .collect(Collectors.toList());
 
         // 3. Emit rank request event
         RankRequestEvent event = RankRequestEvent.builder()
                 .jobId(jobId)
                 .rankingJobId(saved.getId())
                 .applicationIds(applicationIds)
+                .applications(applicationPayloads)
                 .build();
 
         try {
             kafkaTemplate.send(
                     KafkaConfig.JOB_RANK_REQUEST_TOPIC,
                     event);
+            saved.setStatus(RankingStatus.PROCESSING);
+            rankingJobRepository.save(saved);
             log.info("Published job.rank.request event for jobId={}, rankingJobId={}", jobId, saved.getId());
         } catch (Exception e) {
             log.error("Failed to publish job.rank.request event: {}", e.getMessage());
             saved.setStatus(RankingStatus.FAILED);
+            saved.setCompletedAt(LocalDateTime.now());
+            saved.setResult(Map.of("error", "Failed to publish ranking request: " + e.getMessage()));
             rankingJobRepository.save(saved);
         }
 

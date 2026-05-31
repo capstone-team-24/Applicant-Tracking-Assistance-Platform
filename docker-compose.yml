@@ -79,32 +79,35 @@ services:
       kafka:
         condition: service_healthy
 
-  weaviate:
-    image: semitechnologies/weaviate:1.24.1
-    ports:
-      - "8079:8080"
-      - "50051:50051"
-    environment:
-      QUERY_DEFAULTS_LIMIT: 25
-      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
-      PERSISTENCE_DATA_PATH: /var/lib/weaviate
-      DEFAULT_VECTORIZER_MODULE: none
-      CLUSTER_HOSTNAME: node1
-    volumes:
-      - weaviate_data:/var/lib/weaviate
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8080/v1/.well-known/ready",
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   profiles:
+  #     - local-llm
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   healthcheck:
+  #     test: ["CMD", "ollama", "list"]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 12
+  #     start_period: 20s
+
+  # ollama-model-pull:
+  #   image: ollama/ollama:latest
+  #   profiles:
+  #     - local-llm
+  #   environment:
+  #     OLLAMA_HOST: http://ollama:11434
+  #     OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b-instruct-q4_K_M}
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   command: >
+  #     until ollama list >/dev/null 2>&1; do sleep 2; done;
+  #     ollama pull "$${OLLAMA_MODEL}"
+  #   depends_on:
+  #     ollama:
+  #       condition: service_started
 
   minio:
     image: minio/minio:latest
@@ -195,12 +198,17 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URI}
+      NOTIFICATION_SERVICE_URL: http://notification-service:8084
+      AUTH_SERVICE_URL: http://auth-service:8081
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
     volumes:
       - ./data/storage:/app/data/storage
     depends_on:
       postgres:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      auth-service:
         condition: service_healthy
 
   jobs-service:
@@ -213,10 +221,15 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URI}
+      NOTIFICATION_SERVICE_URL: http://notification-service:8084
       APP_FRONTEND_URL: http://localhost:3000
+      APP_STORAGE_PATH: /app/data/storage
+      ASSESSMENT_SERVICE_URL: http://assessment-service:8091
+      HIRING_RAG_SERVICE_URL: http://hiring-rag-service:8090
       GOOGLE_CREDENTIALS_BASE64: ${GOOGLE_CREDENTIALS_BASE64}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-internal-token}
     volumes:
       - ./data/storage:/app/data/storage
     depends_on:
@@ -254,6 +267,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URI}
       GATEWAY_JWKS_URI: ${GATEWAY_JWKS_URI}
+      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: "${GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS:-http://localhost:3000,http://127.0.0.1:3000,http://*:[3000]}"
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -262,48 +276,32 @@ services:
 
   # ─── Python ML Services ──────────────────────────────────
 
-  parsing-service:
-    build: ./ml/parsing-service
-    command:
-      [
-        "opentelemetry-instrument",
-        "uvicorn",
-        "app.main:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8090",
-      ]
+  hiring-rag-service:
+    build: ./ml/hiring-rag-service
     ports:
-      - "8090:8090"
+      - "${HIRING_RAG_SERVICE_PORT:-8097}:8090"
     environment:
-      OTEL_SERVICE_NAME: parsing-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: none
-      OTEL_LOGS_EXPORTER: none
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      WEAVIATE_HOST: ${WEAVIATE_HOST}
-      WEAVIATE_PORT: ${WEAVIATE_PORT}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL}
-      DEMO_MODE: ${DEMO_MODE}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${JOBS_DB}
-      EUREKA_HOST: eureka-server
-      EUREKA_PORT: 8761
+      JOBS_SERVICE_URL: http://jobs-service:8083
+      RAG_LLM_PROVIDER: ${RAG_LLM_PROVIDER:-groq}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b-instruct-q4_K_M}
+      EMBEDDING_MODEL_NAME: ${RAG_EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
+      CROSS_ENCODER_MODEL: ${RAG_CROSS_ENCODER_MODEL:-kirubelmidru/resume-cross-encoder}
+      RESUME_STORAGE_ROOT: /app/data/storage
+      CHROMA_DB_PATH: /app/chroma_db
+      CHROMA_COLLECTION_NAME: ${CHROMA_COLLECTION_NAME:-hiring_resumes}
       SERVICE_PORT: 8090
     volumes:
       - ./data/storage:/app/data/storage
+      - hiring_rag_chroma:/app/chroma_db
     depends_on:
       kafka:
         condition: service_healthy
-      weaviate:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+      jobs-service:
+        condition: service_started
 
   assessment-service:
     build: ./ml/assessment-service
@@ -331,7 +329,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${JOBS_DB}
+      JOBS_SERVICE_URL: http://jobs-service:8083
       LLM_PROVIDER: ${LLM_PROVIDER}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-internal-token}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
@@ -342,53 +342,6 @@ services:
       SERVICE_PORT: 8091
     depends_on:
       kafka:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-
-  ai-orchestrator:
-    build: ./ml/ai-orchestrator
-    command:
-      [
-        "opentelemetry-instrument",
-        "uvicorn",
-        "app.main:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8092",
-      ]
-    ports:
-      - "8092:8092"
-    environment:
-      OTEL_SERVICE_NAME: ai-orchestrator
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: none
-      OTEL_LOGS_EXPORTER: none
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      WEAVIATE_HOST: ${WEAVIATE_HOST}
-      WEAVIATE_PORT: ${WEAVIATE_PORT}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${JOBS_DB}
-      LLM_PROVIDER: ${LLM_PROVIDER}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GROQ_API_KEY: ${GROQ_API_KEY}
-      GROQ_MODEL: ${GROQ_MODEL}
-      DEMO_MODE: ${DEMO_MODE}
-      EUREKA_HOST: eureka-server
-      EUREKA_PORT: 8761
-      SERVICE_PORT: 8092
-    depends_on:
-      kafka:
-        condition: service_healthy
-      weaviate:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -404,6 +357,7 @@ services:
 
 volumes:
   postgres_data:
-  weaviate_data:
+  ollama_data:
+  hiring_rag_chroma:
   minio_data:
   pgadmin_data:

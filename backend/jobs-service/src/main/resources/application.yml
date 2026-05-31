@@ -50,6 +50,7 @@ app:
   storage:
     base-path: ${APP_STORAGE_PATH:./data/storage}
   frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
+  hiring-rag-service-url: ${HIRING_RAG_SERVICE_URL:http://localhost:8090}
 
 google:
   credentials:
