@@ -56,7 +56,7 @@ RAG_USE_CROSS_ENCODER = os.getenv(
     "false" if RAG_LLM_PROVIDER == "groq" else "true",
 ).lower() == "true"
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "BAAI/bge-small-en-v1.5")
-CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL", "kirubelmidru/resume-cross-encoder")
 JOBS_SERVICE_URL = os.getenv("JOBS_SERVICE_URL", "http://jobs-service:8083").rstrip("/")
 KAFKA_ENABLED = os.getenv("KAFKA_ENABLED", "true").lower() == "true"
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")

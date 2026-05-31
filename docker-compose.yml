@@ -289,7 +289,7 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b-instruct-q4_K_M}
       EMBEDDING_MODEL_NAME: ${RAG_EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
-      CROSS_ENCODER_MODEL: ${RAG_CROSS_ENCODER_MODEL:-cross-encoder/ms-marco-MiniLM-L-6-v2}
+      CROSS_ENCODER_MODEL: ${RAG_CROSS_ENCODER_MODEL:-kirubelmidru/resume-cross-encoder}
       RESUME_STORAGE_ROOT: /app/data/storage
       CHROMA_DB_PATH: /app/chroma_db
       CHROMA_COLLECTION_NAME: ${CHROMA_COLLECTION_NAME:-hiring_resumes}
