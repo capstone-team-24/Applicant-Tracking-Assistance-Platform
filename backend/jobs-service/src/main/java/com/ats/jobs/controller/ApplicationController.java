@@ -157,6 +157,16 @@ public class ApplicationController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/api/v1/applications/{id}/explain")
+    public ResponseEntity<ApplicationExplainResponse> explainApplicationMatch(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        HeaderContext.assertRecruiter(httpRequest);
+        UUID orgId = HeaderContext.getOrgId(httpRequest);
+        ApplicationExplainResponse response = applicationService.explainApplicationMatch(id, orgId);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/api/v1/applications/{id}/status")
     public ResponseEntity<ApplicationDetailResponse> updateApplicationStatus(
             @PathVariable UUID id,

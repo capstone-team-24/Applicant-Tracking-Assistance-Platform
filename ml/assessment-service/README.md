@@ -52,11 +52,8 @@ POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_DB=ats_assessments
 
-# RabbitMQ
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
-RABBITMQ_USER=guest
-RABBITMQ_PASSWORD=guest
+# Kafka
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
 # LLM
 LLM_PROVIDER=mock
@@ -84,7 +81,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8091 --reload
 docker build -t assessment-service .
 docker run -p 8091:8091 \
   -e POSTGRES_HOST=host.docker.internal \
-  -e RABBITMQ_HOST=host.docker.internal \
+  -e KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092 \
   assessment-service
 ```
 

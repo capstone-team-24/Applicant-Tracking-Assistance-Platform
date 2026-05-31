@@ -570,36 +570,6 @@
                     "response": []
                 },
                 {
-                    "name": "Get Org Policies (Internal)",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{baseUrl}}/internal/organizations/{{orgId}}/policies",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "internal",
-                                "organizations",
-                                "{{orgId}}",
-                                "policies"
-                            ]
-                        },
-                        "auth": {
-                            "type": "bearer",
-                            "bearer": [
-                                {
-                                    "key": "token",
-                                    "value": "{{authToken}}",
-                                    "type": "string"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
                     "name": "Get Profile By ID",
                     "request": {
                         "method": "GET",

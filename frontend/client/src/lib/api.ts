@@ -12,6 +12,7 @@ import type {
   CreateJobData,
   UpdateJobData,
   Application,
+  ApplicationMatchExplanation,
   CandidateApplicationDetail,
   ApplicationListResponse,
   ApplicationListParams,
@@ -400,6 +401,13 @@ export const applicationsApi = {
     const response = await api.post<Application>(
       `/api/v1/applications/${appId}/reject`,
       data ?? {},
+    );
+    return response.data;
+  },
+
+  explainMatch: async (appId: string): Promise<ApplicationMatchExplanation> => {
+    const response = await api.post<ApplicationMatchExplanation>(
+      `/api/v1/applications/${appId}/explain`,
     );
     return response.data;
   },

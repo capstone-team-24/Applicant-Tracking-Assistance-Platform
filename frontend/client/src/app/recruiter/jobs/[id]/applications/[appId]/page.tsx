@@ -6,6 +6,7 @@ import Link from "next/link";
 import { applicationsApi, assessmentsApi, jobsApi, offersApi } from "@/lib/api";
 import type {
   Application,
+  ApplicationMatchExplanation,
   Assessment,
   AssessmentSubmission,
   ProctoringEvent,
@@ -62,6 +63,9 @@ export default function ApplicationDetailPage() {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectMessage, setRejectMessage] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
+  const [matchExplanation, setMatchExplanation] =
+    useState<ApplicationMatchExplanation | null>(null);
+  const [isExplaining, setIsExplaining] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -69,6 +73,7 @@ export default function ApplicationDetailPage() {
         setProctoringEvents([]);
         setCandidateSubmission(null);
         setIsProofOpen(false);
+        setMatchExplanation(null);
         const app = await applicationsApi.getApplication(appId);
         setApplication(app);
 
@@ -298,6 +303,26 @@ export default function ApplicationDetailPage() {
       URL.revokeObjectURL(url);
     } catch {
       toast.error("Failed to download file");
+    }
+  };
+
+  const handleExplainMatch = async () => {
+    if (!application) return;
+
+    setIsExplaining(true);
+    try {
+      const explanation = await applicationsApi.explainMatch(appId);
+      setMatchExplanation(explanation);
+      if (explanation.analysisError && !explanation.analysis) {
+        toast.error("AI explanation could not be generated.");
+      } else {
+        toast.success("AI explanation generated.");
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string; message?: string } } };
+      toast.error(err.response?.data?.detail || err.response?.data?.message || "Failed to explain this match");
+    } finally {
+      setIsExplaining(false);
     }
   };
 
@@ -764,6 +789,137 @@ export default function ApplicationDetailPage() {
                     )}
                   </div>
                 )}
+
+              {/* AI Match Explanation */}
+              <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-3xl shadow-xl">
+                <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-2">
+                  AI Match Explanation
+                </h3>
+                <p className="text-[10px] text-white/50 mb-5 leading-relaxed">
+                  Generate a job-specific explanation using the indexed resume and job description.
+                </p>
+
+                <button
+                  id="explain-match-btn"
+                  onClick={handleExplainMatch}
+                  disabled={isExplaining || !application.originalFilename}
+                  title={
+                    application.originalFilename
+                      ? "Explain this candidate's fit for the job"
+                      : "No resume file is available for this application"
+                  }
+                  className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-sm font-bold bg-cyan-500/15 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/25 hover:border-cyan-400/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.456-2.456L14.25 6l1.035-.259a3.375 3.375 0 0 0 2.456-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423L16.5 15.75l.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
+                      />
+                    </svg>
+                    {matchExplanation ? "Refresh Explanation" : "Explain Match"}
+                  </span>
+                  {isExplaining && (
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                  )}
+                </button>
+
+                {matchExplanation && (
+                  <div className="mt-5 space-y-4">
+                    {matchExplanation.score != null && (
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">
+                          Match Score
+                        </p>
+                        <p className="text-3xl font-black text-cyan-300">
+                          {Math.round(matchExplanation.score * 100)}
+                          <span className="text-sm font-medium text-white/50 ml-1">
+                            /100
+                          </span>
+                        </p>
+                      </div>
+                    )}
+
+                    {matchExplanation.analysis ? (
+                      <div className="space-y-4 text-sm text-white/70">
+                        {matchExplanation.analysis.summary && (
+                          <p className="leading-relaxed">
+                            {matchExplanation.analysis.summary}
+                          </p>
+                        )}
+                        {matchExplanation.analysis.strengths &&
+                          matchExplanation.analysis.strengths.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-2">
+                                Strengths
+                              </p>
+                              <div className="space-y-2">
+                                {matchExplanation.analysis.strengths.map((strength) => (
+                                  <div
+                                    key={strength}
+                                    className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100"
+                                  >
+                                    {strength}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        {matchExplanation.analysis.gap && (
+                          <div>
+                            <p className="text-[10px] font-bold text-amber-300 uppercase tracking-widest mb-2">
+                              Potential Gap
+                            </p>
+                            <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                              {matchExplanation.analysis.gap}
+                            </p>
+                          </div>
+                        )}
+                        {matchExplanation.analysis.recommendation && (
+                          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                            <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">
+                              Recommendation
+                            </p>
+                            <p className="text-xs font-bold text-white capitalize">
+                              {matchExplanation.analysis.recommendation.replace(/_/g, " ")}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                        {matchExplanation.analysisError || "No explanation was returned."}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Submitted File */}
               {application.originalFilename && (

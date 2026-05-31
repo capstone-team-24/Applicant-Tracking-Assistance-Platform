@@ -1,13 +1,13 @@
 # Notification Service
 
-Spring Boot microservice responsible for sending email, in-app, and webhook notifications within the ATS platform. Listens to RabbitMQ events for automated notifications and exposes REST endpoints for manual notification management.
+Spring Boot microservice responsible for sending email, in-app, and webhook notifications within the ATS platform. Listens to Kafka events for automated notifications and exposes REST endpoints for manual notification management.
 
 ## Tech Stack
 
 - Java 17, Spring Boot 3.4.1
 - Spring Data JPA + PostgreSQL
 - Spring Mail (MailHog in dev)
-- Spring AMQP (RabbitMQ)
+- Spring Kafka
 - Flyway for database migrations
 - Eureka client for service discovery
 - SpringDoc OpenAPI (Swagger UI)
@@ -16,13 +16,13 @@ Spring Boot microservice responsible for sending email, in-app, and webhook noti
 
 - Java 17+
 - PostgreSQL (database: `ats_notifications`)
-- RabbitMQ
+- Kafka
 - MailHog (for local email testing, SMTP on port 1025, UI on port 8025)
 
 ## Running Locally
 
 ```bash
-# Start dependencies (PostgreSQL, RabbitMQ, MailHog)
+# Start dependencies (PostgreSQL, Kafka, MailHog)
 # Then run:
 ./mvnw spring-boot:run
 ```
@@ -75,17 +75,17 @@ curl -X POST "http://localhost:8084/api/v1/notifications/send" \
   }'
 ```
 
-## RabbitMQ Events
+## Kafka Events
 
-The service listens on the `ats.events` topic exchange for the following routing keys:
+The service listens to these Kafka topics:
 
-| Queue                                | Routing Key              | Description                     |
-|--------------------------------------|--------------------------|---------------------------------|
-| `notification.application.submitted` | `application.submitted`  | New application submitted       |
-| `notification.parse.completed`       | `resume.parse.completed` | Resume parsing finished         |
-| `notification.rank.result`           | `job.rank.result`        | Candidate ranking completed     |
+| Topic | Description |
+|-------|-------------|
+| `application.submitted` | New application submitted |
+| `resume.parse.completed` | Resume parsing finished |
+| `job.rank.result` | Candidate ranking completed |
 
-### Example RabbitMQ event payload
+### Example Kafka event payload
 
 ```json
 {
@@ -110,7 +110,7 @@ docker run -p 8084:8084 \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/ats_notifications \
   -e SPRING_DATASOURCE_USERNAME=ats_admin \
   -e SPRING_DATASOURCE_PASSWORD=ats_secret_2024 \
-  -e SPRING_RABBITMQ_HOST=host.docker.internal \
+  -e SPRING_KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092 \
   -e SPRING_MAIL_HOST=host.docker.internal \
   notification-service
 ```
@@ -124,8 +124,5 @@ docker run -p 8084:8084 \
 | `SPRING_DATASOURCE_PASSWORD`              | `ats_secret_2024`                                |
 | `SPRING_MAIL_HOST`                        | `localhost`                                      |
 | `SPRING_MAIL_PORT`                        | `1025`                                           |
-| `SPRING_RABBITMQ_HOST`                    | `localhost`                                      |
-| `SPRING_RABBITMQ_PORT`                    | `5672`                                           |
-| `SPRING_RABBITMQ_USERNAME`                | `ats`                                            |
-| `SPRING_RABBITMQ_PASSWORD`                | `ats_rabbit_2024`                                |
+| `SPRING_KAFKA_BOOTSTRAP_SERVERS`          | `localhost:9092`                                 |
 | `EUREKA_CLIENT_SERVICEURL_DEFAULTZONE`    | `http://localhost:8761/eureka`                   |

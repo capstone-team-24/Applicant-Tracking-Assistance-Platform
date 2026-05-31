@@ -1,11 +1,15 @@
 #!/bin/bash
-cd /home/kaleb/final/trial1
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$ROOT_DIR"
 
 DCMD="docker"
 CCMD="compose"
 BCMD="build"
 
-for svc in auth-service jobs-service notification-service api-gateway parsing-service assessment-service ai-orchestrator frontend; do
+for svc in eureka-server auth-service user-service jobs-service notification-service api-gateway hiring-rag-service assessment-service frontend; do
   echo "==> Building $svc at $(date)"
   $DCMD $CCMD $BCMD "$svc" 2>&1 | tail -10
   RC=$?

@@ -6,7 +6,7 @@ Spring Boot authentication service providing JWT-based auth with RS256 signing, 
 
 - Java 17+
 - PostgreSQL
-- RabbitMQ
+- Kafka
 - Eureka Server (optional, for service discovery)
 
 ## Configuration
@@ -20,10 +20,7 @@ Set environment variables or edit `src/main/resources/application.yml`:
 | DB_NAME | ats_auth | Database name |
 | DB_USER | postgres | Database user |
 | DB_PASS | postgres | Database password |
-| RABBITMQ_HOST | localhost | RabbitMQ host |
-| RABBITMQ_PORT | 5672 | RabbitMQ port |
-| RABBITMQ_USER | guest | RabbitMQ user |
-| RABBITMQ_PASS | guest | RabbitMQ password |
+| SPRING_KAFKA_BOOTSTRAP_SERVERS | localhost:9092 | Kafka bootstrap servers |
 | EUREKA_URI | http://localhost:8761/eureka | Eureka server URL |
 | JWT_ACCESS_TTL_MINUTES | 15 | Access token TTL in minutes |
 | JWT_REFRESH_TTL_DAYS | 7 | Refresh token TTL in days |
@@ -43,7 +40,7 @@ java -jar target/auth-service-0.0.1-SNAPSHOT.jar
 docker build -t auth-service .
 docker run -p 8081:8081 \
   -e DB_HOST=host.docker.internal \
-  -e RABBITMQ_HOST=host.docker.internal \
+  -e SPRING_KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092 \
   auth-service
 ```
 
