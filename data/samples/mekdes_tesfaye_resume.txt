@@ -1,0 +1,38 @@
+Mekdes Tesfaye
+Full Stack Product Engineer
+mekdes.tesfaye@example.com | +251 91 234 5678 | Addis Ababa, Ethiopia
+Portfolio: https://mekdes-tesfaye.example/portfolio | GitHub: https://github.com/mekdestesfaye-demo
+
+SUMMARY
+Product-minded full stack engineer with 5 years of experience building polished workflow tools for hiring, onboarding, and operations teams. Strong in React, Next.js, TypeScript, Spring Boot, PostgreSQL, and accessible user interfaces. Known for turning ambiguous product problems into reliable, well-tested features for Ethiopian and remote teams.
+
+CORE SKILLS
+Frontend: React, Next.js, TypeScript, Tailwind CSS, accessibility, design systems
+Backend: Java, Spring Boot, REST APIs, PostgreSQL, Kafka, Redis
+Product: workflow design, metrics instrumentation, user research collaboration, rapid iteration
+Delivery: Docker, GitHub Actions, observability, automated testing, incident follow-up
+
+EXPERIENCE
+
+Senior Product Engineer | AddisFlow Labs | 2023 - Present
+- Built candidate-facing application and interview scheduling flows used by distributed hiring teams.
+- Led a redesign of recruiter review queues, improving task completion speed by 34% in usability testing.
+- Implemented Spring Boot APIs for application status changes, audit history, and notification delivery.
+- Partnered with design to create accessible components for forms, tables, cards, and status indicators.
+
+Full Stack Engineer | Sheger Systems | 2020 - 2023
+- Shipped Next.js dashboards for operations teams with PostgreSQL-backed reporting APIs.
+- Designed event-driven application workflows using Kafka and transactional outbox patterns.
+- Improved frontend performance by splitting heavy data views and tightening API response payloads.
+- Mentored two junior engineers on React patterns, testing, and pragmatic product discovery.
+
+Software Engineer | Blue Nile Digital | 2018 - 2020
+- Built internal tools with React, Node.js, and PostgreSQL for account management teams.
+- Introduced component documentation and lightweight accessibility checks before release.
+
+EDUCATION
+B.S. Software Engineering, Addis Ababa University
+
+SELECTED PROJECTS
+- Candidate Journey Map: analytics dashboard that surfaces drop-off points across application stages.
+- Recruiter Command Center: multi-column review board for screening, assessment, interview, and offer states.

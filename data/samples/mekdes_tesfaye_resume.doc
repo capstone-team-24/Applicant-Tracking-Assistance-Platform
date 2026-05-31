@@ -1,0 +1,33 @@
+<html>
+<head><title>Mekdes Tesfaye Resume</title></head>
+<body>
+<h1>Mekdes Tesfaye</h1>
+<p><strong>Full Stack Product Engineer</strong></p>
+<p>mekdes.tesfaye@example.com | +251 91 234 5678 | Addis Ababa, Ethiopia</p>
+<p>Portfolio: https://mekdes-tesfaye.example/portfolio | GitHub: https://github.com/mekdestesfaye-demo</p>
+<h2>Summary</h2>
+<p>Product-minded full stack engineer with 5 years of experience building polished workflow tools for hiring, onboarding, and operations teams. Strong in React, Next.js, TypeScript, Spring Boot, PostgreSQL, and accessible user interfaces.</p>
+<h2>Core Skills</h2>
+<ul>
+<li>React, Next.js, TypeScript, Tailwind CSS, accessibility, design systems</li>
+<li>Java, Spring Boot, REST APIs, PostgreSQL, Kafka, Redis</li>
+<li>Workflow design, metrics instrumentation, user research collaboration</li>
+<li>Docker, GitHub Actions, observability, automated testing</li>
+</ul>
+<h2>Experience</h2>
+<h3>Senior Product Engineer | AddisFlow Labs | 2023 - Present</h3>
+<ul>
+<li>Built candidate-facing application and interview scheduling flows used by distributed hiring teams.</li>
+<li>Led a redesign of recruiter review queues, improving task completion speed by 34% in usability testing.</li>
+<li>Implemented Spring Boot APIs for application status changes, audit history, and notification delivery.</li>
+</ul>
+<h3>Full Stack Engineer | Sheger Systems | 2020 - 2023</h3>
+<ul>
+<li>Shipped Next.js dashboards for operations teams with PostgreSQL-backed reporting APIs.</li>
+<li>Designed event-driven application workflows using Kafka and transactional outbox patterns.</li>
+<li>Mentored two junior engineers on React patterns, testing, and pragmatic product discovery.</li>
+</ul>
+<h2>Education</h2>
+<p>B.S. Software Engineering, Addis Ababa University</p>
+</body>
+</html>
